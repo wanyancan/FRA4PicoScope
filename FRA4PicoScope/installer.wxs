@@ -8,7 +8,7 @@
                 <Directory Id="FRA4PicoScope" Name="FRA4PicoScope">
                     <Component Id="ApplicationFiles" DiskId="1" KeyPath="no" Guid="36038c11-ec02-4ce1-b9db-da18b2094ad2">
                         <Shortcut Id="ExeShortcut" Directory="ProgramMenuDir" Name="FRA For PicoScope" Advertise="yes" Icon="StartMenuIcon.exe" IconIndex="0" WorkingDirectory="FRA4PicoScope" />
-                        <File Id="PICOSCOPEFRA.EXE" Name="PicoScopeFRA.exe" Source="..\Release\PicoScopeFRA.exe">
+                        <File Id="FRA4PICOSCOPE.EXE" Name="FRA4PicoScope.exe" Source="..\Release\FRA4PicoScope.exe">
                         </File>
                         <File Id="CMAP0_DEFAULT.PAL" Name="cmap0_default.pal" Source="cmap0_default.pal" />
                         <File Id="CMAP1_DEFAULT.PAL" Name="cmap1_default.pal" Source="cmap1_default.pal" />
@@ -51,6 +51,6 @@
             <ComponentRef Id="UserData" />        
         </Feature>
         <UI />
-        <Icon Id="StartMenuIcon.exe" SourceFile="..\Release\PicoScopeFRA.exe" />
+        <Icon Id="StartMenuIcon.exe" SourceFile="..\Release\FRA4PicoScope.exe" />
     </Product>
 </Wix>
