@@ -1,0 +1,5 @@
+lib/
+*.svg
+*.db
+*.wixobj
+*.wixpdb

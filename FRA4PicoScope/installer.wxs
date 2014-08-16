@@ -1,0 +1,56 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Wix xmlns="http://schemas.microsoft.com/wix/2006/wi">
+    <Product Id="29B6E5D9-1CBE-4197-868E-136B80B0FDC1" Name="FRA for PicoScope" Language="1033" Version="1.0" Manufacturer="Aaron Hexamer" UpgradeCode="1E288F95-986A-44C9-BF01-6E6397433F8E">
+        <Package Description="Simple Installer" Comments="Simple Installer" InstallerVersion="200" Compressed="yes" />
+        <Media Id="1" Cabinet="simple.cab" EmbedCab="yes" />
+        <Directory Id="TARGETDIR" Name="SourceDir">
+            <Directory Id="ProgramFilesFolder" Name="PFiles">
+                <Directory Id="FRA4PicoScope" Name="FRA4PicoScope">
+                    <Component Id="ApplicationFiles" DiskId="1" KeyPath="no" Guid="36038c11-ec02-4ce1-b9db-da18b2094ad2">
+                        <Shortcut Id="ExeShortcut" Directory="ProgramMenuDir" Name="FRA For PicoScope" Advertise="yes" Icon="StartMenuIcon.exe" IconIndex="0" WorkingDirectory="FRA4PicoScope" />
+                        <File Id="PICOSCOPEFRA.EXE" Name="PicoScopeFRA.exe" Source="..\Release\PicoScopeFRA.exe">
+                        </File>
+                        <File Id="CMAP0_DEFAULT.PAL" Name="cmap0_default.pal" Source="cmap0_default.pal" />
+                        <File Id="CMAP1_DEFAULT.PAL" Name="cmap1_default.pal" Source="cmap1_default.pal" />
+                        <File Id="PLXTND5.FNT" Name="plxtnd5.fnt" Source="plxtnd5.fnt" />
+                    </Component>
+                </Directory>
+            </Directory>
+            <Directory Id="AppDataFolder">
+                <Directory Id="FRA4PicoScopeAppFolder" Name="FRA4PicoScope">
+                    <Component Id="ApplicationData" Guid="">
+                        <RegistryValue Root="HKCU" Key="Software\[Manufacturer]\[ProductName]" Name="installed" Type="integer" Value="1" KeyPath="yes" />
+                        <RemoveFolder Id="FRA4PicoScopeAppFolder" On="uninstall" />
+                        <CreateFolder />
+                    </Component>
+                </Directory>
+            </Directory>
+            <Directory Id="PersonalFolder">
+                <Directory Id="FRA4PicoScopeUserDataFolder" Name="FRA4PicoScope">
+                    <Component Id="UserData" Guid="">
+                        <RegistryValue Root="HKCU" Key="Software\[Manufacturer]\[ProductName]" Name="installed" Type="integer" Value="1" KeyPath="yes" />
+                        <RemoveFolder Id="FRA4PicoScopeUserDataFolder" On="uninstall" />
+                        <CreateFolder />
+                    </Component>
+                </Directory>
+            </Directory>
+            <Directory Id="ProgramMenuFolder">
+                <Directory Id="ProgramMenuDir" Name="FRA for PicoScope">
+                    <Component Id="StartMenuShortcuts" Guid="BA17DF50-B0D2-41CA-9AC4-01FE5211D4E0">
+                        <RemoveFolder Id="ProgramMenuDir" On="uninstall" />
+                        <RegistryValue Root="HKCU" Key="Software\[Manufacturer]\[ProductName]" Type="string" Value="" />
+                        <Shortcut Id="UninstallProduct" Name="Uninstall" Description="Uninstalls the application" Target="[System64Folder]msiexec.exe" Arguments="/x [ProductCode]" />
+                    </Component>
+                </Directory>
+            </Directory>
+        </Directory>
+        <Feature Id="DefaultFeature" Title="Main Feature" Level="1">
+            <ComponentRef Id="ApplicationFiles" />
+            <ComponentRef Id="StartMenuShortcuts" />
+            <ComponentRef Id="ApplicationData" />
+            <ComponentRef Id="UserData" />        
+        </Feature>
+        <UI />
+        <Icon Id="StartMenuIcon.exe" SourceFile="..\Release\PicoScopeFRA.exe" />
+    </Product>
+</Wix>
