@@ -880,7 +880,8 @@ DWORD WINAPI ExecuteFRA(LPVOID lpdwThreadParam)
                 phasesDeg[i] = (double)-i;
                 gainsDb[i] = (double)i*2;
             }
-            fraPlotter -> PlotFRA( freqsLogHz, gainsDb, phasesDeg, numSteps );
+            fraPlotter -> PlotFRA( freqsLogHz, gainsDb, phasesDeg, numSteps,
+                                   pSettings->GetGainScale(), pSettings->GetPhaseScale() );
 #else
             if (NULL == pScopeSelector->GetSelectedScope()) // Scope not created
             {
@@ -933,7 +934,8 @@ DWORD WINAPI ExecuteFRA(LPVOID lpdwThreadParam)
 
             psFRA->GetResults( &numSteps, &freqsLogHz, &gainsDb, &phasesDeg );
 
-            fraPlotter -> PlotFRA( freqsLogHz, gainsDb, phasesDeg, numSteps );
+            fraPlotter -> PlotFRA( freqsLogHz, gainsDb, phasesDeg, numSteps,
+                                   pSettings->GetGainScale(), pSettings->GetPhaseScale() );
 #endif
             unique_ptr<uint8_t[]> buffer;
 
@@ -1590,7 +1592,8 @@ void SavePlotImageFile( wstring dataFilePath )
 
         if (dataFileOutputStream)
         {
-            fraPlotter->PlotFRA( freqsLogHz, gainsDb, phasesDeg, numSteps );
+            fraPlotter->PlotFRA( freqsLogHz, gainsDb, phasesDeg, numSteps,
+                                 pSettings->GetGainScale(), pSettings->GetPhaseScale() );
 
             try
             {

@@ -145,12 +145,16 @@ FRAPlotter::~FRAPlotter(void)
 //             [in] gains - Gains from the FRA execution
 //             [in] phases - Phases from the FRA execution
 //             [in] N - Number of data points in the arrays supplied
-//
+//             [in] gainAxisScale - a tuple where the first element is whether to autoscale,
+//                                  and if false, the second and third are the min and max values
+//             [in] phaseAxisScale - a tuple where the first element is whether to autoscale,
+//                                   and if false, the second and third are the min and max values
 // Notes: 
 //
 ///////////////////////////////////////////////////////////////////////////////////////////////////
 
-void FRAPlotter::PlotFRA(double freqs[], double gains[], double phases[], int N)
+void FRAPlotter::PlotFRA(double freqs[], double gains[], double phases[], int N, 
+                         tuple<bool,double,double> gainAxisScale, tuple<bool,double,double> phaseAxisScale)
 {
 
     double minGain, maxGain;
@@ -166,21 +170,38 @@ void FRAPlotter::PlotFRA(double freqs[], double gains[], double phases[], int N)
     plsmem(plotWidth, plotHeight, plotBmBuffer.data());
     plinit();
 
-    // Find mins and maxes
+    // Compute axis mins and maxes
+
     minFreq = *min_element(freqs,freqs+N);
     maxFreq = *max_element(freqs,freqs+N);
-    minGain = *min_element(gains,gains+N);
-    maxGain = *max_element(gains,gains+N);
-    minPhase = *min_element(phases,phases+N);
-    maxPhase = *max_element(phases,phases+N);
 
-    double gainSpan = maxGain - minGain;
-    minGain -= 0.1 * gainSpan;
-    maxGain += 0.1 * gainSpan;
+    if (get<0>(gainAxisScale)) // autoscale is true
+    {
+        minGain = *min_element(gains,gains+N);
+        maxGain = *max_element(gains,gains+N);
+        double gainSpan = maxGain - minGain;
+        minGain -= 0.1 * gainSpan;
+        maxGain += 0.1 * gainSpan;
+    }
+    else
+    {
+        minGain = get<1>(gainAxisScale);
+        maxGain = get<2>(gainAxisScale);
+    }
 
-    double phaseSpan = maxPhase - minPhase;
-    minPhase -= 0.1 * phaseSpan;
-    maxPhase += 0.1 * phaseSpan;
+    if (get<0>(phaseAxisScale)) // autoscale is true
+    {
+        minPhase = *min_element(phases,phases+N);
+        maxPhase = *max_element(phases,phases+N);
+        double phaseSpan = maxPhase - minPhase;
+        minPhase -= 0.1 * phaseSpan;
+        maxPhase += 0.1 * phaseSpan;
+    }
+    else
+    {
+        minPhase = get<1>(phaseAxisScale);
+        maxPhase = get<2>(phaseAxisScale);
+    }
 
     pladv( 0 );
 

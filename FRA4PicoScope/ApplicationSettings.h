@@ -26,6 +26,7 @@
 #pragma once
 
 #include <string>
+#include <tuple>
 
 #include <boost/property_tree/ptree.hpp>
 using namespace boost::property_tree;
@@ -88,6 +89,36 @@ class ApplicationSettings
         inline void SetPlotGridmarks( bool showGridmarks )
         {
             AppSettingsPropTree.put( "plot.showGridmarks", showGridmarks );
+            appSettingsDirty = true;
+        }
+
+        inline tuple<bool, double, double> GetGainScale(void)
+        {
+            auto retVal = make_tuple( AppSettingsPropTree.get<bool>( "plot.gainAxis.autoscale" ),
+                                      AppSettingsPropTree.get<double>( "plot.gainAxis.min" ),
+                                      AppSettingsPropTree.get<double>( "plot.gainAxis.max" ) );
+            return retVal;
+        }
+        inline void SetGainScale(tuple<bool, double, double> gainScale)
+        {
+            AppSettingsPropTree.put( "plot.gainAxis.autoscale", get<0>(gainScale) );
+            AppSettingsPropTree.put( "plot.gainAxis.min", get<1>(gainScale) );
+            AppSettingsPropTree.put( "plot.gainAxis.max", get<2>(gainScale) );
+            appSettingsDirty = true;
+        }
+
+        inline tuple<bool, double, double> GetPhaseScale(void)
+        {
+            auto retVal = make_tuple( AppSettingsPropTree.get<bool>( "plot.phaseAxis.autoscale" ),
+                                      AppSettingsPropTree.get<double>( "plot.phaseAxis.min" ),
+                                      AppSettingsPropTree.get<double>( "plot.phaseAxis.max" ) );
+            return retVal;
+        }
+        inline void SetPhaseScale(tuple<bool, double, double> phaseScale)
+        {
+            AppSettingsPropTree.put( "plot.phaseAxis.autoscale", get<0>(phaseScale) );
+            AppSettingsPropTree.put( "plot.phaseAxis.min", get<1>(phaseScale) );
+            AppSettingsPropTree.put( "plot.phaseAxis.max", get<2>(phaseScale) );
             appSettingsDirty = true;
         }
 
@@ -175,157 +206,157 @@ class ApplicationSettings
         inline uint8_t GetNumChannels(void)
         {
             return numChannels;
-        };
+        }
 
         inline int GetInputChannel()
         {
             return ScopeSettingsPropTree.get<wstring>(L"picoScope.inputChannel.name").c_str()[0] - wchar_t('A');
-        };
+        }
         inline void SetInputChannel(int channel)
         {
             wchar_t chanLetter[2] = L"A";
             chanLetter[0] += channel;
             ScopeSettingsPropTree.put(L"picoScope.inputChannel.name", wstring(chanLetter));
             scopeSettingsDirty = true;
-        };
+        }
 
         inline int GetInputCoupling()
         {
             return ScopeSettingsPropTree.get<int>(L"picoScope.inputChannel.coupling");
-        };
+        }
         inline void SetInputCoupling(int coupling)
         {
             ScopeSettingsPropTree.put(L"picoScope.inputChannel.coupling", coupling);
             scopeSettingsDirty = true;
-        };
+        }
 
         inline int GetInputAttenuation()
         {
             return ScopeSettingsPropTree.get<int>(L"picoScope.inputChannel.attenuation");
-        };
+        }
         inline void SetInputAttenuation(int attenuation)
         {
             ScopeSettingsPropTree.put(L"picoScope.inputChannel.attenuation", attenuation);
             scopeSettingsDirty = true;
-        };
+        }
 
         inline const wstring GetInputDcOffset()
         {
             return ScopeSettingsPropTree.get<wstring>(L"picoScope.inputChannel.dcOffset");
-        };
+        }
         inline void SetInputDcOffset(const wchar_t* dcOffset)
         {
             ScopeSettingsPropTree.put(L"picoScope.inputChannel.dcOffset", wstring(dcOffset));
             scopeSettingsDirty = true;
-        };
+        }
 
         inline int GetOutputChannel()
         {
             return ScopeSettingsPropTree.get<wstring>(L"picoScope.outputChannel.name").c_str()[0] - wchar_t('A');
-        };
+        }
         inline void SetOutputChannel(int channel)
         {
             wchar_t chanLetter[2] = L"A";
             chanLetter[0] += channel;
             ScopeSettingsPropTree.put(L"picoScope.outputChannel.name", wstring(chanLetter));
             scopeSettingsDirty = true;
-        };
+        }
 
         inline int GetOutputCoupling()
         {
             return ScopeSettingsPropTree.get<int>(L"picoScope.outputChannel.coupling");
-        };
+        }
         inline void SetOutputCoupling(int coupling)
         {
             ScopeSettingsPropTree.put(L"picoScope.outputChannel.coupling", coupling);
             scopeSettingsDirty = true;
-        };
+        }
 
         inline int GetOutputAttenuation()
         {
             return ScopeSettingsPropTree.get<int>(L"picoScope.outputChannel.attenuation");
-        };
+        }
         inline void SetOutputAttenuation(int attenuation)
         {
             ScopeSettingsPropTree.put(L"picoScope.outputChannel.attenuation", attenuation);
             scopeSettingsDirty = true;
-        };
+        }
 
         inline const wstring GetOutputDcOffset()
         {
             return ScopeSettingsPropTree.get<wstring>(L"picoScope.outputChannel.dcOffset");
-        };
+        }
         inline void SetOutputDcOffset(const wchar_t* dcOffset)
         {
             ScopeSettingsPropTree.put(L"picoScope.outputChannel.dcOffset", wstring(dcOffset));
             scopeSettingsDirty = true;
-        };
+        }
 
         inline const wstring GetInputSignalVpp()
         {
             return ScopeSettingsPropTree.get<wstring>(L"picoScope.fraParam.signalVpp");
-        };
+        }
         inline void SetInputSignalVpp(const wchar_t* inputSignalVpp)
         {
             ScopeSettingsPropTree.put(L"picoScope.fraParam.signalVpp", wstring(inputSignalVpp));
             scopeSettingsDirty = true;
-        };
+        }
 
         inline const wstring GetStartFreq()
         {
             return ScopeSettingsPropTree.get<wstring>(L"picoScope.fraParam.startFrequency");
-        };
+        }
         inline void SetStartFrequency(const wchar_t* startFreq)
         {
             ScopeSettingsPropTree.put(L"picoScope.fraParam.startFrequency", wstring(startFreq));
             scopeSettingsDirty = true;
-        };
+        }
 
         inline const wstring GetStopFreq()
         {
             return ScopeSettingsPropTree.get<wstring>(L"picoScope.fraParam.stopFrequency");
-        };
+        }
         inline void SetStopFrequency(const wchar_t* stopFreq)
         {
             ScopeSettingsPropTree.put(L"picoScope.fraParam.stopFrequency", wstring(stopFreq));
             scopeSettingsDirty = true;
-        };
+        }
 
         inline const wstring GetStepsPerDecade()
         {
             return ScopeSettingsPropTree.get<wstring>(L"picoScope.fraParam.stepsPerDecade");
-        };
+        }
         inline void SetStepsPerDecade(const wchar_t* stepsPerDecade)
         {
             ScopeSettingsPropTree.put(L"picoScope.fraParam.stepsPerDecade", wstring(stepsPerDecade));
             scopeSettingsDirty = true;
-        };
+        }
 
         // Versions which convert the string to a number
         inline double GetInputDcOffsetAsDouble()
         {
             return ScopeSettingsPropTree.get<double>(L"picoScope.inputChannel.dcOffset");
-        };
+        }
         inline double GetOutputDcOffsetAsDouble()
         {
             return ScopeSettingsPropTree.get<double>(L"picoScope.outputChannel.dcOffset");
-        };
+        }
         inline double GetInputSignalVppAsDouble()
         {
             return ScopeSettingsPropTree.get<double>(L"picoScope.fraParam.signalVpp");
-        };
+        }
         inline double GetStartFreqAsDouble()
         {
             return ScopeSettingsPropTree.get<double>(L"picoScope.fraParam.startFrequency");
-        };
+        }
         inline double GetStopFreqAsDouble()
         {
             return ScopeSettingsPropTree.get<double>(L"picoScope.fraParam.stopFrequency");
-        };
+        }
         inline int GetStepsPerDecadeAsInt()
         {
             return ScopeSettingsPropTree.get<int>(L"picoScope.fraParam.stepsPerDecade");
-        };
+        }
 
     private:
 

@@ -144,6 +144,12 @@ bool ApplicationSettings::InitializeApplicationSettingsFile( void )
         AppSettingsPropTree.put( "samplingMode", LOW_NOISE );
 
         AppSettingsPropTree.put( "plot.showGridmarks", false );
+        AppSettingsPropTree.put( "plot.gainAxis.autoscale", true );
+        AppSettingsPropTree.put( "plot.gainAxis.min", 0.0 );
+        AppSettingsPropTree.put( "plot.gainAxis.max", 0.0 );
+        AppSettingsPropTree.put( "plot.phaseAxis.autoscale", true );
+        AppSettingsPropTree.put( "plot.phaseAxis.min", 0.0 );
+        AppSettingsPropTree.put( "plot.phaseAxis.max", 0.0 );
         AppSettingsPropTree.put( "plot.plotGainMargin", false );
         AppSettingsPropTree.put( "plot.plotPhaseMargin", false );
         AppSettingsPropTree.put( "plot.screenColor.background.red", 0 );
@@ -235,6 +241,7 @@ bool ApplicationSettings::WriteApplicationSettings( void )
             {
                 xml_writer_settings<char> settings(' ', 4);
                 write_xml(settingsFileOutputStream, AppSettingsPropTree, settings);
+                appSettingsDirty = false;
             }
             else
             {
@@ -389,6 +396,8 @@ bool ApplicationSettings::InitializeScopeSettingsFile(PicoScope* pScope)
         {
             xml_writer_settings<wchar_t> settings(wchar_t(' '), 4);
             write_xml(settingsFileOutputStream, ScopeSettingsPropTree, settings);
+            appSettingsOpened = true;
+            appSettingsDirty = false;
         }
         catch( const ptree_error& pte )
         {
@@ -467,6 +476,7 @@ bool ApplicationSettings::WriteScopeSettings(void)
             {
                 xml_writer_settings<wchar_t> settings(wchar_t(' '), 4);
                 write_xml(settingsFileOutputStream, ScopeSettingsPropTree, settings);
+                scopeSettingsDirty = false;
             }
             catch( const ptree_error& pte )
             {

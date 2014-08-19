@@ -30,6 +30,7 @@
 #include <stdint.h>
 #include <vector>
 #include <memory>
+#include <tuple>
 #include <boost/logic/tribool.hpp>
 using namespace boost::logic;
 
@@ -37,7 +38,8 @@ using namespace boost::logic;
 //
 // Name: class FRAPlotter
 //
-// Purpose: This is the class supporting plotting of Frequency Response Analysis data
+// Purpose: This is the class supporting plotting of Frequency Response Analysis data.  It creates
+//          image pixel buffers for clients to display or save images.
 //
 // Parameters: N/A
 //
@@ -51,7 +53,7 @@ class FRAPlotter
         FRAPlotter(uint16_t width, uint16_t height);
         ~FRAPlotter(void);
         bool Initialize(void);
-        void PlotFRA(double freqs[], double gains[], double phases[], int N);
+        void PlotFRA(double freqs[], double gains[], double phases[], int N, tuple<bool,double,double> gainAxisScale, tuple<bool,double,double> phaseAxisScale );
         unique_ptr<uint8_t[]> GetScreenBitmapPlot32BppBGRA(void);
         unique_ptr<uint8_t[]> GetPNGBitmapPlot(size_t* size);
 
