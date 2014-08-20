@@ -145,21 +145,41 @@ FRAPlotter::~FRAPlotter(void)
 //             [in] gains - Gains from the FRA execution
 //             [in] phases - Phases from the FRA execution
 //             [in] N - Number of data points in the arrays supplied
+//             [in] freqAxisScale - a tuple where the first element is whether to autoscale,
+//                                  and if false, the second and third are the min and max values
 //             [in] gainAxisScale - a tuple where the first element is whether to autoscale,
 //                                  and if false, the second and third are the min and max values
 //             [in] phaseAxisScale - a tuple where the first element is whether to autoscale,
 //                                   and if false, the second and third are the min and max values
-// Notes: 
+//             [in] freqAxisIntervals - a tuple where the first two elements are the major and 
+//                                      minor intervals, and the next two elements indicate
+//                                      whether to draw grids
+//             [in] gainAxisIntervals - a tuple where the first two elements are the major and 
+//                                      minor intervals, and the next two elements indicate
+//                                      whether to draw grids
+//             [in] phaseAxisIntervals - a tuple where the first two elements are the major and 
+//                                       minor intervals, and the next two elements indicate
+//                                       whether to draw grids
+//
+// Notes: Use of 0.0 for intervals results in PLplot automatically calculating an interval.
 //
 ///////////////////////////////////////////////////////////////////////////////////////////////////
 
 void FRAPlotter::PlotFRA(double freqs[], double gains[], double phases[], int N, 
-                         tuple<bool,double,double> gainAxisScale, tuple<bool,double,double> phaseAxisScale)
+                         tuple<bool,double,double> freqAxisScale,
+                         tuple<bool,double,double> gainAxisScale, 
+                         tuple<bool,double,double> phaseAxisScale,
+                         tuple<double,uint8_t,bool,bool> freqAxisIntervals,
+                         tuple<double,uint8_t,bool,bool> gainAxisIntervals, 
+                         tuple<double,uint8_t,bool,bool> phaseAxisIntervals)
 {
 
     double minGain, maxGain;
     double minPhase, maxPhase;
     double minFreq, maxFreq;
+    string freqAxisOpts = "bclnst";
+    string gainAxisOpts = "bnstv";
+    string phaseAxisOpts = "cmstv";
 
     for (uint8_t &bufferElem : plotBmBuffer) // range based for from C++11 not available in VS2010
     {
@@ -172,16 +192,25 @@ void FRAPlotter::PlotFRA(double freqs[], double gains[], double phases[], int N,
 
     // Compute axis mins and maxes
 
-    minFreq = *min_element(freqs,freqs+N);
-    maxFreq = *max_element(freqs,freqs+N);
+    if (get<0>(freqAxisScale)) // autoscale is true
+    {
+        minFreq = *min_element(freqs,freqs+N);
+        maxFreq = *max_element(freqs,freqs+N);
+        minFreq -= 0.1;// * (maxFreq - minFreq);
+        maxFreq += 0.1;// * (maxFreq - minFreq);
+    }
+    else
+    {
+        minFreq = get<1>(freqAxisScale);
+        maxFreq = get<2>(freqAxisScale);
+    }
 
     if (get<0>(gainAxisScale)) // autoscale is true
     {
         minGain = *min_element(gains,gains+N);
         maxGain = *max_element(gains,gains+N);
-        double gainSpan = maxGain - minGain;
-        minGain -= 0.1 * gainSpan;
-        maxGain += 0.1 * gainSpan;
+        minGain -= 0.1 * (maxGain - minGain);
+        maxGain += 0.1 * (maxGain - minGain);
     }
     else
     {
@@ -193,14 +222,39 @@ void FRAPlotter::PlotFRA(double freqs[], double gains[], double phases[], int N,
     {
         minPhase = *min_element(phases,phases+N);
         maxPhase = *max_element(phases,phases+N);
-        double phaseSpan = maxPhase - minPhase;
-        minPhase -= 0.1 * phaseSpan;
-        maxPhase += 0.1 * phaseSpan;
+        minPhase -= 0.1 * (maxPhase - minPhase);
+        maxPhase += 0.1 * (maxPhase - minPhase);
     }
     else
     {
         minPhase = get<1>(phaseAxisScale);
         maxPhase = get<2>(phaseAxisScale);
+    }
+
+    // Set up options for grids
+    if (get<2>(freqAxisIntervals))
+    {
+        freqAxisOpts += "g";
+    }
+    if (get<3>(freqAxisIntervals))
+    {
+        freqAxisOpts += "h";
+    }
+    if (get<2>(gainAxisIntervals))
+    {
+        gainAxisOpts += "g";
+    }
+    if (get<3>(gainAxisIntervals))
+    {
+        gainAxisOpts += "h";
+    }
+    if (get<2>(phaseAxisIntervals))
+    {
+        phaseAxisOpts += "g";
+    }
+    if (get<3>(phaseAxisIntervals))
+    {
+        phaseAxisOpts += "h";
     }
 
     pladv( 0 );
@@ -214,7 +268,8 @@ void FRAPlotter::PlotFRA(double freqs[], double gains[], double phases[], int N,
     // Set the color of the viewport box
     plcol0( 0 );
     // Setup box and axes for gain
-    plbox( "bclnst", 0.0, 0, "bnstv", 0.0, 0 );
+    plbox( freqAxisOpts.c_str(), get<0>(freqAxisIntervals), get<1>(freqAxisIntervals), 
+           gainAxisOpts.c_str(), get<0>(gainAxisIntervals), get<1>(gainAxisIntervals) );
     // Set the color of the gain data
     plcol0( 9 );
     // Plot the gain data
@@ -232,7 +287,7 @@ void FRAPlotter::PlotFRA(double freqs[], double gains[], double phases[], int N,
     // Set the color of the viewport box
     plcol0( 0 );
     // Setup axes for phase
-    plbox( "", 0.0, 0, "cmstv", 30.0, 3 );
+    plbox( "", 0.0, 0, phaseAxisOpts.c_str(), get<0>(phaseAxisIntervals), get<1>(phaseAxisIntervals) );
     // Set the color of the phase data
     plcol1(0.9); // Something near red
     // Plot the phase data

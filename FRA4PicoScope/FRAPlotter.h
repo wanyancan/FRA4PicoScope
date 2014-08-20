@@ -53,7 +53,13 @@ class FRAPlotter
         FRAPlotter(uint16_t width, uint16_t height);
         ~FRAPlotter(void);
         bool Initialize(void);
-        void PlotFRA(double freqs[], double gains[], double phases[], int N, tuple<bool,double,double> gainAxisScale, tuple<bool,double,double> phaseAxisScale );
+        void PlotFRA(double freqs[], double gains[], double phases[], int N, 
+                     tuple<bool,double,double> freqAxisScale,
+                     tuple<bool,double,double> gainAxisScale, 
+                     tuple<bool,double,double> phaseAxisScale,
+                     tuple<double,uint8_t,bool,bool> freqAxisIntervals,
+                     tuple<double,uint8_t,bool,bool> gainAxisIntervals, 
+                     tuple<double,uint8_t,bool,bool> phaseAxisIntervals );
         unique_ptr<uint8_t[]> GetScreenBitmapPlot32BppBGRA(void);
         unique_ptr<uint8_t[]> GetPNGBitmapPlot(size_t* size);
 

@@ -82,13 +82,18 @@ class ApplicationSettings
             appSettingsDirty = true;
         }
 
-        inline bool GetPlotGridmarks( void )
+        inline tuple<bool, double, double> GetFreqScale(void)
         {
-            return AppSettingsPropTree.get<bool>( "plot.showGridmarks" );
+            auto retVal = make_tuple( AppSettingsPropTree.get<bool>( "plot.freqAxis.autoscale" ),
+                                      AppSettingsPropTree.get<double>( "plot.freqAxis.min" ),
+                                      AppSettingsPropTree.get<double>( "plot.freqAxis.max" ) );
+            return retVal;
         }
-        inline void SetPlotGridmarks( bool showGridmarks )
+        inline void SetFreqScale(tuple<bool, double, double> freqScale)
         {
-            AppSettingsPropTree.put( "plot.showGridmarks", showGridmarks );
+            AppSettingsPropTree.put( "plot.freqAxis.autoscale", get<0>(freqScale) );
+            AppSettingsPropTree.put( "plot.freqAxis.min", get<1>(freqScale) );
+            AppSettingsPropTree.put( "plot.freqAxis.max", get<2>(freqScale) );
             appSettingsDirty = true;
         }
 
@@ -119,6 +124,57 @@ class ApplicationSettings
             AppSettingsPropTree.put( "plot.phaseAxis.autoscale", get<0>(phaseScale) );
             AppSettingsPropTree.put( "plot.phaseAxis.min", get<1>(phaseScale) );
             AppSettingsPropTree.put( "plot.phaseAxis.max", get<2>(phaseScale) );
+            appSettingsDirty = true;
+        }
+
+        inline tuple<double, uint8_t, bool, bool> GetFreqIntervals(void)
+        {
+            auto retVal = make_tuple( AppSettingsPropTree.get<double>( "plot.freqAxis.majorTickInterval" ),
+                                      AppSettingsPropTree.get<uint8_t>( "plot.freqAxis.minorTicksPerMajorInterval" ),
+                                      AppSettingsPropTree.get<bool>( "plot.freqAxis.majorGrids" ),
+                                      AppSettingsPropTree.get<bool>( "plot.freqAxis.minorGrids" ));
+            return retVal;
+        }
+        inline void SetFreqIntervals(tuple<double, uint8_t, bool, bool> freqIntervals)
+        {
+            AppSettingsPropTree.put( "plot.freqAxis.majorTickInterval", get<0>(freqIntervals) );
+            AppSettingsPropTree.put( "plot.freqAxis.minorTicksPerMajorInterval", get<1>(freqIntervals) );
+            AppSettingsPropTree.put( "plot.freqAxis.majorGrids", get<2>(freqIntervals) );
+            AppSettingsPropTree.put( "plot.freqAxis.minorGrids", get<3>(freqIntervals) );
+            appSettingsDirty = true;
+        }
+
+        inline tuple<double, uint8_t, bool, bool> GetGainIntervals(void)
+        {
+            auto retVal = make_tuple( AppSettingsPropTree.get<double>( "plot.gainAxis.majorTickInterval" ),
+                                      AppSettingsPropTree.get<uint8_t>( "plot.gainAxis.minorTicksPerMajorInterval" ),
+                                      AppSettingsPropTree.get<bool>( "plot.gainAxis.majorGrids" ),
+                                      AppSettingsPropTree.get<bool>( "plot.gainAxis.minorGrids" ));
+            return retVal;
+        }
+        inline void SetGainIntervals(tuple<double, uint8_t, bool, bool> gainIntervals)
+        {
+            AppSettingsPropTree.put( "plot.gainAxis.majorTickInterval", get<0>(gainIntervals) );
+            AppSettingsPropTree.put( "plot.gainAxis.minorTicksPerMajorInterval", get<1>(gainIntervals) );
+            AppSettingsPropTree.put( "plot.gainAxis.majorGrids", get<2>(gainIntervals) );
+            AppSettingsPropTree.put( "plot.gainAxis.minorGrids", get<3>(gainIntervals) );
+            appSettingsDirty = true;
+        }
+
+        inline tuple<double, uint8_t, bool, bool> GetPhaseIntervals(void)
+        {
+            auto retVal = make_tuple( AppSettingsPropTree.get<double>( "plot.phaseAxis.majorTickInterval" ),
+                                      AppSettingsPropTree.get<uint8_t>( "plot.phaseAxis.minorTicksPerMajorInterval" ),
+                                      AppSettingsPropTree.get<bool>( "plot.phaseAxis.majorGrids" ),
+                                      AppSettingsPropTree.get<bool>( "plot.phaseAxis.minorGrids" ));
+            return retVal;
+        }
+        inline void SetPhaseIntervals(tuple<double, uint8_t, bool, bool> phaseIntervals)
+        {
+            AppSettingsPropTree.put( "plot.phaseAxis.majorTickInterval", get<0>(phaseIntervals) );
+            AppSettingsPropTree.put( "plot.phaseAxis.minorTicksPerMajorInterval", get<1>(phaseIntervals) );
+            AppSettingsPropTree.put( "plot.phaseAxis.majorGrids", get<2>(phaseIntervals) );
+            AppSettingsPropTree.put( "plot.phaseAxis.minorGrids", get<3>(phaseIntervals) );
             appSettingsDirty = true;
         }
 
