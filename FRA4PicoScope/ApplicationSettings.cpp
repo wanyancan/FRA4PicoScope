@@ -143,15 +143,33 @@ bool ApplicationSettings::InitializeApplicationSettingsFile( void )
 
         AppSettingsPropTree.put( "samplingMode", LOW_NOISE );
 
-        AppSettingsPropTree.put( "plot.showGridmarks", false );
+        AppSettingsPropTree.put( "plot.freqAxis.autoscale", true );
+        AppSettingsPropTree.put( "plot.freqAxis.min", 0.0 );
+        AppSettingsPropTree.put( "plot.freqAxis.max", 0.0 );
+        AppSettingsPropTree.put( "plot.freqAxis.majorTickInterval", 0.0 );
+        AppSettingsPropTree.put( "plot.freqAxis.minorTicksPerMajorInterval", 0 );
+        AppSettingsPropTree.put( "plot.freqAxis.majorGrids", true );
+        AppSettingsPropTree.put( "plot.freqAxis.minorGrids", true );
+
         AppSettingsPropTree.put( "plot.gainAxis.autoscale", true );
         AppSettingsPropTree.put( "plot.gainAxis.min", 0.0 );
         AppSettingsPropTree.put( "plot.gainAxis.max", 0.0 );
+        AppSettingsPropTree.put( "plot.gainAxis.majorTickInterval", 0.0 );
+        AppSettingsPropTree.put( "plot.gainAxis.minorTicksPerMajorInterval", 0 );
+        AppSettingsPropTree.put( "plot.gainAxis.majorGrids", false );
+        AppSettingsPropTree.put( "plot.gainAxis.minorGrids", false );
+
         AppSettingsPropTree.put( "plot.phaseAxis.autoscale", true );
         AppSettingsPropTree.put( "plot.phaseAxis.min", 0.0 );
         AppSettingsPropTree.put( "plot.phaseAxis.max", 0.0 );
+        AppSettingsPropTree.put( "plot.phaseAxis.majorTickInterval", 0.0 );
+        AppSettingsPropTree.put( "plot.phaseAxis.minorTicksPerMajorInterval", 0 );
+        AppSettingsPropTree.put( "plot.phaseAxis.majorGrids", false );
+        AppSettingsPropTree.put( "plot.phaseAxis.minorGrids", false );
+
         AppSettingsPropTree.put( "plot.plotGainMargin", false );
         AppSettingsPropTree.put( "plot.plotPhaseMargin", false );
+
         AppSettingsPropTree.put( "plot.screenColor.background.red", 0 );
         AppSettingsPropTree.put( "plot.screenColor.background.green", 0 );
         AppSettingsPropTree.put( "plot.screenColor.background.blue", 0 );
