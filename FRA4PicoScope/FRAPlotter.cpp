@@ -162,6 +162,7 @@ FRAPlotter::~FRAPlotter(void)
 //                                       whether to draw grids
 //
 // Notes: Use of 0.0 for intervals results in PLplot automatically calculating an interval.
+//        Can throw a runtime_error exception with an error message indicating the PLplot error
 //
 ///////////////////////////////////////////////////////////////////////////////////////////////////
 
@@ -186,23 +187,18 @@ void FRAPlotter::PlotFRA(double freqs[], double gains[], double phases[], int N,
         bufferElem = 230; // Set to a light gray background
     }
 
-    plsdev( "mem" );
-    plsmem(plotWidth, plotHeight, plotBmBuffer.data());
-    plinit();
-
     // Compute axis mins and maxes
-
     if (get<0>(freqAxisScale)) // autoscale is true
     {
         minFreq = *min_element(freqs,freqs+N);
         maxFreq = *max_element(freqs,freqs+N);
-        minFreq -= 0.1;// * (maxFreq - minFreq);
-        maxFreq += 0.1;// * (maxFreq - minFreq);
     }
     else
     {
         minFreq = get<1>(freqAxisScale);
         maxFreq = get<2>(freqAxisScale);
+        minFreq = log10(minFreq);
+        maxFreq = log10(maxFreq);
     }
 
     if (get<0>(gainAxisScale)) // autoscale is true
@@ -256,6 +252,11 @@ void FRAPlotter::PlotFRA(double freqs[], double gains[], double phases[], int N,
     {
         phaseAxisOpts += "h";
     }
+
+    plsdev( "mem" );
+    plsmem(plotWidth, plotHeight, plotBmBuffer.data());
+    plinit();
+    plsexit(HandlePLplotError);
 
     pladv( 0 );
 
@@ -573,4 +574,12 @@ DWORD WINAPI FRAPlotter::WorkerThread(LPVOID lpThreadParameter)
     SetEvent(instance->hFraPlotterCommandCompleteEvent);
 
     return 0;
+}
+
+int FRAPlotter::HandlePLplotError(const char* error)
+{
+    string plplotErrorString = "PLplot error: ";
+    plplotErrorString += error;
+    plend();
+    throw runtime_error( plplotErrorString.c_str() );
 }

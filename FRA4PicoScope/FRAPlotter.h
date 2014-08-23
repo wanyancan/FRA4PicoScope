@@ -87,5 +87,6 @@ class FRAPlotter
         HANDLE hFraPlotterWorkerThread;
 
         static DWORD WINAPI WorkerThread(LPVOID lpThreadParameter);
+        static int HandlePLplotError(const char* error);
 };
 

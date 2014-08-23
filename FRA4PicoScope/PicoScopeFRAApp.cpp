@@ -880,9 +880,19 @@ DWORD WINAPI ExecuteFRA(LPVOID lpdwThreadParam)
                 phasesDeg[i] = (double)-i;
                 gainsDb[i] = (double)i*2;
             }
-            fraPlotter -> PlotFRA( freqsLogHz, gainsDb, phasesDeg, numSteps,
-                                   pSettings->GetFreqScale(), pSettings->GetGainScale(), pSettings->GetPhaseScale(),
-                                   pSettings->GetFreqIntervals(), pSettings->GetGainIntervals(), pSettings->GetPhaseIntervals() );
+            try
+            {
+                fraPlotter -> PlotFRA( freqsLogHz, gainsDb, phasesDeg, numSteps,
+                                       pSettings->GetFreqScale(), pSettings->GetGainScale(), pSettings->GetPhaseScale(),
+                                       pSettings->GetFreqIntervals(), pSettings->GetGainIntervals(), pSettings->GetPhaseIntervals() );
+            }
+            catch (runtime_error e)
+            {
+                wstringstream wss;
+                wss << e.what();
+                LogMessage( wss.str() );
+                continue;
+            }
 #else
             if (NULL == pScopeSelector->GetSelectedScope()) // Scope not created
             {
@@ -935,9 +945,19 @@ DWORD WINAPI ExecuteFRA(LPVOID lpdwThreadParam)
 
             psFRA->GetResults( &numSteps, &freqsLogHz, &gainsDb, &phasesDeg );
 
-            fraPlotter -> PlotFRA( freqsLogHz, gainsDb, phasesDeg, numSteps,
-                                   pSettings->GetFreqScale(), pSettings->GetGainScale(), pSettings->GetPhaseScale(),
-                                   pSettings->GetFreqIntervals(), pSettings->GetGainIntervals(), pSettings->GetPhaseIntervals() );
+            try
+            {
+                fraPlotter -> PlotFRA( freqsLogHz, gainsDb, phasesDeg, numSteps,
+                                       pSettings->GetFreqScale(), pSettings->GetGainScale(), pSettings->GetPhaseScale(),
+                                       pSettings->GetFreqIntervals(), pSettings->GetGainIntervals(), pSettings->GetPhaseIntervals() );
+            }
+            catch (runtime_error e)
+            {
+                wstringstream wss;
+                wss << e.what();
+                LogMessage( wss.str() );
+                continue;
+            }
 #endif
             unique_ptr<uint8_t[]> buffer;
 
@@ -1019,6 +1039,7 @@ bool ValidateSettings(void)
     double signalVpp;
     double startFreq;
     double stopFreq;
+    tuple <bool, double, double> freqScale;
     int16_t stepsPerDecade;
     bool validStartFreq = false;
     bool validStopFreq = false;
@@ -1083,6 +1104,33 @@ bool ValidateSettings(void)
         else
         {
             validStartFreq = true;
+        }
+    }
+
+    // Check to make sure that manually set frequency axis limts are not excessively
+    // small; in particlar also guarding against 0.0 (without comparing to 0.0).
+    // This could happen if the user manually edits the settings file.
+    // If they are too small, just adjust them based on scope capabilities.
+    // This is important because we don't want the plotting routines trying
+    // to take a log of 0.0.  
+    freqScale = pSettings->GetFreqScale();
+    if (!get<0>(freqScale)) // If not autoscale
+    {
+        if (get<1>(freqScale) < psFRA->GetMinFrequency())
+        {
+            wstringstream wss;
+            get<1>(freqScale) = psFRA->GetMinFrequency();
+            pSettings->SetFreqScale(freqScale);
+            wss << L"Warning: Frequency axis minimum too small; adjusting to: " << get<1>(freqScale);
+            LogMessage( wss.str() );
+        }
+        if (get<2>(freqScale) < psFRA->GetMinFrequency())
+        {
+            wstringstream wss;
+            get<2>(freqScale) = pScopeSelector->GetSelectedScope()->GetMaxFuncGenFreq();
+            pSettings->SetFreqScale(freqScale);
+            wss << L"Warning: Frequency axis maximum too small; adjusting to: " << get<2>(freqScale);
+            LogMessage( wss.str() );
         }
     }
 
@@ -1594,12 +1642,12 @@ void SavePlotImageFile( wstring dataFilePath )
 
         if (dataFileOutputStream)
         {
-            fraPlotter->PlotFRA( freqsLogHz, gainsDb, phasesDeg, numSteps,
-                                 pSettings->GetFreqScale(), pSettings->GetGainScale(), pSettings->GetPhaseScale(),
-                                 pSettings->GetFreqIntervals(), pSettings->GetGainIntervals(), pSettings->GetPhaseIntervals() );
-
             try
             {
+                fraPlotter->PlotFRA( freqsLogHz, gainsDb, phasesDeg, numSteps,
+                                     pSettings->GetFreqScale(), pSettings->GetGainScale(), pSettings->GetPhaseScale(),
+                                     pSettings->GetFreqIntervals(), pSettings->GetGainIntervals(), pSettings->GetPhaseIntervals() );
+            
                 buffer = fraPlotter->GetPNGBitmapPlot(&bufferSize);
             }
             catch (runtime_error e)
