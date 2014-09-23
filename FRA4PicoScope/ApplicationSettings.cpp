@@ -160,9 +160,9 @@ bool ApplicationSettings::InitializeApplicationSettingsFile( void )
         AppSettingsPropTree.put( "plot.gainAxis.max", 0.0 );
         AppSettingsPropTree.put( "plot.gainAxis.majorTickInterval", 0.0 );
         AppSettingsPropTree.put( "plot.gainAxis.minorTicksPerMajorInterval", 0 );
-        AppSettingsPropTree.put( "plot.gainAxis.majorGrids", false );
-        AppSettingsPropTree.put( "plot.gainAxis.minorGrids", false );
-        AppSettingsPropTree.put( "plot.gainAxis.masterGrids", false );
+        AppSettingsPropTree.put( "plot.gainAxis.majorGrids", true );
+        AppSettingsPropTree.put( "plot.gainAxis.minorGrids", true );
+        AppSettingsPropTree.put( "plot.gainAxis.masterGrids", true );
 
         AppSettingsPropTree.put( "plot.phaseAxis.autoscale", true );
         AppSettingsPropTree.put( "plot.phaseAxis.min", 0.0 );
@@ -262,11 +262,13 @@ void ApplicationSettings::CheckSettingsVersionAndUpgrade(void)
     {
         if (0 == settingsVersionString.compare("unknown"))
         {
+            // There was no settings version in the file, so it must be an older version
             InitializeApplicationSettingsFile();
         }
         else
         {
             // TBD - In the future, we can handle upgrading the file, rather than re-initializing it
+            InitializeApplicationSettingsFile();
         }
     }
 }

@@ -42,6 +42,7 @@
 #include "PlotAxesDialog.h"
 
 char* appVersionString = "0.1b";
+char* appNameString = "Frequency Response Analyzer for PicoScope";
 
 //#define TEST_PLOTTING
 //#define TEST_LOG
@@ -1719,8 +1720,13 @@ INT_PTR CALLBACK About(HWND hDlg, UINT message, WPARAM wParam, LPARAM lParam)
     switch (message)
     {
         case WM_INITDIALOG:
+        {
+            HWND hAppIdText = GetDlgItem( hDlg, IDC_APPID );
+            wstringstream AppIdSS;
+            AppIdSS << appNameString << L", Version " << appVersionString;
+            Static_SetText( hAppIdText, AppIdSS.str().c_str() );
             return (INT_PTR)TRUE;
-
+        }
         case WM_COMMAND:
             if (LOWORD(wParam) == IDOK || LOWORD(wParam) == IDCANCEL)
             {

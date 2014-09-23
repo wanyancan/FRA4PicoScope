@@ -174,6 +174,8 @@ bool ValidateAndStoreSettings( HWND hDlg )
     WCHAR numberStr[32];
     HWND hndCtrl;
     PlotSettings_T dlgPlotSettings;
+    wstring errorConditions[32];
+    uint8_t numErrors = 0;
 
     // Get freq axis settings
     hndCtrl = GetDlgItem(hDlg, IDC_FREQ_AXIS_AUTOSCALE);
@@ -182,26 +184,17 @@ bool ValidateAndStoreSettings( HWND hDlg )
     Edit_GetText( hndCtrl, numberStr, sizeof(numberStr) );
     if (!WStringToDouble( numberStr, get<1>(dlgPlotSettings.freqAxisScale) ))
     {
+        errorConditions[numErrors++] = L"Frequency Minimum is not a valid number";
         retVal = false;
     }
     hndCtrl = GetDlgItem(hDlg, IDC_FREQ_AXIS_MAX);
     Edit_GetText( hndCtrl, numberStr, sizeof(numberStr) );
     if (!WStringToDouble( numberStr, get<2>(dlgPlotSettings.freqAxisScale) ))
     {
+        errorConditions[numErrors++] = L"Frequency Maximum is not a valid number";
         retVal = false;
     }
-    hndCtrl = GetDlgItem(hDlg, IDC_FREQ_AXIS_MAJ_INT);
-    Edit_GetText( hndCtrl, numberStr, sizeof(numberStr) );
-    if (!WStringToDouble( numberStr, get<0>(dlgPlotSettings.freqAxisIntervals) ))
-    {
-        retVal = false;
-    }
-    hndCtrl = GetDlgItem(hDlg, IDC_FREQ_AXIS_TICKS_PER_MAJOR);
-    Edit_GetText( hndCtrl, numberStr, sizeof(numberStr) );
-    if (!WStringToUint8( numberStr, get<1>(dlgPlotSettings.freqAxisIntervals) ))
-    {
-        retVal = false;
-    }
+    
     hndCtrl = GetDlgItem(hDlg, IDC_FREQ_AXIS_MAJOR_GRIDS);
     get<2>(dlgPlotSettings.freqAxisIntervals) = (Button_GetCheck( hndCtrl ) == BST_CHECKED);
     hndCtrl = GetDlgItem(hDlg, IDC_FREQ_AXIS_MINOR_GRIDS);
@@ -214,24 +207,28 @@ bool ValidateAndStoreSettings( HWND hDlg )
     Edit_GetText( hndCtrl, numberStr, sizeof(numberStr) );
     if (!WStringToDouble( numberStr, get<1>(dlgPlotSettings.gainAxisScale) ))
     {
+        errorConditions[numErrors++] = L"Gain Minimum is not a valid number";
         retVal = false;
     }
     hndCtrl = GetDlgItem(hDlg, IDC_GAIN_AXIS_MAX);
     Edit_GetText( hndCtrl, numberStr, sizeof(numberStr) );
     if (!WStringToDouble( numberStr, get<2>(dlgPlotSettings.gainAxisScale) ))
     {
+        errorConditions[numErrors++] = L"Gain Maximum is not a valid number";
         retVal = false;
     }
     hndCtrl = GetDlgItem(hDlg, IDC_GAIN_AXIS_MAJ_INT);
     Edit_GetText( hndCtrl, numberStr, sizeof(numberStr) );
     if (!WStringToDouble( numberStr, get<0>(dlgPlotSettings.gainAxisIntervals) ))
     {
+        errorConditions[numErrors++] = L"Gain Major Interval is not a valid number";
         retVal = false;
     }
     hndCtrl = GetDlgItem(hDlg, IDC_GAIN_AXIS_TICKS_PER_MAJOR);
     Edit_GetText( hndCtrl, numberStr, sizeof(numberStr) );
     if (!WStringToUint8( numberStr, get<1>(dlgPlotSettings.gainAxisIntervals) ))
     {
+        errorConditions[numErrors++] = L"Gain Ticks/Major Interval is not a valid number";
         retVal = false;
     }
     hndCtrl = GetDlgItem(hDlg, IDC_GAIN_AXIS_MAJOR_GRIDS);
@@ -248,24 +245,28 @@ bool ValidateAndStoreSettings( HWND hDlg )
     Edit_GetText( hndCtrl, numberStr, sizeof(numberStr) );
     if (!WStringToDouble( numberStr, get<1>(dlgPlotSettings.phaseAxisScale) ))
     {
+        errorConditions[numErrors++] = L"Phase Minimum is not a valid number";
         retVal = false;
     }
     hndCtrl = GetDlgItem(hDlg, IDC_PHASE_AXIS_MAX);
     Edit_GetText( hndCtrl, numberStr, sizeof(numberStr) );
     if (!WStringToDouble( numberStr, get<2>(dlgPlotSettings.phaseAxisScale) ))
     {
+        errorConditions[numErrors++] = L"Phase Maximum is not a valid number";
         retVal = false;
     }
     hndCtrl = GetDlgItem(hDlg, IDC_PHASE_AXIS_MAJ_INT);
     Edit_GetText( hndCtrl, numberStr, sizeof(numberStr) );
     if (!WStringToDouble( numberStr, get<0>(dlgPlotSettings.phaseAxisIntervals) ))
     {
+        errorConditions[numErrors++] = L"Phase Major Interval is not a valid number";
         retVal = false;
     }
     hndCtrl = GetDlgItem(hDlg, IDC_PHASE_AXIS_TICKS_PER_MAJOR);
     Edit_GetText( hndCtrl, numberStr, sizeof(numberStr) );
     if (!WStringToUint8( numberStr, get<1>(dlgPlotSettings.phaseAxisIntervals) ))
     {
+        errorConditions[numErrors++] = L"Phase Ticks/Major Interval is not a valid number";
         retVal = false;
     }
     hndCtrl = GetDlgItem(hDlg, IDC_PHASE_AXIS_MAJOR_GRIDS);
@@ -278,6 +279,18 @@ bool ValidateAndStoreSettings( HWND hDlg )
     if (retVal)
     {
         *plotSettings = dlgPlotSettings;
+    }
+    else
+    {
+        uint8_t i;
+        wstring errorMessage = L"The following are invalid:\n";
+        for (i = 0; i < numErrors-1; i++)
+        {
+            errorMessage += L"- " + errorConditions[i] + L",\n";
+        }
+        errorMessage += L"- " + errorConditions[i];
+
+        MessageBox( hDlg, errorMessage.c_str(), L"Error", MB_OK );
     }
 
     return retVal;
@@ -325,19 +338,13 @@ INT_PTR CALLBACK PlotAxesDialogHandler(HWND hDlg, UINT message, WPARAM wParam, L
             initialMaxFreqStr = wss.str();
             Edit_SetText( hndCtrl, initialMaxFreqStr.c_str() );
             
+            // Frequency axis intervals are currently ignored since we only implement log mode, so disable
             hndCtrl = GetDlgItem(hDlg, IDC_FREQ_AXIS_MAJ_INT);
-            wss.clear();
-            wss.str(L"");
-            wss << get<0>(plotSettings->freqAxisIntervals);
-            initialFreqMajorIntervalStr = wss.str();
-            Edit_SetText( hndCtrl, initialFreqMajorIntervalStr.c_str() );
+            Edit_Enable( hndCtrl, false );
             
+            // Frequency axis intervals are currently ignored since we only implement log mode, so disable
             hndCtrl = GetDlgItem(hDlg, IDC_FREQ_AXIS_TICKS_PER_MAJOR);
-            wss.clear();
-            wss.str(L"");
-            wss << get<1>(plotSettings->freqAxisIntervals);
-            initialFreqTicksPerMajorStr = wss.str();
-            Edit_SetText( hndCtrl, initialFreqTicksPerMajorStr.c_str() );
+            Edit_Enable( hndCtrl, false );
             
             hndCtrl = GetDlgItem(hDlg, IDC_FREQ_AXIS_MAJOR_GRIDS);
             Button_SetCheck( hndCtrl, get<2>(plotSettings->freqAxisIntervals) ? BST_CHECKED : BST_UNCHECKED );

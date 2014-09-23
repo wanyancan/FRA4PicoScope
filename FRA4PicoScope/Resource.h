@@ -102,6 +102,7 @@
 #define IDC_PHASE_AXIS_MINOR_GRIDS      560
 #define IDC_GAIN_AXIS_MASTER_GRIDS      561
 #define IDC_PHASE_AXIS_MASTER_GRIDS     562
+#define IDC_APPID                       563
 
 #define IDC_TEXT_1                      570
 #define IDC_TEXT_2                      571
