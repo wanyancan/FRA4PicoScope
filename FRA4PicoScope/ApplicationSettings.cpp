@@ -25,6 +25,7 @@
 
 #include "stdafx.h"
 #include "ApplicationSettings.h"
+#include "PicoScopeFraApp.h"
 #include <Shlobj.h>
 #include <Shlwapi.h>
 #include <sstream>
@@ -97,6 +98,7 @@ bool ApplicationSettings::ReadApplicationSettings( void )
         if (settingsFileInputStream)
         {
             read_xml(settingsFileInputStream, AppSettingsPropTree, xml_parser::trim_whitespace);
+            CheckSettingsVersionAndUpgrade();
             appSettingsOpened = true;
             appSettingsDirty = false;
         }
@@ -138,6 +140,8 @@ bool ApplicationSettings::InitializeApplicationSettingsFile( void )
     {
         AppSettingsPropTree.clear();
 
+        AppSettingsPropTree.put( "appVersion", string(appVersionString) );
+
         AppSettingsPropTree.put( "mostRecentScope.SN", string("None") );
         AppSettingsPropTree.put( "mostRecentScope.family", PS_NO_FAMILY );
 
@@ -158,6 +162,7 @@ bool ApplicationSettings::InitializeApplicationSettingsFile( void )
         AppSettingsPropTree.put( "plot.gainAxis.minorTicksPerMajorInterval", 0 );
         AppSettingsPropTree.put( "plot.gainAxis.majorGrids", false );
         AppSettingsPropTree.put( "plot.gainAxis.minorGrids", false );
+        AppSettingsPropTree.put( "plot.gainAxis.masterGrids", false );
 
         AppSettingsPropTree.put( "plot.phaseAxis.autoscale", true );
         AppSettingsPropTree.put( "plot.phaseAxis.min", 0.0 );
@@ -166,6 +171,7 @@ bool ApplicationSettings::InitializeApplicationSettingsFile( void )
         AppSettingsPropTree.put( "plot.phaseAxis.minorTicksPerMajorInterval", 0 );
         AppSettingsPropTree.put( "plot.phaseAxis.majorGrids", false );
         AppSettingsPropTree.put( "plot.phaseAxis.minorGrids", false );
+        AppSettingsPropTree.put( "plot.phaseAxis.masterGrids", false );
 
         AppSettingsPropTree.put( "plot.plotGainMargin", false );
         AppSettingsPropTree.put( "plot.plotPhaseMargin", false );
@@ -230,6 +236,39 @@ bool ApplicationSettings::InitializeApplicationSettingsFile( void )
     settingsFileOutputStream.close();
 
     return retVal;
+}
+
+////////////////////////////////////////////////////////////////////////////////////////////////////
+//
+// Name: ApplicationSettings::CheckSettingsVersionAndUpgrade
+//
+// Purpose: Checks to see if the version of the application settings file matches the current
+//          running application version.  If not, then the file is upgraded.  This may simply mean
+//          re-initialization to the latest format, or it may mean attempting to preserve the user's
+//          settings and tranferring them to a settings file with the most recent format.
+//
+// Parameters: None
+//
+// Notes: N/A
+//
+///////////////////////////////////////////////////////////////////////////////////////////////////
+
+void ApplicationSettings::CheckSettingsVersionAndUpgrade(void)
+{
+    string currentVersionString( appVersionString );
+    string settingsVersionString = GetApplicationVersion();
+
+    if (0 != currentVersionString.compare(settingsVersionString))
+    {
+        if (0 == settingsVersionString.compare("unknown"))
+        {
+            InitializeApplicationSettingsFile();
+        }
+        else
+        {
+            // TBD - In the future, we can handle upgrading the file, rather than re-initializing it
+        }
+    }
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////

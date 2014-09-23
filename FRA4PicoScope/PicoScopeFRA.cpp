@@ -196,7 +196,7 @@ double PicoScopeFRA::GetMinFrequency(void)
 //             [in] inputChannelCoupling - AC/DC coupling for input channel
 //             [in] inputChannelAttenuation - Attenuation setting for input channel
 //             [in] inputDcOffset - DC Offset for input channel
-//             [in] outputChannel  - Channel to use for output signal
+//             [in] outputChannel - Channel to use for output signal
 //             [in] outputChannelCoupling - AC/DC coupling for output channel
 //             [in] outputChannelAttenuation - Attenuation setting for output channel
 //             [in] outputDcOffset - DC Offset for output channel
@@ -1184,7 +1184,7 @@ bool PicoScopeFRA::CalculateGainAndPhase( double* gain, double* phase)
 // interested in a single frequency per measurement, and thus Goertzel is faster than FFT.  The advantage of the generalized
 // Goertzel (k ∈ R) is that we don't have to adjust the number of samples or sampling rate to maintain accuracy of the
 // frequency selection.  This function also computes other useful parameters such as amplitude and purity, which can be used 
-// for data quality decisions// 
+// for data quality decisions.
 //
 // Parameters: [in] samples - data sample points
 //             [in] N - number of data points

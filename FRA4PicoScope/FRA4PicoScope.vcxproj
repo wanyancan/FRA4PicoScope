@@ -104,15 +104,18 @@
     <ClInclude Include="FRAPlotter.h" />
     <ClInclude Include="PicoScopeFRA.h" />
     <ClInclude Include="PicoScopeFraApp.h" />
+    <ClInclude Include="PlotAxesDialog.h" />
     <ClInclude Include="Resource.h" />
     <ClInclude Include="stdafx.h" />
     <ClInclude Include="targetver.h" />
+    <ClInclude Include="utility.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="ApplicationSettings.cpp" />
     <ClCompile Include="FRAPlotter.cpp" />
     <ClCompile Include="PicoScopeFRA.cpp" />
     <ClCompile Include="PicoScopeFraApp.cpp" />
+    <ClCompile Include="PlotAxesDialog.cpp" />
     <ClCompile Include="ps2000aImpl.cpp" />
     <ClCompile Include="ps4000Impl.cpp" />
     <ClCompile Include="ps5000aImpl.cpp" />

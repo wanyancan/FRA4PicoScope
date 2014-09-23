@@ -31,8 +31,22 @@
 #include <vector>
 #include <memory>
 #include <tuple>
+#include <stack>
 #include <boost/logic/tribool.hpp>
+#include "plplot.h"
 using namespace boost::logic;
+
+typedef struct
+{
+    tuple<bool,double,double> freqAxisScale;
+    tuple<bool,double,double> gainAxisScale; 
+    tuple<bool,double,double> phaseAxisScale;
+    tuple<double,uint8_t,bool,bool> freqAxisIntervals;
+    tuple<double,uint8_t,bool,bool> gainAxisIntervals; 
+    tuple<double,uint8_t,bool,bool> phaseAxisIntervals;
+    bool gainMasterIntervals; 
+    bool phaseMasterIntervals;
+} PlotSettings_T;
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 //
@@ -59,16 +73,56 @@ class FRAPlotter
                      tuple<bool,double,double> phaseAxisScale,
                      tuple<double,uint8_t,bool,bool> freqAxisIntervals,
                      tuple<double,uint8_t,bool,bool> gainAxisIntervals, 
-                     tuple<double,uint8_t,bool,bool> phaseAxisIntervals );
+                     tuple<double,uint8_t,bool,bool> phaseAxisIntervals,
+                     bool gainMasterIntervals, bool phaseMasterIntervals);
+
+        bool Zoom(tuple<int32_t,int32_t> plotOriginPoint,  // upper left screen coordinates
+                  tuple<int32_t,int32_t> plotExtentPoint,  // lower right screen coordinates
+                  tuple<int32_t,int32_t> zoomOriginPoint,  // screen coordinates
+                  tuple<int32_t,int32_t> zoomExtentPoint); // screen coordinates
+
+        bool UndoOneZoom(void);
+        bool ZoomToOriginal(void);
+        void GetPlotSettings(PlotSettings_T& plotSettings);
+        bool PlotDataAvailable( void );
+
         unique_ptr<uint8_t[]> GetScreenBitmapPlot32BppBGRA(void);
         unique_ptr<uint8_t[]> GetPNGBitmapPlot(size_t* size);
 
     private:
+
+        void PlotFRA(void);
+
         uint16_t plotWidth;
         uint16_t plotHeight;
+        bool plotDataAvailable;
+
         vector<uint8_t> plotBmBuffer;
 
         const static uint8_t bytesPerPixel = 3; // 24bpp RGB for PLPlot "mem" driver
+
+        // Data describing the current plot
+        double currentFreqAxisMin; // Log Hz
+        double currentFreqAxisMax; // Log Hz
+        double currentGainAxisMin;
+        double currentGainAxisMax;
+        double currentPhaseAxisMin;
+        double currentPhaseAxisMax;
+        double currentFreqAxisMajorTickInterval;
+        int32_t currentFreqAxisMinorTicksPerMajorInterval;
+        double currentGainAxisMajorTickInterval;
+        int32_t currentGainAxisMinorTicksPerMajorInterval;
+        bool currentGainMasterIntervals;
+        double currentPhaseAxisMajorTickInterval;
+        int32_t currentPhaseAxisMinorTicksPerMajorInterval;
+        bool currentPhaseMasterIntervals;
+        string currentFreqAxisOpts, currentGainAxisOpts, currentPhaseAxisOpts;
+        vector<double> currentFreqs, currentGains, currentPhases;
+
+        // A stack of zoom values (top is current)
+        stack<tuple<tuple<bool,double,double>,tuple<bool,double,double>,tuple<bool,double,double>>> zoomStack;
+
+        PlotSettings_T currentPlotSettings;
 
         typedef enum
         {
@@ -88,5 +142,16 @@ class FRAPlotter
 
         static DWORD WINAPI WorkerThread(LPVOID lpThreadParameter);
         static int HandlePLplotError(const char* error);
+
+        static void LabelYAxis(PLINT axis, PLFLT value, char* labelText, PLINT length, PLPointer labelData);
+        void LabelYAxisExponent( PLINT scale, char* side );
+        static PLINT widestYAxisLabel;
+        static bool scientific;
+        static PLINT yAxisScale;
+
+        const static double viewPortLeftEdge;
+        const static double viewPortRightEdge;
+        const static double viewPortBottomEdge;
+        const static double viewPortTopEdge;
 };
 

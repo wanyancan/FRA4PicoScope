@@ -19,12 +19,14 @@
 // You should have received a copy of the GNU General Public License
 // along with Frequency Response Analyzer for PicoScope.  If not, see <http://www.gnu.org/licenses/>.
 //
-// Module PicoScopeFraApp.h: Main module for the application.
+// Module: PlotAxesDialog.h
 //
 //////////////////////////////////////////////////////////////////////////////////////////////////
 
-#pragma once
+#include <Windows.h>
 
-#include "resource.h"
+#include <stdint.h>
+#include <tuple>
+#include "FRAPlotter.h"
 
-extern char* appVersionString;
+INT_PTR CALLBACK PlotAxesDialogHandler(HWND hDlg, UINT message, WPARAM wParam, LPARAM lParam);

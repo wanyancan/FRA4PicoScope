@@ -33,12 +33,15 @@
 #include <fstream>
 
 #include "PicoScopeFRA.h"
-
+#include "utility.h"
 #include "StatusLog.h"
 #include "ApplicationSettings.h"
 #include "ScopeSelector.h"
 #include "PicoScopeFraApp.h"
 #include "FRAPlotter.h"
+#include "PlotAxesDialog.h"
+
+char* appVersionString = "0.1b";
 
 //#define TEST_PLOTTING
 //#define TEST_LOG
@@ -57,11 +60,14 @@ TCHAR szWindowClass[MAX_LOADSTRING];			// the main window class name
 const int numAttens = 3;
 const int numCouplings = 2;
 
+// Application Objects
 PicoScopeFRA* psFRA = NULL;
 FRAPlotter* fraPlotter = NULL;
 ScopeSelector* pScopeSelector = NULL;
 ApplicationSettings* pSettings = NULL;
 
+// Plot variables
+bool plotAvailable = false;
 HBITMAP hPlotBM;
 HBITMAP hPlotUnavailableBM;
 HBITMAP hPlotSeparatorBM;
@@ -73,6 +79,12 @@ int pxPlotSeparatorXStart;
 
 HANDLE hExecuteFraThread;
 HANDLE hExecuteFraEvent;
+
+// Plot zoom variables
+bool detectingZoom = false;
+bool zooming = false;
+POINT ptZoomBegin;
+POINT ptZoomEnd;               
 
 // Forward declarations of functions included in this code module:
 ATOM				MyRegisterClass(HINSTANCE hInstance);
@@ -395,6 +407,33 @@ BOOL InitInstance(HINSTANCE hInstance, int nCmdShow)
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 //
+// Name: DrawZoomRectangle
+//
+// Purpose: Erases the previously drawn zoom rectangle or draws a new one
+//
+// Parameters: [in] hWnd: Handle to the window on which the rectangle is drawn
+//             [in] ptZoomBegin: coordinates for start of zoom rectangle
+//             [in] ptZoomEnd: coordinate for end of zoom rectangle
+//
+// Notes: Used by the code that handles user mouse drag operations for zooming on the plot.
+//
+///////////////////////////////////////////////////////////////////////////////////////////////////
+
+void DrawZoomRectangle (HWND hWnd, POINT ptZoomBegin, POINT ptZoomEnd)
+{
+     HDC hdc;
+
+     hdc = GetDC( hWnd );
+
+     SetROP2( hdc, R2_NOT );
+     SelectObject( hdc, GetStockObject(NULL_BRUSH) );
+     Rectangle( hdc, ptZoomBegin.x, ptZoomBegin.y, ptZoomEnd.x, ptZoomEnd.y );
+
+     ReleaseDC( hWnd, hdc );
+}
+
+////////////////////////////////////////////////////////////////////////////////////////////////////
+//
 // Name: WndProc
 //
 // Purpose: Message handler for the main window
@@ -510,12 +549,7 @@ BOOL CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
                 }
                 case IDM_SAVEAS:
                 {
-                    int numSteps;
-                    double *freqsLogHz, *phasesDeg, *gainsDb;
-
-                    psFRA->GetResults( &numSteps, &freqsLogHz, &gainsDb, &phasesDeg );
-
-                    if (numSteps == 0)
+                    if (!fraPlotter->PlotDataAvailable())
                     {
                         MessageBox( 0, L"No plot is available to save.", L"Error", MB_OK );
                     }
@@ -594,16 +628,287 @@ BOOL CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
                     }
                     SetEvent( hExecuteFraEvent );
                     return TRUE;
+                case IDM_CAL:
+                    return TRUE;
                 case IDC_COPY:
                     CopyLog();
                     return TRUE;
                 case IDC_CLEAR:
                     ClearLog();
                     return TRUE;
+                case IDCANCEL:
+                    {
+                        // Esc key was pressed.  Cancel zoom operation if it's happening.
+                        if (zooming)
+                        {
+                            DrawZoomRectangle( hWnd, ptZoomBegin, ptZoomEnd );
+                            ReleaseCapture();
+                            SetCursor(LoadCursor(NULL, IDC_ARROW));
+                            zooming = false;
+                            detectingZoom = false;   
+                        }
+                    }
+                    return TRUE;
                 default:
                     return FALSE;
             }
             return TRUE;
+            break;
+        case WM_LBUTTONDOWN:
+            {
+                // Check to see if it was a click on the plot area.
+                ptZoomBegin.x = GET_X_LPARAM(lParam);
+                ptZoomBegin.y = GET_Y_LPARAM(lParam);
+                if (plotAvailable && ptZoomBegin.x >= pxPlotXStart && ptZoomBegin.x < pxPlotXStart+pxPlotWidth && ptZoomBegin.y >= pxPlotYStart && ptZoomBegin.y < pxPlotYStart+pxPlotHeight)
+                {
+                    ptZoomEnd.x = ptZoomBegin.x;
+                    ptZoomEnd.y = ptZoomBegin.y;
+          
+                    SetCapture (hWnd) ;
+                    SetCursor (LoadCursor (NULL, IDC_CROSS)) ;
+          
+                    detectingZoom = true;
+                }
+            }
+            break;
+        case WM_MOUSEMOVE:
+            {
+                POINT ptPossibleZoomEnd = {GET_X_LPARAM(lParam), GET_Y_LPARAM(lParam)};
+                // Clip it if it goes outside the plot area.
+                if (ptPossibleZoomEnd.x < pxPlotXStart)
+                {
+                    ptPossibleZoomEnd.x = pxPlotXStart;
+                }
+                if (ptPossibleZoomEnd.x >= pxPlotXStart+pxPlotWidth)
+                {
+                    ptPossibleZoomEnd.x = pxPlotXStart+pxPlotWidth-1;
+                }
+                if (ptPossibleZoomEnd.y < pxPlotYStart)
+                {
+                    ptPossibleZoomEnd.y = pxPlotYStart;
+                }
+                if (ptPossibleZoomEnd.y >= pxPlotYStart+pxPlotHeight)
+                {
+                    ptPossibleZoomEnd.y = pxPlotYStart+pxPlotHeight-1;
+                }
+
+                if (detectingZoom)
+                {
+                    // Detect if the mouse moved enough to consider it a zoom operation
+                    if (abs(ptPossibleZoomEnd.x-ptZoomBegin.x) > 5 && abs(ptPossibleZoomEnd.y-ptZoomBegin.y) > 5)
+                    {
+                        if (zooming)
+                        {
+                            // Erase the old rectangle
+                            DrawZoomRectangle( hWnd, ptZoomBegin, ptZoomEnd );
+                        }
+                        else
+                        {
+                            zooming = true;
+                        }
+               
+                        ptZoomEnd = ptPossibleZoomEnd;
+
+                        // Draw the new rectangle
+                        DrawZoomRectangle( hWnd, ptZoomBegin, ptZoomEnd );
+                    }
+                    else
+                    { 
+                        if (zooming)
+                        {
+                            // Erase the last rectangle as we go out of zoom mode
+                            DrawZoomRectangle( hWnd, ptZoomBegin, ptZoomEnd );
+                            zooming = false;
+                        }
+                    }
+                }
+            }
+            return 0;
+            break;
+        case WM_LBUTTONUP:
+            {
+                if (detectingZoom)
+                {
+                    ReleaseCapture();
+                    SetCursor(LoadCursor(NULL, IDC_ARROW));
+                    detectingZoom = false;
+
+                    ptZoomEnd.x = GET_X_LPARAM(lParam);
+                    ptZoomEnd.y = GET_Y_LPARAM(lParam);
+                    // Clip it if it ends up outside the plot area.
+                    if (ptZoomEnd.x < pxPlotXStart)
+                    {
+                        ptZoomEnd.x = pxPlotXStart;
+                    }
+                    if (ptZoomEnd.x >= pxPlotXStart+pxPlotWidth)
+                    {
+                        ptZoomEnd.x = pxPlotXStart+pxPlotWidth-1;
+                    }
+                    if (ptZoomEnd.y < pxPlotYStart)
+                    {
+                        ptZoomEnd.y = pxPlotYStart;
+                    }
+                    if (ptZoomEnd.y >= pxPlotYStart+pxPlotHeight)
+                    {
+                        ptZoomEnd.y = pxPlotYStart+pxPlotHeight-1;
+                    }
+
+                    if (abs(ptZoomEnd.x-ptZoomBegin.x) > 5 && abs(ptZoomEnd.y-ptZoomBegin.y) > 5)
+                    {
+                        // Consider it a zoom
+                        if (fraPlotter->Zoom(make_tuple(pxPlotXStart, pxPlotYStart),
+                                             make_tuple(pxPlotXStart+pxPlotWidth, pxPlotYStart+pxPlotHeight),
+                                             make_tuple(ptZoomBegin.x, ptZoomBegin.y),
+                                             make_tuple(ptZoomEnd.x, ptZoomEnd.y)))
+                        {
+                            // Get the new plot and paint it
+                            unique_ptr<uint8_t[]> buffer;
+
+                            try
+                            {
+                                buffer = fraPlotter->GetScreenBitmapPlot32BppBGRA();
+                            }
+                            catch (runtime_error e)
+                            {
+                                wstringstream wss;
+                                wss << e.what();
+                                LogMessage( wss.str() );
+                                return 0;
+                            }
+
+                            DeleteObject( hPlotBM );
+                            hPlotBM = CreateBitmap(pxPlotWidth, pxPlotHeight, 1, 32, buffer.get());
+
+                            RECT invalidRect = { pxPlotXStart, pxPlotYStart, pxPlotXStart + pxPlotWidth, pxPlotYStart + pxPlotHeight };
+                            InvalidateRect( hMainWnd, &invalidRect, true );
+                        }
+                        else
+                        {
+                            // Erase the rectangle
+                            DrawZoomRectangle( hWnd, ptZoomBegin, ptZoomEnd );
+                        }
+                    }
+                    else // No zoom, just a single click
+                    {
+                        POINT pt = { GET_X_LPARAM(lParam), GET_Y_LPARAM(lParam) };
+                        // Check to see if it was a click on the plot area.
+                        if (pt.x >= pxPlotXStart && pt.x < pxPlotXStart+pxPlotWidth && pt.y >= pxPlotYStart && pt.y < pxPlotYStart+pxPlotHeight)
+                        {
+                            PlotSettings_T plotSettings;
+                            DWORD dwDlgResp;
+                            fraPlotter->GetPlotSettings(plotSettings);
+                            dwDlgResp = DialogBoxParam(hInst, MAKEINTRESOURCE(IDD_AXES_DIALOG), hWnd, PlotAxesDialogHandler, (LPARAM)&plotSettings);
+                            if (LOWORD(dwDlgResp) == IDOK)
+                            {
+                                // Set the new settings and draw the plot
+                                try
+                                {
+                                    fraPlotter->PlotFRA( NULL, NULL, NULL, 0,
+                                                         plotSettings.freqAxisScale, plotSettings.gainAxisScale, plotSettings.phaseAxisScale,
+                                                         plotSettings.freqAxisIntervals, plotSettings.gainAxisIntervals, plotSettings.phaseAxisIntervals,
+                                                         plotSettings.gainMasterIntervals, plotSettings.phaseMasterIntervals );
+                                }
+                                catch (runtime_error e)
+                                {
+                                    wstringstream wss;
+                                    wss << e.what();
+                                    LogMessage( wss.str() );
+                                    return 0;
+                                }
+
+                                // Get the new plot and paint it
+                                unique_ptr<uint8_t[]> buffer;
+
+                                try
+                                {
+                                    buffer = fraPlotter->GetScreenBitmapPlot32BppBGRA();
+                                }
+                                catch (runtime_error e)
+                                {
+                                    wstringstream wss;
+                                    wss << e.what();
+                                    LogMessage( wss.str() );
+                                    return 0;
+                                }
+
+                                DeleteObject( hPlotBM );
+                                hPlotBM = CreateBitmap(pxPlotWidth, pxPlotHeight, 1, 32, buffer.get());
+
+                                RECT invalidRect = { pxPlotXStart, pxPlotYStart, pxPlotXStart + pxPlotWidth, pxPlotYStart + pxPlotHeight };
+                                InvalidateRect( hMainWnd, &invalidRect, true );
+                            }
+                            return TRUE;
+                        }
+                        else
+                        {
+                            return FALSE;
+                        }
+                    }
+                }
+            }
+            return 0; 
+            break;
+        case WM_RBUTTONUP:
+            {
+                ptZoomBegin.x = GET_X_LPARAM(lParam);
+                ptZoomBegin.y = GET_Y_LPARAM(lParam);
+                if (plotAvailable && ptZoomBegin.x >= pxPlotXStart && ptZoomBegin.x < pxPlotXStart+pxPlotWidth && ptZoomBegin.y >= pxPlotYStart && ptZoomBegin.y < pxPlotYStart+pxPlotHeight &&
+                    fraPlotter->UndoOneZoom())
+                {
+                    // Get the new plot and paint it
+                    unique_ptr<uint8_t[]> buffer;
+
+                    try
+                    {
+                        buffer = fraPlotter->GetScreenBitmapPlot32BppBGRA();
+                    }
+                    catch (runtime_error e)
+                    {
+                        wstringstream wss;
+                        wss << e.what();
+                        LogMessage( wss.str() );
+                        return 0;
+                    }
+
+                    DeleteObject( hPlotBM );
+                    hPlotBM = CreateBitmap(pxPlotWidth, pxPlotHeight, 1, 32, buffer.get());
+
+                    RECT invalidRect = { pxPlotXStart, pxPlotYStart, pxPlotXStart + pxPlotWidth, pxPlotYStart + pxPlotHeight };
+                    InvalidateRect( hMainWnd, &invalidRect, true );
+                }
+            }
+            return 0;
+            break;
+        case WM_RBUTTONDBLCLK:
+            {
+                ptZoomBegin.x = GET_X_LPARAM(lParam);
+                ptZoomBegin.y = GET_Y_LPARAM(lParam);
+                if (plotAvailable && ptZoomBegin.x >= pxPlotXStart && ptZoomBegin.x < pxPlotXStart+pxPlotWidth && ptZoomBegin.y >= pxPlotYStart && ptZoomBegin.y < pxPlotYStart+pxPlotHeight &&
+                    fraPlotter->ZoomToOriginal())
+                {
+                    // Get the new plot and paint it
+                    unique_ptr<uint8_t[]> buffer;
+
+                    try
+                    {
+                        buffer = fraPlotter->GetScreenBitmapPlot32BppBGRA();
+                    }
+                    catch (runtime_error e)
+                    {
+                        wstringstream wss;
+                        wss << e.what();
+                        LogMessage( wss.str() );
+                        return 0;
+                    }
+
+                    DeleteObject( hPlotBM );
+                    hPlotBM = CreateBitmap(pxPlotWidth, pxPlotHeight, 1, 32, buffer.get());
+
+                    RECT invalidRect = { pxPlotXStart, pxPlotYStart, pxPlotXStart + pxPlotWidth, pxPlotYStart + pxPlotHeight };
+                    InvalidateRect( hMainWnd, &invalidRect, true );
+                }
+            }
+            return 0;
             break;
         case WM_HSCROLL:
             return 0;
@@ -611,6 +916,16 @@ BOOL CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
         case WM_PAINT:
             BITMAP bm;
             hdc = BeginPaint(hWnd, &ps);
+
+            if (detectingZoom)
+            {
+                if (abs(ptZoomEnd.x-ptZoomBegin.x) > 5 || abs(ptZoomEnd.y-ptZoomBegin.y) > 5)
+                {
+                    SetROP2( hdc, R2_NOT ) ;
+                    SelectObject( hdc, GetStockObject (NULL_BRUSH) );
+                    Rectangle( hdc, ptZoomBegin.x, ptZoomBegin.y, ptZoomEnd.x, ptZoomEnd.y ) ;
+                }
+            }
 
             hdcMem = CreateCompatibleDC(hdc);
 
@@ -884,7 +1199,8 @@ DWORD WINAPI ExecuteFRA(LPVOID lpdwThreadParam)
             {
                 fraPlotter -> PlotFRA( freqsLogHz, gainsDb, phasesDeg, numSteps,
                                        pSettings->GetFreqScale(), pSettings->GetGainScale(), pSettings->GetPhaseScale(),
-                                       pSettings->GetFreqIntervals(), pSettings->GetGainIntervals(), pSettings->GetPhaseIntervals() );
+                                       pSettings->GetFreqIntervals(), pSettings->GetGainIntervals(), pSettings->GetPhaseIntervals(),
+                                       pSettings->GetGainMasterIntervals(), pSettings->GetPhaseMasterIntervals() );
             }
             catch (runtime_error e)
             {
@@ -949,7 +1265,8 @@ DWORD WINAPI ExecuteFRA(LPVOID lpdwThreadParam)
             {
                 fraPlotter -> PlotFRA( freqsLogHz, gainsDb, phasesDeg, numSteps,
                                        pSettings->GetFreqScale(), pSettings->GetGainScale(), pSettings->GetPhaseScale(),
-                                       pSettings->GetFreqIntervals(), pSettings->GetGainIntervals(), pSettings->GetPhaseIntervals() );
+                                       pSettings->GetFreqIntervals(), pSettings->GetGainIntervals(), pSettings->GetPhaseIntervals(),
+                                       pSettings->GetGainMasterIntervals(), pSettings->GetPhaseMasterIntervals() );
             }
             catch (runtime_error e)
             {
@@ -973,46 +1290,33 @@ DWORD WINAPI ExecuteFRA(LPVOID lpdwThreadParam)
                 continue;
             }
 
-            DeleteObject( hPlotBM );
-            hPlotBM = CreateBitmap(pxPlotWidth, pxPlotHeight, 1, 32, buffer.get());
-
-            RECT invalidRect = { pxPlotXStart, pxPlotYStart, pxPlotXStart + pxPlotWidth, pxPlotYStart + pxPlotHeight };
-            InvalidateRect( hMainWnd, &invalidRect, true );
+            if (DeleteObject( hPlotBM ))
+            {
+                if (NULL != (hPlotBM = CreateBitmap(pxPlotWidth, pxPlotHeight, 1, 32, buffer.get())))
+                {
+                    RECT invalidRect = { pxPlotXStart, pxPlotYStart, pxPlotXStart + pxPlotWidth, pxPlotYStart + pxPlotHeight };
+                    if (InvalidateRect( hMainWnd, &invalidRect, true ))
+                    {
+                        plotAvailable = true;
+                    }
+                    else
+                    {
+                        LogMessage( L"Error: InvalidateRect failed while painting plot. Plot image may be stale." );
+                    }
+                }
+                else
+                {
+                    LogMessage( L"Error: CreateBitmap failed while painting plot. Plot image may be stale." );
+                }
+            }
+            else
+            {
+                LogMessage( L"Error: DeleteObject failed while painting plot. Plot image may be stale." );
+            }
         }
     }
 
     return TRUE;
-}
-
-////////////////////////////////////////////////////////////////////////////////////////////////////
-//
-// Name: WStringTo[type]
-//
-// Purpose: Strictly convert a string to a number, while indicating whether the string was properly
-//          formatted.
-//
-// Parameters: [in] myString: The string to convert
-//             [out] d/i: The resulting number
-//             [out] return: Whether the conversion succeeded.
-//
-// Notes: 
-//
-///////////////////////////////////////////////////////////////////////////////////////////////////
-
-bool WStringToDouble( wstring myString, double& d )
-{
-    wstringstream wss(myString);
-    wss >> noskipws >> d; // Consider leading whitespace invalid
-    // Valid only if whole string was consumed and neither failbit nor badbit is set
-    return (wss.eof() && !wss.fail());
-}
-
-bool WStringToInt16( wstring myString, int16_t& i )
-{
-    wstringstream wss(myString);
-    wss >> noskipws >> i; // Consider leading whitespace invalid
-    // Valid only if whole string was consumed and neither failbit nor badbit is set
-    return (wss.eof() && !wss.fail());
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -1439,7 +1743,6 @@ INT_PTR CALLBACK About(HWND hDlg, UINT message, WPARAM wParam, LPARAM lParam)
 // Notes: 
 //
 ///////////////////////////////////////////////////////////////////////////////////////////////////
-// Message handler for Scope Selector Dialog Box.
 
 INT_PTR CALLBACK ScopeSelectHandler(HWND hDlg, UINT message, WPARAM wParam, LPARAM lParam)
 {
@@ -1624,15 +1927,11 @@ void SaveRawData( wstring dataFilePath )
 
 void SavePlotImageFile( wstring dataFilePath )
 {
-    int numSteps;
-    double *freqsLogHz, *phasesDeg, *gainsDb;
     ofstream dataFileOutputStream;
     size_t bufferSize;
     unique_ptr<uint8_t[]> buffer;
 
-    psFRA->GetResults( &numSteps, &freqsLogHz, &gainsDb, &phasesDeg );
-
-    if (numSteps == 0)
+    if ( !fraPlotter->PlotDataAvailable() )
     {
         MessageBox( 0, L"No plot is available to save.", L"Error", MB_OK );
     }
@@ -1644,10 +1943,6 @@ void SavePlotImageFile( wstring dataFilePath )
         {
             try
             {
-                fraPlotter->PlotFRA( freqsLogHz, gainsDb, phasesDeg, numSteps,
-                                     pSettings->GetFreqScale(), pSettings->GetGainScale(), pSettings->GetPhaseScale(),
-                                     pSettings->GetFreqIntervals(), pSettings->GetGainIntervals(), pSettings->GetPhaseIntervals() );
-            
                 buffer = fraPlotter->GetPNGBitmapPlot(&bufferSize);
             }
             catch (runtime_error e)

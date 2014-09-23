@@ -58,6 +58,22 @@ class ApplicationSettings
         void SetNoScopeSettings( void );
 
         // Accessors/Mutators for Application Settings
+
+        inline string GetApplicationVersion(void)
+        {
+            string versionString;
+            try
+            {
+                versionString = AppSettingsPropTree.get<string>( "appVersion" );
+            }
+            catch ( const ptree_error& pte )
+            {
+                UNREFERENCED_PARAMETER(pte);
+                versionString = "unknown";
+            }
+            return versionString;
+        }
+
         inline void GetMostRecentScope( ScopeDriverFamily_T& family, string& sn )
         {
             sn = AppSettingsPropTree.get<string>( "mostRecentScope.SN" );
@@ -161,6 +177,16 @@ class ApplicationSettings
             appSettingsDirty = true;
         }
 
+        inline bool GetGainMasterIntervals(void)
+        {
+            return AppSettingsPropTree.get<bool>( "plot.gainAxis.masterGrids" );
+        }
+        inline void SetGainMasterIntervals( bool masterIntervals )
+        {
+            AppSettingsPropTree.put( "plot.gainAxis.masterGrids", masterIntervals );
+            appSettingsDirty = true;
+        }
+
         inline tuple<double, uint8_t, bool, bool> GetPhaseIntervals(void)
         {
             auto retVal = make_tuple( AppSettingsPropTree.get<double>( "plot.phaseAxis.majorTickInterval" ),
@@ -175,6 +201,16 @@ class ApplicationSettings
             AppSettingsPropTree.put( "plot.phaseAxis.minorTicksPerMajorInterval", get<1>(phaseIntervals) );
             AppSettingsPropTree.put( "plot.phaseAxis.majorGrids", get<2>(phaseIntervals) );
             AppSettingsPropTree.put( "plot.phaseAxis.minorGrids", get<3>(phaseIntervals) );
+            appSettingsDirty = true;
+        }
+
+        inline bool GetPhaseMasterIntervals(void)
+        {
+            return AppSettingsPropTree.get<bool>( "plot.phaseAxis.masterGrids" );
+        }
+        inline void SetPhaseMasterIntervals( bool masterIntervals )
+        {
+            AppSettingsPropTree.put( "plot.phaseAxis.masterGrids", masterIntervals );
             appSettingsDirty = true;
         }
 
@@ -418,6 +454,7 @@ class ApplicationSettings
 
         bool InitializeScopeSettingsFile( PicoScope* pScope );
         bool InitializeApplicationSettingsFile( void );
+        void CheckSettingsVersionAndUpgrade( void );
 
         bool appSettingsOpened;
         bool appSettingsDirty;
