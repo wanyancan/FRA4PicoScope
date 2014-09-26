@@ -733,6 +733,7 @@ BOOL CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
                     ReleaseCapture();
                     SetCursor(LoadCursor(NULL, IDC_ARROW));
                     detectingZoom = false;
+                    zooming = false;
 
                     ptZoomEnd.x = GET_X_LPARAM(lParam);
                     ptZoomEnd.y = GET_Y_LPARAM(lParam);

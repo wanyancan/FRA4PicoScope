@@ -69,19 +69,19 @@ bool SettingsChanged( HWND hDlg )
     freqAutoscale = (Button_GetCheck( hndCtrl ) == BST_CHECKED);
     
     hndCtrl = GetDlgItem(hDlg, IDC_FREQ_AXIS_MIN);
-    Edit_GetText( hndCtrl, editStr, sizeof(editStr) );
+    Edit_GetText( hndCtrl, editStr, sizeof(editStr)/sizeof(WCHAR) );
     currentMinFreqStr = editStr;
 
     hndCtrl = GetDlgItem(hDlg, IDC_FREQ_AXIS_MAX);
-    Edit_GetText( hndCtrl, editStr, sizeof(editStr) );
+    Edit_GetText( hndCtrl, editStr, sizeof(editStr)/sizeof(WCHAR) );
     currentMaxFreqStr = editStr;
 
     hndCtrl = GetDlgItem(hDlg, IDC_FREQ_AXIS_MAJ_INT);
-    Edit_GetText( hndCtrl, editStr, sizeof(editStr) );
+    Edit_GetText( hndCtrl, editStr, sizeof(editStr)/sizeof(WCHAR) );
     currentFreqMajorIntervalStr = editStr;
     
     hndCtrl = GetDlgItem(hDlg, IDC_FREQ_AXIS_TICKS_PER_MAJOR);
-    Edit_GetText( hndCtrl, editStr, sizeof(editStr) );
+    Edit_GetText( hndCtrl, editStr, sizeof(editStr)/sizeof(WCHAR) );
     currentFreqTicksPerMajorStr = editStr;
     
     hndCtrl = GetDlgItem(hDlg, IDC_FREQ_AXIS_MAJOR_GRIDS);
@@ -95,19 +95,19 @@ bool SettingsChanged( HWND hDlg )
     gainAutoscale = (Button_GetCheck( hndCtrl ) == BST_CHECKED);
     
     hndCtrl = GetDlgItem(hDlg, IDC_GAIN_AXIS_MIN);
-    Edit_GetText( hndCtrl, editStr, sizeof(editStr) );
+    Edit_GetText( hndCtrl, editStr, sizeof(editStr)/sizeof(WCHAR) );
     currentMinGainStr = editStr;
 
     hndCtrl = GetDlgItem(hDlg, IDC_GAIN_AXIS_MAX);
-    Edit_GetText( hndCtrl, editStr, sizeof(editStr) );
+    Edit_GetText( hndCtrl, editStr, sizeof(editStr)/sizeof(WCHAR) );
     currentMaxGainStr = editStr;
 
     hndCtrl = GetDlgItem(hDlg, IDC_GAIN_AXIS_MAJ_INT);
-    Edit_GetText( hndCtrl, editStr, sizeof(editStr) );
+    Edit_GetText( hndCtrl, editStr, sizeof(editStr)/sizeof(WCHAR) );
     currentGainMajorIntervalStr = editStr;
     
     hndCtrl = GetDlgItem(hDlg, IDC_GAIN_AXIS_TICKS_PER_MAJOR);
-    Edit_GetText( hndCtrl, editStr, sizeof(editStr) );
+    Edit_GetText( hndCtrl, editStr, sizeof(editStr)/sizeof(WCHAR) );
     currentGainTicksPerMajorStr = editStr;
     
     hndCtrl = GetDlgItem(hDlg, IDC_GAIN_AXIS_MAJOR_GRIDS);
@@ -124,19 +124,19 @@ bool SettingsChanged( HWND hDlg )
     phaseAutoscale = (Button_GetCheck( hndCtrl ) == BST_CHECKED);
     
     hndCtrl = GetDlgItem(hDlg, IDC_PHASE_AXIS_MIN);
-    Edit_GetText( hndCtrl, editStr, sizeof(editStr) );
+    Edit_GetText( hndCtrl, editStr, sizeof(editStr)/sizeof(WCHAR) );
     currentMinPhaseStr = editStr;
 
     hndCtrl = GetDlgItem(hDlg, IDC_PHASE_AXIS_MAX);
-    Edit_GetText( hndCtrl, editStr, sizeof(editStr) );
+    Edit_GetText( hndCtrl, editStr, sizeof(editStr)/sizeof(WCHAR) );
     currentMaxPhaseStr = editStr;
 
     hndCtrl = GetDlgItem(hDlg, IDC_PHASE_AXIS_MAJ_INT);
-    Edit_GetText( hndCtrl, editStr, sizeof(editStr) );
+    Edit_GetText( hndCtrl, editStr, sizeof(editStr)/sizeof(WCHAR) );
     currentPhaseMajorIntervalStr = editStr;
     
     hndCtrl = GetDlgItem(hDlg, IDC_PHASE_AXIS_TICKS_PER_MAJOR);
-    Edit_GetText( hndCtrl, editStr, sizeof(editStr) );
+    Edit_GetText( hndCtrl, editStr, sizeof(editStr)/sizeof(WCHAR) );
     currentPhaseTicksPerMajorStr = editStr;
     
     hndCtrl = GetDlgItem(hDlg, IDC_PHASE_AXIS_MAJOR_GRIDS);
@@ -181,14 +181,14 @@ bool ValidateAndStoreSettings( HWND hDlg )
     hndCtrl = GetDlgItem(hDlg, IDC_FREQ_AXIS_AUTOSCALE);
     get<0>(dlgPlotSettings.freqAxisScale) = (Button_GetCheck( hndCtrl ) == BST_CHECKED);
     hndCtrl = GetDlgItem(hDlg, IDC_FREQ_AXIS_MIN);
-    Edit_GetText( hndCtrl, numberStr, sizeof(numberStr) );
+    Edit_GetText( hndCtrl, numberStr, sizeof(numberStr)/sizeof(WCHAR) );
     if (!WStringToDouble( numberStr, get<1>(dlgPlotSettings.freqAxisScale) ))
     {
         errorConditions[numErrors++] = L"Frequency Minimum is not a valid number";
         retVal = false;
     }
     hndCtrl = GetDlgItem(hDlg, IDC_FREQ_AXIS_MAX);
-    Edit_GetText( hndCtrl, numberStr, sizeof(numberStr) );
+    Edit_GetText( hndCtrl, numberStr, sizeof(numberStr)/sizeof(WCHAR) );
     if (!WStringToDouble( numberStr, get<2>(dlgPlotSettings.freqAxisScale) ))
     {
         errorConditions[numErrors++] = L"Frequency Maximum is not a valid number";
@@ -204,28 +204,28 @@ bool ValidateAndStoreSettings( HWND hDlg )
     hndCtrl = GetDlgItem(hDlg, IDC_GAIN_AXIS_AUTOSCALE);
     get<0>(dlgPlotSettings.gainAxisScale) = (Button_GetCheck( hndCtrl ) == BST_CHECKED);
     hndCtrl = GetDlgItem(hDlg, IDC_GAIN_AXIS_MIN);
-    Edit_GetText( hndCtrl, numberStr, sizeof(numberStr) );
+    Edit_GetText( hndCtrl, numberStr, sizeof(numberStr)/sizeof(WCHAR) );
     if (!WStringToDouble( numberStr, get<1>(dlgPlotSettings.gainAxisScale) ))
     {
         errorConditions[numErrors++] = L"Gain Minimum is not a valid number";
         retVal = false;
     }
     hndCtrl = GetDlgItem(hDlg, IDC_GAIN_AXIS_MAX);
-    Edit_GetText( hndCtrl, numberStr, sizeof(numberStr) );
+    Edit_GetText( hndCtrl, numberStr, sizeof(numberStr)/sizeof(WCHAR) );
     if (!WStringToDouble( numberStr, get<2>(dlgPlotSettings.gainAxisScale) ))
     {
         errorConditions[numErrors++] = L"Gain Maximum is not a valid number";
         retVal = false;
     }
     hndCtrl = GetDlgItem(hDlg, IDC_GAIN_AXIS_MAJ_INT);
-    Edit_GetText( hndCtrl, numberStr, sizeof(numberStr) );
+    Edit_GetText( hndCtrl, numberStr, sizeof(numberStr)/sizeof(WCHAR) );
     if (!WStringToDouble( numberStr, get<0>(dlgPlotSettings.gainAxisIntervals) ))
     {
         errorConditions[numErrors++] = L"Gain Major Interval is not a valid number";
         retVal = false;
     }
     hndCtrl = GetDlgItem(hDlg, IDC_GAIN_AXIS_TICKS_PER_MAJOR);
-    Edit_GetText( hndCtrl, numberStr, sizeof(numberStr) );
+    Edit_GetText( hndCtrl, numberStr, sizeof(numberStr)/sizeof(WCHAR) );
     if (!WStringToUint8( numberStr, get<1>(dlgPlotSettings.gainAxisIntervals) ))
     {
         errorConditions[numErrors++] = L"Gain Ticks/Major Interval is not a valid number";
@@ -242,28 +242,28 @@ bool ValidateAndStoreSettings( HWND hDlg )
     hndCtrl = GetDlgItem(hDlg, IDC_PHASE_AXIS_AUTOSCALE);
     get<0>(dlgPlotSettings.phaseAxisScale) = (Button_GetCheck( hndCtrl ) == BST_CHECKED);
     hndCtrl = GetDlgItem(hDlg, IDC_PHASE_AXIS_MIN);
-    Edit_GetText( hndCtrl, numberStr, sizeof(numberStr) );
+    Edit_GetText( hndCtrl, numberStr, sizeof(numberStr)/sizeof(WCHAR) );
     if (!WStringToDouble( numberStr, get<1>(dlgPlotSettings.phaseAxisScale) ))
     {
         errorConditions[numErrors++] = L"Phase Minimum is not a valid number";
         retVal = false;
     }
     hndCtrl = GetDlgItem(hDlg, IDC_PHASE_AXIS_MAX);
-    Edit_GetText( hndCtrl, numberStr, sizeof(numberStr) );
+    Edit_GetText( hndCtrl, numberStr, sizeof(numberStr)/sizeof(WCHAR) );
     if (!WStringToDouble( numberStr, get<2>(dlgPlotSettings.phaseAxisScale) ))
     {
         errorConditions[numErrors++] = L"Phase Maximum is not a valid number";
         retVal = false;
     }
     hndCtrl = GetDlgItem(hDlg, IDC_PHASE_AXIS_MAJ_INT);
-    Edit_GetText( hndCtrl, numberStr, sizeof(numberStr) );
+    Edit_GetText( hndCtrl, numberStr, sizeof(numberStr)/sizeof(WCHAR) );
     if (!WStringToDouble( numberStr, get<0>(dlgPlotSettings.phaseAxisIntervals) ))
     {
         errorConditions[numErrors++] = L"Phase Major Interval is not a valid number";
         retVal = false;
     }
     hndCtrl = GetDlgItem(hDlg, IDC_PHASE_AXIS_TICKS_PER_MAJOR);
-    Edit_GetText( hndCtrl, numberStr, sizeof(numberStr) );
+    Edit_GetText( hndCtrl, numberStr, sizeof(numberStr)/sizeof(WCHAR) );
     if (!WStringToUint8( numberStr, get<1>(dlgPlotSettings.phaseAxisIntervals) ))
     {
         errorConditions[numErrors++] = L"Phase Ticks/Major Interval is not a valid number";
@@ -483,6 +483,46 @@ INT_PTR CALLBACK PlotAxesDialogHandler(HWND hDlg, UINT message, WPARAM wParam, L
                 Edit_Enable( hndCtrl, true );
             }
 
+            // Disable minor grid settings if major grids are not on
+            // Order matter here, this needs to come before code that disables interval settings for master grids
+            hndCtrl = GetDlgItem(hDlg, IDC_FREQ_AXIS_MAJOR_GRIDS);
+            if (Button_GetCheck(hndCtrl))
+            {
+                hndCtrl = GetDlgItem(hDlg, IDC_FREQ_AXIS_MINOR_GRIDS);
+                Button_Enable( hndCtrl, true );
+            }
+            else
+            {
+                hndCtrl = GetDlgItem(hDlg, IDC_FREQ_AXIS_MINOR_GRIDS);
+                Button_SetCheck( hndCtrl, BST_UNCHECKED );
+                Button_Enable( hndCtrl, false );
+            }
+            hndCtrl = GetDlgItem(hDlg, IDC_GAIN_AXIS_MAJOR_GRIDS);
+            if (Button_GetCheck(hndCtrl))
+            {
+                hndCtrl = GetDlgItem(hDlg, IDC_GAIN_AXIS_MINOR_GRIDS);
+                Button_Enable( hndCtrl, true );
+            }
+            else
+            {
+                hndCtrl = GetDlgItem(hDlg, IDC_GAIN_AXIS_MINOR_GRIDS);
+                Button_SetCheck( hndCtrl, BST_UNCHECKED );
+                Button_Enable( hndCtrl, false );
+            }
+
+            hndCtrl = GetDlgItem(hDlg, IDC_PHASE_AXIS_MAJOR_GRIDS);
+            if (Button_GetCheck(hndCtrl))
+            {
+                hndCtrl = GetDlgItem(hDlg, IDC_PHASE_AXIS_MINOR_GRIDS);
+                Button_Enable( hndCtrl, true );
+            }
+            else
+            {
+                hndCtrl = GetDlgItem(hDlg, IDC_PHASE_AXIS_MINOR_GRIDS);
+                Button_SetCheck( hndCtrl, BST_UNCHECKED );
+                Button_Enable( hndCtrl, false );
+            }
+
             // Disable interval settings if a master grids checkbox is checked
             hndCtrl = GetDlgItem( hDlg, IDC_GAIN_AXIS_MASTER_GRIDS );
             if (Button_GetCheck(hndCtrl))
@@ -496,8 +536,17 @@ INT_PTR CALLBACK PlotAxesDialogHandler(HWND hDlg, UINT message, WPARAM wParam, L
                 Edit_Enable( hndCtrl, true );
                 hndCtrl = GetDlgItem(hDlg, IDC_GAIN_AXIS_MAJOR_GRIDS);
                 Button_Enable( hndCtrl, true );
-                hndCtrl = GetDlgItem(hDlg, IDC_GAIN_AXIS_MINOR_GRIDS);
-                Button_Enable( hndCtrl, true );
+                if (Button_GetCheck(hndCtrl))
+                {
+                    hndCtrl = GetDlgItem(hDlg, IDC_GAIN_AXIS_MINOR_GRIDS);
+                    Button_Enable( hndCtrl, true );
+                }
+                else
+                {
+                    hndCtrl = GetDlgItem(hDlg, IDC_GAIN_AXIS_MINOR_GRIDS);
+                    Button_SetCheck( hndCtrl, BST_UNCHECKED );
+                    Button_Enable( hndCtrl, false );
+                }
 
                 hndCtrl = GetDlgItem(hDlg, IDC_PHASE_AXIS_MAJ_INT);
                 Edit_Enable( hndCtrl, false );
@@ -516,8 +565,17 @@ INT_PTR CALLBACK PlotAxesDialogHandler(HWND hDlg, UINT message, WPARAM wParam, L
                 Edit_Enable( hndCtrl, true );
                 hndCtrl = GetDlgItem(hDlg, IDC_PHASE_AXIS_MAJOR_GRIDS);
                 Button_Enable( hndCtrl, true );
-                hndCtrl = GetDlgItem(hDlg, IDC_PHASE_AXIS_MINOR_GRIDS);
-                Button_Enable( hndCtrl, true );
+                if (Button_GetCheck(hndCtrl))
+                {
+                    hndCtrl = GetDlgItem(hDlg, IDC_PHASE_AXIS_MINOR_GRIDS);
+                    Button_Enable( hndCtrl, true );
+                }
+                else
+                {
+                    hndCtrl = GetDlgItem(hDlg, IDC_PHASE_AXIS_MINOR_GRIDS);
+                    Button_SetCheck( hndCtrl, BST_UNCHECKED );
+                    Button_Enable( hndCtrl, false );
+                }
             }
 
             hndCtrl = GetDlgItem( hDlg, IDC_PHASE_AXIS_MASTER_GRIDS );
@@ -532,8 +590,17 @@ INT_PTR CALLBACK PlotAxesDialogHandler(HWND hDlg, UINT message, WPARAM wParam, L
                 Edit_Enable( hndCtrl, true );
                 hndCtrl = GetDlgItem(hDlg, IDC_PHASE_AXIS_MAJOR_GRIDS);
                 Button_Enable( hndCtrl, true );
-                hndCtrl = GetDlgItem(hDlg, IDC_PHASE_AXIS_MINOR_GRIDS);
-                Button_Enable( hndCtrl, true );
+                if (Button_GetCheck(hndCtrl))
+                {
+                    hndCtrl = GetDlgItem(hDlg, IDC_PHASE_AXIS_MINOR_GRIDS);
+                    Button_Enable( hndCtrl, true );
+                }
+                else
+                {
+                    hndCtrl = GetDlgItem(hDlg, IDC_PHASE_AXIS_MINOR_GRIDS);
+                    Button_SetCheck( hndCtrl, BST_UNCHECKED );
+                    Button_Enable( hndCtrl, false );
+                }
 
                 hndCtrl = GetDlgItem(hDlg, IDC_GAIN_AXIS_MAJ_INT);
                 Edit_Enable( hndCtrl, false );
@@ -552,8 +619,17 @@ INT_PTR CALLBACK PlotAxesDialogHandler(HWND hDlg, UINT message, WPARAM wParam, L
                 Edit_Enable( hndCtrl, true );
                 hndCtrl = GetDlgItem(hDlg, IDC_GAIN_AXIS_MAJOR_GRIDS);
                 Button_Enable( hndCtrl, true );
-                hndCtrl = GetDlgItem(hDlg, IDC_GAIN_AXIS_MINOR_GRIDS);
-                Button_Enable( hndCtrl, true );
+                if (Button_GetCheck(hndCtrl))
+                {
+                    hndCtrl = GetDlgItem(hDlg, IDC_GAIN_AXIS_MINOR_GRIDS);
+                    Button_Enable( hndCtrl, true );
+                }
+                else
+                {
+                    hndCtrl = GetDlgItem(hDlg, IDC_GAIN_AXIS_MINOR_GRIDS);
+                    Button_SetCheck( hndCtrl, BST_UNCHECKED );
+                    Button_Enable( hndCtrl, false );
+                }
             }
 
             return (INT_PTR)TRUE;
@@ -563,6 +639,55 @@ INT_PTR CALLBACK PlotAxesDialogHandler(HWND hDlg, UINT message, WPARAM wParam, L
         {
             switch (LOWORD(wParam))
             {
+                case IDC_FREQ_AXIS_MAJOR_GRIDS:
+                {
+                    hndCtrl = GetDlgItem(hDlg, IDC_FREQ_AXIS_MAJOR_GRIDS);
+                    if (Button_GetCheck(hndCtrl))
+                    {
+                        hndCtrl = GetDlgItem(hDlg, IDC_FREQ_AXIS_MINOR_GRIDS);
+                        Button_Enable( hndCtrl, true );
+                    }
+                    else
+                    {
+                        hndCtrl = GetDlgItem(hDlg, IDC_FREQ_AXIS_MINOR_GRIDS);
+                        Button_SetCheck( hndCtrl, BST_UNCHECKED );
+                        Button_Enable( hndCtrl, false );
+                    }
+                }
+                case IDC_GAIN_AXIS_MAJOR_GRIDS:
+                {
+                    hndCtrl = GetDlgItem( hDlg, IDC_GAIN_AXIS_MAJOR_GRIDS );
+                    if (Button_GetCheck(hndCtrl))
+                    {
+                        hndCtrl = GetDlgItem(hDlg, IDC_GAIN_AXIS_MINOR_GRIDS);
+                        Button_Enable( hndCtrl, true );
+                    }
+                    else
+                    {
+                        hndCtrl = GetDlgItem(hDlg, IDC_GAIN_AXIS_MINOR_GRIDS);
+                        Button_SetCheck( hndCtrl, BST_UNCHECKED );
+                        Button_Enable( hndCtrl, false );
+                    }
+                    return 0;
+                    break;
+                }
+                case IDC_PHASE_AXIS_MAJOR_GRIDS:
+                {
+                    hndCtrl = GetDlgItem( hDlg, IDC_PHASE_AXIS_MAJOR_GRIDS );
+                    if (Button_GetCheck(hndCtrl))
+                    {
+                        hndCtrl = GetDlgItem(hDlg, IDC_PHASE_AXIS_MINOR_GRIDS);
+                        Button_Enable( hndCtrl, true );
+                    }
+                    else
+                    {
+                        hndCtrl = GetDlgItem(hDlg, IDC_PHASE_AXIS_MINOR_GRIDS);
+                        Button_SetCheck( hndCtrl, BST_UNCHECKED );
+                        Button_Enable( hndCtrl, false );
+                    }
+                    return 0;
+                    break;
+                }
                 case IDC_GAIN_AXIS_MASTER_GRIDS: // Gain Axis Master Grids checkbox was clicked
                 {
                     hndCtrl = GetDlgItem( hDlg, IDC_GAIN_AXIS_MASTER_GRIDS );
@@ -577,8 +702,17 @@ INT_PTR CALLBACK PlotAxesDialogHandler(HWND hDlg, UINT message, WPARAM wParam, L
                         Edit_Enable( hndCtrl, true );
                         hndCtrl = GetDlgItem(hDlg, IDC_GAIN_AXIS_MAJOR_GRIDS);
                         Button_Enable( hndCtrl, true );
-                        hndCtrl = GetDlgItem(hDlg, IDC_GAIN_AXIS_MINOR_GRIDS);
-                        Button_Enable( hndCtrl, true );
+                        if (Button_GetCheck(hndCtrl))
+                        {
+                            hndCtrl = GetDlgItem(hDlg, IDC_GAIN_AXIS_MINOR_GRIDS);
+                            Button_Enable( hndCtrl, true );
+                        }
+                        else
+                        {
+                            hndCtrl = GetDlgItem(hDlg, IDC_GAIN_AXIS_MINOR_GRIDS);
+                            Button_SetCheck( hndCtrl, BST_UNCHECKED );
+                            Button_Enable( hndCtrl, false );
+                        }
 
                         hndCtrl = GetDlgItem(hDlg, IDC_PHASE_AXIS_MAJ_INT);
                         Edit_Enable( hndCtrl, false );
@@ -597,8 +731,17 @@ INT_PTR CALLBACK PlotAxesDialogHandler(HWND hDlg, UINT message, WPARAM wParam, L
                         Edit_Enable( hndCtrl, true );
                         hndCtrl = GetDlgItem(hDlg, IDC_PHASE_AXIS_MAJOR_GRIDS);
                         Button_Enable( hndCtrl, true );
-                        hndCtrl = GetDlgItem(hDlg, IDC_PHASE_AXIS_MINOR_GRIDS);
-                        Button_Enable( hndCtrl, true );
+                        if (Button_GetCheck(hndCtrl))
+                        {
+                            hndCtrl = GetDlgItem(hDlg, IDC_PHASE_AXIS_MINOR_GRIDS);
+                            Button_Enable( hndCtrl, true );
+                        }
+                        else
+                        {
+                            hndCtrl = GetDlgItem(hDlg, IDC_PHASE_AXIS_MINOR_GRIDS);
+                            Button_SetCheck( hndCtrl, BST_UNCHECKED );
+                            Button_Enable( hndCtrl, false );
+                        }
                     }
                     return 0;
                     break;
@@ -617,8 +760,17 @@ INT_PTR CALLBACK PlotAxesDialogHandler(HWND hDlg, UINT message, WPARAM wParam, L
                         Edit_Enable( hndCtrl, true );
                         hndCtrl = GetDlgItem(hDlg, IDC_PHASE_AXIS_MAJOR_GRIDS);
                         Button_Enable( hndCtrl, true );
-                        hndCtrl = GetDlgItem(hDlg, IDC_PHASE_AXIS_MINOR_GRIDS);
-                        Button_Enable( hndCtrl, true );
+                        if (Button_GetCheck(hndCtrl))
+                        {
+                            hndCtrl = GetDlgItem(hDlg, IDC_PHASE_AXIS_MINOR_GRIDS);
+                            Button_Enable( hndCtrl, true );
+                        }
+                        else
+                        {
+                            hndCtrl = GetDlgItem(hDlg, IDC_PHASE_AXIS_MINOR_GRIDS);
+                            Button_SetCheck( hndCtrl, BST_UNCHECKED );
+                            Button_Enable( hndCtrl, false );
+                        }
 
                         hndCtrl = GetDlgItem(hDlg, IDC_GAIN_AXIS_MAJ_INT);
                         Edit_Enable( hndCtrl, false );
@@ -637,8 +789,17 @@ INT_PTR CALLBACK PlotAxesDialogHandler(HWND hDlg, UINT message, WPARAM wParam, L
                         Edit_Enable( hndCtrl, true );
                         hndCtrl = GetDlgItem(hDlg, IDC_GAIN_AXIS_MAJOR_GRIDS);
                         Button_Enable( hndCtrl, true );
-                        hndCtrl = GetDlgItem(hDlg, IDC_GAIN_AXIS_MINOR_GRIDS);
-                        Button_Enable( hndCtrl, true );
+                        if (Button_GetCheck(hndCtrl))
+                        {
+                            hndCtrl = GetDlgItem(hDlg, IDC_GAIN_AXIS_MINOR_GRIDS);
+                            Button_Enable( hndCtrl, true );
+                        }
+                        else
+                        {
+                            hndCtrl = GetDlgItem(hDlg, IDC_GAIN_AXIS_MINOR_GRIDS);
+                            Button_SetCheck( hndCtrl, BST_UNCHECKED );
+                            Button_Enable( hndCtrl, false );
+                        }
                     }
                     return 0;
                     break;
