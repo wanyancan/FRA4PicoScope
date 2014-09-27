@@ -613,6 +613,11 @@ extern "C" void FRAPlotter::LabelYAxis(PLINT axis, PLFLT value, char * labelText
             labelString = labelString.substr( 0, decimalPointPos-1 );
         }
     }
+    // Finally, correct for possibility of "-0"
+    if (0 == labelString.compare("-0"))
+    {
+        labelString = "0";
+    }
 
     // Copy the string over to PLplot's output parameter
     strncpy( labelText, labelString.c_str(), length );
