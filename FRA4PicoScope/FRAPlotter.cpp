@@ -32,6 +32,7 @@
 #include <algorithm>
 #include <sstream>
 #include <boost/math/special_functions/sign.hpp>
+using namespace boost::math;
 #include <boost/algorithm/string.hpp>
 using namespace boost;
 #include <Wincodec.h>
@@ -410,6 +411,10 @@ void FRAPlotter::PlotFRA(void)
         {
             // Compute the top tick
             customTicks[0] = currentGainAxisMax - fmod(currentPhaseAxisMax, tmpPhaseAxisMajorTickInterval) * scaleFactor;
+            if (signbit(currentPhaseAxisMax))
+            {
+                customTicks[0] -= gainMajorTickInterval;
+            }
             // Compute the rest
             for ( uint32_t i = 1; i < customTicks.size(); i++ )
             {
@@ -487,6 +492,10 @@ void FRAPlotter::PlotFRA(void)
         {
             // Compute the top tick
             customTicks[0] = currentPhaseAxisMax - fmod(currentGainAxisMax, tmpGainAxisMajorTickInterval) * scaleFactor;
+            if (signbit(currentGainAxisMax))
+            {
+                customTicks[0] -= phaseMajorTickInterval;
+            }
             // Compute the rest
             for ( uint32_t i = 1; i < customTicks.size(); i++ )
             {
@@ -590,7 +599,7 @@ extern "C" void FRAPlotter::LabelYAxis(PLINT axis, PLFLT value, char * labelText
 
     // Output a fixed point value with the most significant digits allowed by digmax
     // Compute most number of digits past the decimal ever possible while still honoring digmax
-    prec = ydigmax - 2 - (boost::math::signbit(value) ? 1 : 0); // 2 is for sign and first digit left of the decimal point
+    prec = ydigmax - 2 - (signbit(value) ? 1 : 0); // 2 is for sign and first digit left of the decimal point
     // Output using stream I/O
     labelSS.precision(prec);
     labelSS << fixed << value;
