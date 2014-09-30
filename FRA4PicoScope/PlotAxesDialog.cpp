@@ -176,6 +176,12 @@ bool ValidateAndStoreSettings( HWND hDlg )
     PlotSettings_T dlgPlotSettings;
     wstring errorConditions[32];
     uint8_t numErrors = 0;
+    bool minFreqValid = false;
+    bool maxFreqValid = false;
+    bool minGainValid = false;
+    bool maxGainValid = false;
+    bool minPhaseValid = false;
+    bool maxPhaseValid = false;
 
     // Get freq axis settings
     hndCtrl = GetDlgItem(hDlg, IDC_FREQ_AXIS_AUTOSCALE);
@@ -187,12 +193,36 @@ bool ValidateAndStoreSettings( HWND hDlg )
         errorConditions[numErrors++] = L"Frequency Minimum is not a valid number";
         retVal = false;
     }
+    else
+    {
+        if (get<1>(dlgPlotSettings.freqAxisScale) <= 0.0)
+        {
+            errorConditions[numErrors++] = L"Frequency Minimum must be greater than 0";
+            retVal = false;
+        }
+        else
+        {
+            minFreqValid = true;
+        }
+    }
     hndCtrl = GetDlgItem(hDlg, IDC_FREQ_AXIS_MAX);
     Edit_GetText( hndCtrl, numberStr, sizeof(numberStr)/sizeof(WCHAR) );
     if (!WStringToDouble( numberStr, get<2>(dlgPlotSettings.freqAxisScale) ))
     {
         errorConditions[numErrors++] = L"Frequency Maximum is not a valid number";
         retVal = false;
+    }
+    else
+    {
+        if (get<2>(dlgPlotSettings.freqAxisScale) <= 0.0)
+        {
+            errorConditions[numErrors++] = L"Frequency Maximum must be greater than 0";
+            retVal = false;
+        }
+        else
+        {
+            maxFreqValid = true;
+        }
     }
     
     hndCtrl = GetDlgItem(hDlg, IDC_FREQ_AXIS_MAJOR_GRIDS);
@@ -210,12 +240,20 @@ bool ValidateAndStoreSettings( HWND hDlg )
         errorConditions[numErrors++] = L"Gain Minimum is not a valid number";
         retVal = false;
     }
+    else
+    {
+        minGainValid = true;
+    }
     hndCtrl = GetDlgItem(hDlg, IDC_GAIN_AXIS_MAX);
     Edit_GetText( hndCtrl, numberStr, sizeof(numberStr)/sizeof(WCHAR) );
     if (!WStringToDouble( numberStr, get<2>(dlgPlotSettings.gainAxisScale) ))
     {
         errorConditions[numErrors++] = L"Gain Maximum is not a valid number";
         retVal = false;
+    }
+    else
+    {
+        maxGainValid = true;
     }
     hndCtrl = GetDlgItem(hDlg, IDC_GAIN_AXIS_MAJ_INT);
     Edit_GetText( hndCtrl, numberStr, sizeof(numberStr)/sizeof(WCHAR) );
@@ -224,11 +262,16 @@ bool ValidateAndStoreSettings( HWND hDlg )
         errorConditions[numErrors++] = L"Gain Major Interval is not a valid number";
         retVal = false;
     }
+    else
+    {
+        // If the user entered a negative value, just correct it.
+        get<0>(dlgPlotSettings.gainAxisIntervals) = fabs(get<0>(dlgPlotSettings.gainAxisIntervals));
+    }
     hndCtrl = GetDlgItem(hDlg, IDC_GAIN_AXIS_TICKS_PER_MAJOR);
     Edit_GetText( hndCtrl, numberStr, sizeof(numberStr)/sizeof(WCHAR) );
     if (!WStringToUint8( numberStr, get<1>(dlgPlotSettings.gainAxisIntervals) ))
     {
-        errorConditions[numErrors++] = L"Gain Ticks/Major Interval is not a valid number";
+        errorConditions[numErrors++] = L"Gain Ticks/Major Interval must be a non-negative integer";
         retVal = false;
     }
     hndCtrl = GetDlgItem(hDlg, IDC_GAIN_AXIS_MAJOR_GRIDS);
@@ -248,12 +291,20 @@ bool ValidateAndStoreSettings( HWND hDlg )
         errorConditions[numErrors++] = L"Phase Minimum is not a valid number";
         retVal = false;
     }
+    else
+    {
+        minPhaseValid = true;
+    }
     hndCtrl = GetDlgItem(hDlg, IDC_PHASE_AXIS_MAX);
     Edit_GetText( hndCtrl, numberStr, sizeof(numberStr)/sizeof(WCHAR) );
     if (!WStringToDouble( numberStr, get<2>(dlgPlotSettings.phaseAxisScale) ))
     {
         errorConditions[numErrors++] = L"Phase Maximum is not a valid number";
         retVal = false;
+    }
+    else
+    {
+        maxPhaseValid = true;
     }
     hndCtrl = GetDlgItem(hDlg, IDC_PHASE_AXIS_MAJ_INT);
     Edit_GetText( hndCtrl, numberStr, sizeof(numberStr)/sizeof(WCHAR) );
@@ -262,11 +313,16 @@ bool ValidateAndStoreSettings( HWND hDlg )
         errorConditions[numErrors++] = L"Phase Major Interval is not a valid number";
         retVal = false;
     }
+    else
+    {
+        // If the user entered a negative value, just correct it.
+        get<0>(dlgPlotSettings.phaseAxisIntervals) = fabs(get<0>(dlgPlotSettings.phaseAxisIntervals));
+    }
     hndCtrl = GetDlgItem(hDlg, IDC_PHASE_AXIS_TICKS_PER_MAJOR);
     Edit_GetText( hndCtrl, numberStr, sizeof(numberStr)/sizeof(WCHAR) );
     if (!WStringToUint8( numberStr, get<1>(dlgPlotSettings.phaseAxisIntervals) ))
     {
-        errorConditions[numErrors++] = L"Phase Ticks/Major Interval is not a valid number";
+        errorConditions[numErrors++] = L"Phase Ticks/Major Interval must be a non-negative integer";
         retVal = false;
     }
     hndCtrl = GetDlgItem(hDlg, IDC_PHASE_AXIS_MAJOR_GRIDS);
@@ -275,6 +331,22 @@ bool ValidateAndStoreSettings( HWND hDlg )
     get<3>(dlgPlotSettings.phaseAxisIntervals) = (Button_GetCheck( hndCtrl ) == BST_CHECKED);
     hndCtrl = GetDlgItem(hDlg, IDC_PHASE_AXIS_MASTER_GRIDS);
     dlgPlotSettings.phaseMasterIntervals = (Button_GetCheck( hndCtrl ) == BST_CHECKED);
+
+    if (minFreqValid && maxFreqValid && get<1>(dlgPlotSettings.freqAxisScale) >= get<2>(dlgPlotSettings.freqAxisScale))
+    {
+        errorConditions[numErrors++] = L"Frequency Minimum must be less than Frequency Maximum";
+        retVal = false;
+    }
+    if (minGainValid && maxGainValid && get<1>(dlgPlotSettings.gainAxisScale) >= get<2>(dlgPlotSettings.gainAxisScale))
+    {
+        errorConditions[numErrors++] = L"Gain Minimum must be less than Gain Maximum";
+        retVal = false;
+    }
+    if (minPhaseValid && maxPhaseValid && get<1>(dlgPlotSettings.phaseAxisScale) >= get<2>(dlgPlotSettings.phaseAxisScale))
+    {
+        errorConditions[numErrors++] = L"Phase Minimum must be less than Phase Maximum";
+        retVal = false;
+    }
 
     if (retVal)
     {
