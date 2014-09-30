@@ -406,15 +406,11 @@ void FRAPlotter::PlotFRA(void)
         vector<PLFLT> customTicks;
         PLFLT scaleFactor = ((currentGainAxisMax-currentGainAxisMin)/(currentPhaseAxisMax-currentPhaseAxisMin));
         PLFLT gainMajorTickInterval = scaleFactor * tmpPhaseAxisMajorTickInterval;
-        customTicks.resize( (size_t)((currentPhaseAxisMax-currentPhaseAxisMin)/tmpPhaseAxisMajorTickInterval)+1 );
+        customTicks.resize( (size_t)((currentPhaseAxisMax-currentPhaseAxisMin)/tmpPhaseAxisMajorTickInterval)+2 );
         if (customTicks.size() != 0)
         {
             // Compute the top tick
             customTicks[0] = currentGainAxisMax - fmod(currentPhaseAxisMax, tmpPhaseAxisMajorTickInterval) * scaleFactor;
-            if (signbit(currentPhaseAxisMax))
-            {
-                customTicks[0] -= gainMajorTickInterval;
-            }
             // Compute the rest
             for ( uint32_t i = 1; i < customTicks.size(); i++ )
             {
@@ -487,15 +483,11 @@ void FRAPlotter::PlotFRA(void)
         vector<PLFLT> customTicks;
         PLFLT scaleFactor = ((currentPhaseAxisMax-currentPhaseAxisMin)/(currentGainAxisMax-currentGainAxisMin));
         PLFLT phaseMajorTickInterval = scaleFactor * tmpGainAxisMajorTickInterval;
-        customTicks.resize( (size_t)((currentGainAxisMax-currentGainAxisMin)/tmpGainAxisMajorTickInterval)+1 );
+        customTicks.resize( (size_t)((currentGainAxisMax-currentGainAxisMin)/tmpGainAxisMajorTickInterval)+2 );
         if (customTicks.size() != 0)
         {
             // Compute the top tick
             customTicks[0] = currentPhaseAxisMax - fmod(currentGainAxisMax, tmpGainAxisMajorTickInterval) * scaleFactor;
-            if (signbit(currentGainAxisMax))
-            {
-                customTicks[0] -= phaseMajorTickInterval;
-            }
             // Compute the rest
             for ( uint32_t i = 1; i < customTicks.size(); i++ )
             {
