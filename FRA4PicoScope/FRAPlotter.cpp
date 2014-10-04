@@ -561,6 +561,7 @@ extern "C" void FRAPlotter::LabelYAxis(PLINT axis, PLFLT value, char * labelText
     PLINT ydigmax, ydigits, mode, prec, scale;
     stringstream labelSS;
     string labelString;
+    size_t decimalPointPos;
 
     // Check inputs
     if (axis != PL_Y_AXIS)
@@ -590,9 +591,25 @@ extern "C" void FRAPlotter::LabelYAxis(PLINT axis, PLFLT value, char * labelText
     }
 
     // Output a fixed point value with the most significant digits allowed by digmax
-    // Compute most number of digits past the decimal ever possible while still honoring digmax
-    prec = ydigmax - 2 - (signbit(value) ? 1 : 0); // 2 is for sign and first digit left of the decimal point
-    // Output using stream I/O
+
+    // Compute the number of digits past the decimal possible while still honoring digmax
+    // First, build a test string to see how many characters left of the decimal will be used.
+    labelSS.precision(numeric_limits<double>::digits10);
+    labelSS << fixed << value;
+    labelString = labelSS.str();
+    if (string::npos != (decimalPointPos = labelString.find(".")))
+    {
+        prec = ydigmax - (decimalPointPos+1);
+        prec = max(0, prec);
+    }
+    else
+    {
+        prec = 0;
+    }
+
+    // Output using the computed precision
+    labelSS.clear();
+    labelSS.str("");
     labelSS.precision(prec);
     labelSS << fixed << value;
     labelString = labelSS.str();
@@ -600,19 +617,11 @@ extern "C" void FRAPlotter::LabelYAxis(PLINT axis, PLFLT value, char * labelText
     // Smash trailing zeros right of a decimal point, then strip all fractional parts if they cause us not to fit 
     // within digmax.  Arriving at no more than digmax digits, assumes PLPlot has correctly computed scientific 
     // mode such that the whole part fits within digmax
-    size_t decimalPointPos;
     if (string::npos != labelString.find("."))
     {
         trim_right_if( labelString, is_any_of("0") );
         // If there's a decimal point remaining on the end, it needs to be stripped too
         trim_right_if( labelString, is_any_of(".") );
-    }
-    if (string::npos != (decimalPointPos = labelString.find(".")))
-    {
-        if ((PLINT)decimalPointPos > (ydigmax-2))
-        {
-            labelString = labelString.substr( 0, decimalPointPos-1 );
-        }
     }
     // Finally, correct for possibility of "-0"
     if (0 == labelString.compare("-0"))
