@@ -28,6 +28,7 @@
 #include "PicoScopeInterface.h"
 #include <string>
 #include <vector>
+#include <unordered_map>
 
 // Struct to describe a scope that's available to open
 typedef struct
@@ -71,6 +72,7 @@ class ScopeSelector
 {
     public:
         ScopeSelector();
+        ~ScopeSelector();
 
         // Gets information about available scopes
         bool GetAvailableScopes( vector<AvalaibleScopeDescription_T>& _avaliableScopes, bool refresh = true );
@@ -96,4 +98,12 @@ class ScopeSelector
         static PICO_STATUS __stdcall ps2000EnumerateUnits( int16_t *count, int8_t  *serials, int16_t *serialLth );
         static PICO_STATUS __stdcall ps3000EnumerateUnits( int16_t *count, int8_t  *serials, int16_t *serialLth );
         static PICO_STATUS __stdcall ps5000EnumerateUnits( int16_t *count, int8_t  *serials, int16_t *serialLth );
+
+        PICO_STATUS ps2000OpenUnit( int16_t* handle, int8_t* serial );
+        PICO_STATUS ps3000OpenUnit( int16_t* handle, int8_t* serial );
+        PICO_STATUS ps5000OpenUnit( int16_t* handle, int8_t* serial );
+
+        static unordered_map<string, int16_t> ps2000Scopes;
+        static unordered_map<string, int16_t> ps3000Scopes;
+        static unordered_map<string, int16_t> ps5000Scopes;
 };

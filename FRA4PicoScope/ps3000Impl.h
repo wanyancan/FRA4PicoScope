@@ -19,20 +19,19 @@
 // You should have received a copy of the GNU General Public License
 // along with Frequency Response Analyzer for PicoScope.  If not, see <http://www.gnu.org/licenses/>.
 //
-// Module: ps2000aImpl.h
+// Module: ps3000Impl.h
 //
 //////////////////////////////////////////////////////////////////////////////////////////////////
 
 #include "StdAfx.h"
 #include "PicoScopeInterface.h"
 
-class ps2000aImpl : public PicoScope
+class ps3000Impl : public PicoScope
 {
     public:
-        ps2000aImpl( int16_t _handle );
-        ~ps2000aImpl();
+        ps3000Impl( int16_t _handle );
+        ~ps3000Impl();
 
-#define NEW_PS_DRIVER_MODEL
 #include "psCommonImpl.h"
 
 };

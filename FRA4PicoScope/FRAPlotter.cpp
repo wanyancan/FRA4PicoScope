@@ -31,8 +31,6 @@
 #include <cmath>
 #include <algorithm>
 #include <sstream>
-#include <boost/math/special_functions/sign.hpp>
-using namespace boost::math;
 #include <boost/algorithm/string.hpp>
 using namespace boost;
 #include <Wincodec.h>

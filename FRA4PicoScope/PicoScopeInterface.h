@@ -136,7 +136,11 @@ typedef enum
     PS_CHANNEL_A,
     PS_CHANNEL_B,
     PS_CHANNEL_C,
-    PS_CHANNEL_D
+    PS_CHANNEL_D,
+    PS_CHANNEL_E,
+    PS_CHANNEL_F,
+    PS_CHANNEL_G,
+    PS_CHANNEL_H
 } PS_CHANNEL;
 
 typedef enum
@@ -200,7 +204,7 @@ class PicoScope
                               vector<int16_t>& inputCompressedMinBuffer, vector<int16_t>& outputCompressedMinBuffer,
                               vector<int16_t>& inputCompressedMaxBuffer, vector<int16_t>& outputCompressedMaxBuffer, int16_t& inputAbsMax, int16_t& outputAbsMax,
                               bool* inputOv, bool* outputOv ) = 0;
-        virtual bool CloseUnit( void ) = 0;
+        virtual bool Close( void ) = 0;
 
         virtual const RANGE_INFO_T* GetRangeCaps( void ) = 0;
 

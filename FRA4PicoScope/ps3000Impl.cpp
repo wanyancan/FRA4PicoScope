@@ -19,23 +19,31 @@
 // You should have received a copy of the GNU General Public License
 // along with Frequency Response Analyzer for PicoScope.  If not, see <http://www.gnu.org/licenses/>.
 //
-// Module: ps5000aImpl.cpp
+// Module: ps3000Impl.cpp
 //
 //////////////////////////////////////////////////////////////////////////////////////////////////
 
 #include "StdAfx.h"
+#define _USE_MATH_DEFINES
+#include <math.h>
 #include "utility.h"
-#include "ps5000aApi.h"
+#include "ps3000.h"
 #include "picoStatus.h"
-#include "ps5000aImpl.h"
+#include "ps3000Impl.h"
 #include "StatusLog.h"
 
-#define PS5000A
+typedef enum enPS3000Coupling
+{
+    PS3000_AC,
+    PS3000_DC
+} PS3000_COUPLING;
+
+#define PS3000
 #include "psCommonImpl.cpp"
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 //
-// Name: ps5000aImpl::GetTimebase
+// Name: ps3000Impl::GetTimebase
 //
 // Purpose: Get a timebase from a desired frequency, rounding such that the frequency is at least
 //          as high as requested, if possible.
@@ -44,19 +52,44 @@
 //             [out] actualFrequency: the frequency corresponding to the returned timebase.
 //             [out] timebase: the timebase that will achieve the requested freqency or greater
 //
-// Notes: Assumes PS5000A is in 14 or 15 bit sampling mode, which it should be for FRA
+// Notes: 
 //
 ///////////////////////////////////////////////////////////////////////////////////////////////////
-
-bool ps5000aImpl::GetTimebase( double desiredFrequency, double* actualFrequency, uint32_t* timebase )
+bool ps3000Impl::GetTimebase( double desiredFrequency, double* actualFrequency, uint32_t* timebase )
 {
-    bool retVal = true;
+    bool retVal = false;
+    double maxFrequency;
+    uint32_t maxTimebase;
 
     if (desiredFrequency != 0.0 && actualFrequency && timebase)
     {
-        *timebase = saturation_cast<uint32_t,double>((125.0e6/desiredFrequency) + 2.0); // ps5000abpg.en r1: p18
-        *timebase = max( *timebase, 3 ); // make sure it's at least 3
-        *actualFrequency = 125.0e6 / ((double)(*timebase - 2)); // ps5000abpg.en r1: p18
+        if (model == PS3205 || model == PS3206)
+        {
+            switch (model)
+            {
+                case PS3205:
+                    maxFrequency = 100e6; // with 2 channels enabled
+                    maxTimebase = PS3205_MAX_TIMEBASE;
+                    break;
+                case PS3206:
+                    maxFrequency = 100e6; // with 2 channels enabled
+                    maxTimebase = PS3206_MAX_TIMEBASE;
+                    break;
+            }
+
+            *timebase = saturation_cast<uint32_t,double>(log(maxFrequency/desiredFrequency) / M_LN2); // ps3000pg.en r4 p27; log2(n) implemented as log(n)/log(2)
+
+            // Bound to (0, maxTimebase)
+            // Doing this step in integer space to avoid potential for impossibility to reach maxTimebase caused by floating point precision issues
+            *timebase = min(*timebase, maxTimebase);
+
+            *actualFrequency = maxFrequency / (double)(1 << *timebase);
+            retVal = true;
+        }
+        else
+        {
+            retVal = false;
+        }
     }
     else
     {
@@ -68,7 +101,7 @@ bool ps5000aImpl::GetTimebase( double desiredFrequency, double* actualFrequency,
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 //
-// Name: ps5000aImpl::InitializeScope
+// Name: ps3000Impl::InitializeScope
 //
 // Purpose: Initialize scope/family-specific implementation details.
 //
@@ -77,16 +110,19 @@ bool ps5000aImpl::GetTimebase( double desiredFrequency, double* actualFrequency,
 // Notes: 
 //
 ///////////////////////////////////////////////////////////////////////////////////////////////////
-
-bool ps5000aImpl::InitializeScope(void)
+bool ps3000Impl::InitializeScope(void)
 {
-    timebaseNoiseRejectMode = 4; // for PS5000A => 62.5 MHz approximately 3x HW BW limiter
-    fSampNoiseRejectMode = 62500000.0; // for PS5000A - approximately 3x HW BW limiter
+    bool retVal;
 
-    signalGeneratorPrecision = 200.0e6 / (double)UINT32_MAX;
+    timebaseNoiseRejectMode = 0; // All PS3000 scopes support timebase 0 which is the fastest sampling
+    fSampNoiseRejectMode = 100e6; // Both compatible scopes support 100 MS/s
 
-    minRange = (PS_RANGE)PS5000A_10MV;
-    maxRange = (PS_RANGE)PS5000A_20V;
+    signalGeneratorPrecision = 1.0; // Because the frequency passed to ps3000_set_siggen is an integer
 
-    return true;
+    minRange = (PS_RANGE)PS3000_100MV;
+    maxRange = (PS_RANGE)PS3000_20V;
+
+    retVal = InitStatusChecking();
+
+    return retVal;
 }

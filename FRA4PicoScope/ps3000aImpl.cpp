@@ -19,7 +19,7 @@
 // You should have received a copy of the GNU General Public License
 // along with Frequency Response Analyzer for PicoScope.  If not, see <http://www.gnu.org/licenses/>.
 //
-// Module: ps2000aImpl.cpp
+// Module: ps3000aImpl.cpp
 //
 //////////////////////////////////////////////////////////////////////////////////////////////////
 
@@ -27,17 +27,17 @@
 #define _USE_MATH_DEFINES
 #include <math.h>
 #include "utility.h"
-#include "ps2000aApi.h"
+#include "ps3000aApi.h"
 #include "picoStatus.h"
-#include "ps2000aImpl.h"
+#include "ps3000aImpl.h"
 #include "StatusLog.h"
 
-#define PS2000A
+#define PS3000A
 #include "psCommonImpl.cpp"
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 //
-// Name: ps2000aImpl::GetTimebase
+// Name: ps3000aImpl::GetTimebase
 //
 // Purpose: Get a timebase from a desired frequency, rounding such that the frequency is at least
 //          as high as requested, if possible.
@@ -50,51 +50,60 @@
 //
 ///////////////////////////////////////////////////////////////////////////////////////////////////
 
-bool ps2000aImpl::GetTimebase( double desiredFrequency, double* actualFrequency, uint32_t* timebase )
+bool ps3000aImpl::GetTimebase( double desiredFrequency, double* actualFrequency, uint32_t* timebase )
 {
     bool retVal = true;
     double fTimebase;
 
     if (desiredFrequency != 0.0 && actualFrequency && timebase)
     {
-        if (model == PS2206 || model == PS2206A)
+        if (model == PS3204A || model == PS3204B || model == PS3205A || model == PS3205B || model == PS3206A || model == PS3206B)
         {
             if (desiredFrequency > 62.5e6)
             {
-                *timebase = saturation_cast<uint32_t,double>(log(500.0e6/desiredFrequency) / M_LN2); // ps2000apg.en r6 p16; log2(n) implemented as log(n)/log(2)
-                *timebase = max( *timebase, 1 ); // None of the 2000A scopes can use timebase 0 with two channels enabled
+                *timebase = saturation_cast<uint32_t,double>(log(500.0e6/desiredFrequency) / M_LN2); // ps3000apg.en r10 p11; log2(n) implemented as log(n)/log(2)
+                *timebase = max( *timebase, 1 ); // None of the 3000A scopes can use timebase 0 with two or more channels enabled
                 *actualFrequency = 500.0e6 / (double)(1<<(*timebase));
             }
             else
             {
-                fTimebase = ((62.5e6/(desiredFrequency)) + 2.0); // ps2000apg.en r6 p16
+                fTimebase = ((62.5e6/(desiredFrequency)) + 2.0); // ps3000apg.en r10 p11
                 *timebase = saturation_cast<uint32_t,double>(fTimebase);
                 *timebase = max( *timebase, 3 ); // Guarding against potential of float precision issues leading to divide by 0
-                *actualFrequency = 62.5e6 / ((double)(*timebase - 2)); // ps2000apg.en r6 p16
+                *actualFrequency = 62.5e6 / ((double)(*timebase - 2)); // ps3000apg.en r10 p11
             }
         }
-        else if (model == PS2207 || model == PS2207A || model == PS2208 || model == PS2208A)
+        else if (model == PS3404A || model == PS3404B || model == PS3405A || model == PS3405B || model == PS3406A || model == PS3406B || model == PS3207A || model == PS3207B)
         {
             if (desiredFrequency > 125.0e6)
             {
-                *timebase = saturation_cast<uint32_t,double>(log(1.0e9/desiredFrequency) / M_LN2); // ps2000apg.en r6 p16; log2(n) implemented as log(n)/log(2)
-                *timebase = max( *timebase, 1 ); // None of the 2000A scopes can use timebase 0 with two channels enabled
+                *timebase = saturation_cast<uint32_t,double>(log(1.0e9/desiredFrequency) / M_LN2); // ps3000apg.en r10 p11; log2(n) implemented as log(n)/log(2)
+                *timebase = max( *timebase, 1 ); // None of the 3000A scopes can use timebase 0 with two or more channels enabled
                 *actualFrequency = 1.0e9 / (double)(1<<(*timebase));
             }
             else
             {
-                fTimebase = ((125.0e6/(desiredFrequency)) + 2.0); // ps2000apg.en r6 p16
+                fTimebase = ((125.0e6/(desiredFrequency)) + 2.0); // ps3000apg.en r10 p11
                 *timebase = saturation_cast<uint32_t,double>(fTimebase);
                 *timebase = max( *timebase, 3 ); // Guarding against potential of float precision issues leading to divide by 0
-                *actualFrequency = 125.0e6 / ((double)(*timebase - 2)); // ps2000apg.en r6 p16
+                *actualFrequency = 125.0e6 / ((double)(*timebase - 2)); // ps3000apg.en r10 p11
             }
         }
-        else if (model == PS2205MSO)
+        else if (model == PS3204MSO || model == PS3205MSO || model == PS3206MSO)
         {
-            fTimebase = 100.0e6 / desiredFrequency;
-            *timebase = saturation_cast<uint32_t,double>(fTimebase);
-            *timebase = max( *timebase, 1 ); // None of the 2000A scopes can use timebase 0 with two channels enabled; also guards against divide by 0
-            *actualFrequency = 100.0e6 / ((double)*timebase); // ps2000apg.en r6 p16
+            if (desiredFrequency > 125.0e6)
+            {
+                *timebase = saturation_cast<uint32_t,double>(log(500.0e6/desiredFrequency) / M_LN2); // ps3000apg.en r10 p11; log2(n) implemented as log(n)/log(2)
+                *timebase = max( *timebase, 1 ); // None of the 3000A scopes can use timebase 0 with two or more channels enabled
+                *actualFrequency = 500.0e6 / (double)(1<<(*timebase));
+            }
+            else
+            {
+                fTimebase = ((125.0e6/(desiredFrequency)) + 1.0); // ps3000apg.en r10 p11
+                *timebase = saturation_cast<uint32_t,double>(fTimebase);
+                *timebase = max( *timebase, 2 ); // Guarding against potential of float precision issues leading to divide by 0
+                *actualFrequency = 125.0e6 / ((double)(*timebase - 1)); // ps3000apg.en r10 p11
+            }
         }
         else
         {
@@ -111,7 +120,7 @@ bool ps2000aImpl::GetTimebase( double desiredFrequency, double* actualFrequency,
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 //
-// Name: ps2000aImpl::InitializeScope
+// Name: ps3000aImpl::InitializeScope
 //
 // Purpose: Initialize scope/family-specific implementation details.
 //
@@ -121,28 +130,32 @@ bool ps2000aImpl::GetTimebase( double desiredFrequency, double* actualFrequency,
 //
 ///////////////////////////////////////////////////////////////////////////////////////////////////
 
-bool ps2000aImpl::InitializeScope(void)
+bool ps3000aImpl::InitializeScope(void)
 {
+
     timebaseNoiseRejectMode = 1;
 
-    if (model == PS2206 || model == PS2206A)
+    if (model == PS3204A || model == PS3204B || model == PS3205A || model == PS3205B || model == PS3206A || model == PS3206B || model == PS3204MSO || model == PS3205MSO || model == PS3206MSO)
     {
         fSampNoiseRejectMode = 250.0e6;
-        signalGeneratorPrecision = 20.0e6 / (double)UINT32_MAX;
     }
-    else if (model == PS2207 || model == PS2207A || model == PS2208 || model == PS2208A)
+    else if (model == PS3404A || model == PS3404B || model == PS3405A || model == PS3405B || model == PS3406A || model == PS3406B || model == PS3207A || model == PS3207B)
     {
         fSampNoiseRejectMode = 500.0e6;
-        signalGeneratorPrecision = 20.0e6 / (double)UINT32_MAX;
-    }
-    else if (model == PS2205MSO)
-    {
-        fSampNoiseRejectMode = 100.0e6;
-        signalGeneratorPrecision = 2.0e6 / (double)UINT32_MAX;
     }
 
-    minRange = (PS_RANGE)PS2000A_50MV;
-    maxRange = (PS_RANGE)PS2000A_20V;
+    if (model == PS3204A || model == PS3204B || model == PS3205A || model == PS3205B || model == PS3206A || model == PS3206B || model == PS3204MSO || model == PS3205MSO || model == PS3206MSO ||
+        model == PS3404A || model == PS3404B || model == PS3405A || model == PS3405B || model == PS3406A || model == PS3406B)
+    {
+        signalGeneratorPrecision = 20.0e6 / (double)UINT32_MAX;
+    }
+    else if (model == PS3207A || model == PS3207B)
+    {
+        signalGeneratorPrecision = 100.0e6 / (double)UINT32_MAX;
+    }    
+
+    minRange = (PS_RANGE)PS3000A_50MV;
+    maxRange = (PS_RANGE)PS3000A_20V;
 
     return true;
 }

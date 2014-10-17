@@ -30,7 +30,9 @@ class ps4000Impl : public PicoScope
 {
     public:
         ps4000Impl( int16_t _handle );
+        ~ps4000Impl();
 
+#define NEW_PS_DRIVER_MODEL
 #include "psCommonImpl.h"
 
 };

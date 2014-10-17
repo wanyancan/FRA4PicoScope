@@ -52,8 +52,17 @@ bool GetData( uint32_t numSamples, uint32_t downsampleTo, PS_CHANNEL inputChanne
               vector<int16_t>& inputCompressedMinBuffer, vector<int16_t>& outputCompressedMinBuffer,
               vector<int16_t>& inputCompressedMaxBuffer, vector<int16_t>& outputCompressedMaxBuffer, int16_t& inputAbsMax, int16_t& outputAbsMax,
               bool* inputOv, bool* outputOv );
-bool CloseUnit( void );
+bool Close( void );
 const RANGE_INFO_T* GetRangeCaps( void );
 private:
 static const RANGE_INFO_T rangeInfo[];
 bool InitializeScope( void );
+#if !defined(NEW_PS_DRIVER_MODEL)
+static DWORD WINAPI CheckStatus(LPVOID lpThreadParameter);
+bool InitStatusChecking(void);
+HANDLE hCheckStatusEvent;
+HANDLE hCheckStatusThread;
+psBlockReady readyCB;
+int32_t currentTimeIndisposedMs;
+void* cbParam;
+#endif

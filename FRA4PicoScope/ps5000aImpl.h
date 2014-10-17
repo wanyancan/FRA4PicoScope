@@ -30,7 +30,9 @@ class ps5000aImpl : public PicoScope
 {
     public:
         ps5000aImpl( int16_t _handle );
+        ~ps5000aImpl();
 
+#define NEW_PS_DRIVER_MODEL
 #include "psCommonImpl.h"
 
 };

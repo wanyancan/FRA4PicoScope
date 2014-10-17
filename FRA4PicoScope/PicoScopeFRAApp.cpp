@@ -190,7 +190,8 @@ void SelectNewScope( AvalaibleScopeDescription_T scope, bool mruScope = false )
     {
         StoreSettings();
         pSettings->WriteScopeSettings();
-        pScopeSelector->GetSelectedScope()->CloseUnit();
+        pScopeSelector->GetSelectedScope()->Close();
+        delete pScopeSelector->GetSelectedScope();
     }
 
     pScope = pScopeSelector -> OpenScope(scope);
@@ -324,7 +325,7 @@ BOOL InitInstance(HINSTANCE hInstance, int nCmdShow)
     hInst = hInstance; // Store instance handle in our global variable
 
     // Create execution thread and event
-    hExecuteFraEvent = CreateEventW( NULL, false, false, L"ExecuteFRA" );
+    hExecuteFraEvent = CreateEventW( NULL, true, false, L"ExecuteFRA" );
 
     if ((HANDLE)NULL == hExecuteFraEvent)
     {
@@ -620,11 +621,14 @@ BOOL CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
                     psFRA -> CancelFRA();
                     return TRUE;
                 case IDC_GO:
-                    if (BST_CHECKED == IsDlgButtonChecked( hMainWnd, IDC_AUTOCLEAR ))
+                    if (WaitForSingleObject(hExecuteFraEvent, 0) == WAIT_TIMEOUT) // Is the event not already signalled?
                     {
-                        ClearLog();
+                        if (BST_CHECKED == IsDlgButtonChecked( hMainWnd, IDC_AUTOCLEAR ))
+                        {
+                            ClearLog();
+                        }
+                        SetEvent( hExecuteFraEvent );
                     }
-                    SetEvent( hExecuteFraEvent );
                     return TRUE;
                 case IDM_CAL:
                     return TRUE;
@@ -1178,7 +1182,9 @@ DWORD WINAPI ExecuteFRA(LPVOID lpdwThreadParam)
 
     for (;;)
     {
-        EnableAllMenus();  // Place this here because this is where we'll always return whether the FRA executes completely or not.
+        // Place these here because this is where we'll always return whether the FRA executes completely or not.
+        EnableAllMenus();
+        ResetEvent( hExecuteFraEvent );
 
         dwWaitResult = WaitForSingleObject( hExecuteFraEvent, INFINITE );
 
@@ -1991,7 +1997,7 @@ void SavePlotImageFile( wstring dataFilePath )
 //
 // Name: [Enable|Disable]AllMenus
 //
-// Purpose: Enable/Disable the main window menus.  Used to disable the menus's while the FRA is 
+// Purpose: Enable/Disable the main window menus.  Used to disable the menus while the FRA is 
 //          running.
 //
 // Parameters: N/A

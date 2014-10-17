@@ -27,6 +27,8 @@
 #include <string>
 #include <sstream>
 #include <stdint.h>
+#include <boost/numeric/conversion/cast.hpp> 
+#include <limits>
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 //
@@ -83,5 +85,45 @@ inline bool WStringToUint8( wstring myString, uint8_t& u )
     else
     {
         return false;
+    }
+}
+
+////////////////////////////////////////////////////////////////////////////////////////////////////
+//
+// Name: saturation_cast<Target,Source>
+//
+// Purpose: Perform a numerical cast with Boost numeric_cast, but bound the results to fit into the
+//          destination type
+//
+// Parameters: [in] src: The source number to cast
+//             [out] return: The result of the cast
+//
+// Notes: From http://stackoverflow.com/questions/4424168/using-boost-numeric-cast with minor mods
+//
+///////////////////////////////////////////////////////////////////////////////////////////////////
+
+using boost::numeric_cast;
+using boost::numeric::bad_numeric_cast;
+using boost::numeric::positive_overflow;
+using boost::numeric::negative_overflow;
+
+template<typename Target, typename Source>
+Target saturation_cast(Source src) 
+{
+    try 
+    {
+        return numeric_cast<Target>(src);
+    }
+    catch (const negative_overflow &e) 
+    {
+        UNREFERENCED_PARAMETER(e);
+        // Use of parens to avoid conflict with min macro
+        return (numeric_limits<Target>::min)();
+    }
+    catch (const positive_overflow &e) 
+    {
+        UNREFERENCED_PARAMETER(e);
+        // Use of parens to avoid conflict with max macro
+        return (numeric_limits<Target>::max)();
     }
 }

@@ -26,7 +26,10 @@
 #include "StdAfx.h"
 #include "ScopeSelector.h"
 #include "StatusLog.h"
+#include "ps2000Impl.h"
 #include "ps2000aImpl.h"
+#include "ps3000Impl.h"
+#include "ps3000aImpl.h"
 #include "ps4000Impl.h"
 #include "ps5000aImpl.h"
 #include <iostream>
@@ -58,6 +61,10 @@ extern "C" __declspec(dllimport) PICO_STATUS __stdcall ps5000OpenUnit( short * h
 extern "C" __declspec(dllimport) PICO_STATUS __stdcall ps5000aOpenUnit( int16_t *handle, int8_t *serial, PS5000A_DEVICE_RESOLUTION resolution );
 extern "C" __declspec(dllimport) PICO_STATUS __stdcall ps6000OpenUnit( short * handle, char * serial );
 
+const int PS_BATCH_AND_SERIAL = 4;
+extern "C" __declspec(dllimport) short __stdcall ps2000_get_unit_info( short handle, char *string, short string_length, short line );
+extern "C" __declspec(dllimport) int16_t __stdcall ps3000_get_unit_info( int16_t handle, int8_t* string, int16_t string_length, int16_t line );
+
 // Put the enumeration functions in a array so they can be called from a loop
 const ScopeSelector::psEnumerateUnits ScopeSelector::EnumerationFuncs[] =
 {
@@ -80,12 +87,35 @@ const ScopeSelector::psEnumerateUnits ScopeSelector::EnumerationFuncs[] =
 //
 // Parameters: N/A
 //
-// Notes: Initializes selectedScope to NULL (none selected)
+// Notes: Initializes selectedScope to NULL (none selected), and clears out enumeration data
 //
 ///////////////////////////////////////////////////////////////////////////////////////////////////
 
 ScopeSelector::ScopeSelector() : selectedScope(NULL)
 {
+    ps2000Scopes.clear();
+    ps3000Scopes.clear();
+    ps5000Scopes.clear();
+}
+
+////////////////////////////////////////////////////////////////////////////////////////////////////
+//
+// Name: ScopeSelector::~ScopeSelector
+//
+// Purpose: Simple destructor
+//
+// Parameters: N/A
+//
+// Notes: Cleans up any currently selected scope
+//
+///////////////////////////////////////////////////////////////////////////////////////////////////
+
+ScopeSelector::~ScopeSelector()
+{
+    if (selectedScope)
+    {
+        delete selectedScope;
+    }
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -204,18 +234,31 @@ PicoScope* ScopeSelector::OpenScope( AvalaibleScopeDescription_T scope )
 
     if (scope.driverFamily == PS2000)
     {
-        // The scope is already open
-        selectedScope = NULL; // For now, until we implement PS2000
+        status = ps2000OpenUnit( &handle, (int8_t*)scope.serialNumber.c_str() );
+        if (status != PICO_OK || handle <= 0)
+        {
+            if (handle > 0)
+            {
+                selectedScope = new ps2000Impl( handle );
+                selectedScope->Close();
+                delete selectedScope;
+            }
+            selectedScope = NULL;
+        }
+        else
+        {
+            selectedScope = new ps2000Impl( handle );
+        }
     }
     else if (scope.driverFamily == PS2000A)
     {
         status = ps2000aOpenUnit( &handle, (char*)scope.serialNumber.c_str() );
-        if (status != 0 || handle <= 0)
+        if (status != PICO_OK || handle <= 0)
         {
             if (handle > 0)
             {
                 selectedScope = new ps2000aImpl( handle );
-                selectedScope->CloseUnit();
+                selectedScope->Close();
                 delete selectedScope;
             }
             selectedScope = NULL;
@@ -227,31 +270,43 @@ PicoScope* ScopeSelector::OpenScope( AvalaibleScopeDescription_T scope )
     }
     else if (scope.driverFamily == PS3000)
     {
-        // The scope is already open
-        selectedScope = NULL; // For now, until we implement PS3000
+        status = ps3000OpenUnit( &handle, (int8_t*)scope.serialNumber.c_str() );
+        if (status != PICO_OK || handle <= 0)
+        {
+            if (handle > 0)
+            {
+                selectedScope = new ps3000Impl( handle );
+                selectedScope->Close();
+                delete selectedScope;
+            }
+            selectedScope = NULL;
+        }
+        else
+        {
+            selectedScope = new ps3000Impl( handle );
+        }
     }
     else if (scope.driverFamily == PS3000A)
     {
         status = ps3000aOpenUnit( &handle, (int8_t*)scope.serialNumber.c_str() );
-        if (status != 0 || handle <= 0)
+        if (status != PICO_OK || handle <= 0)
         {
             selectedScope = NULL;
         }
         else
         {
-            //selectedScope = new ps3000aImpl( handle );
-            selectedScope = NULL; // For now, until we implement PS3000a
+            selectedScope = new ps3000aImpl( handle );
         }
     }
     else if (scope.driverFamily == PS4000)
     {
         status = ps4000OpenUnitEx( &handle, (int8_t*)scope.serialNumber.c_str() );
-        if (status != 0 || handle <= 0)
+        if (status != PICO_OK || handle <= 0)
         {
             if (handle > 0)
             {
                 selectedScope = new ps4000Impl( handle );
-                selectedScope->CloseUnit();
+                selectedScope->Close();
                 delete selectedScope;
             }
             selectedScope = NULL;
@@ -263,7 +318,7 @@ PicoScope* ScopeSelector::OpenScope( AvalaibleScopeDescription_T scope )
     }
     else if (scope.driverFamily == PS4000A)
     {
-        selectedScope = NULL; // There are currently no compatible PS4000A family scopes
+        selectedScope = NULL;
     }
     else if (scope.driverFamily == PS5000)
     {
@@ -273,12 +328,12 @@ PicoScope* ScopeSelector::OpenScope( AvalaibleScopeDescription_T scope )
     else if (scope.driverFamily == PS5000A)
     {
         status = ps5000aOpenUnit( &handle, (int8_t*)scope.serialNumber.c_str(), PS5000A_DR_15BIT );
-        if (status != 0 || handle <= 0)
+        if (status != PICO_OK || handle <= 0)
         {
             if (handle > 0)
             {
                 selectedScope = new ps5000aImpl( handle );
-                selectedScope->CloseUnit();
+                selectedScope->Close();
                 delete selectedScope;
             }
             selectedScope = NULL;
@@ -291,7 +346,7 @@ PicoScope* ScopeSelector::OpenScope( AvalaibleScopeDescription_T scope )
     else if (scope.driverFamily == PS6000)
     {
         status = ps6000OpenUnit( &handle, NULL );
-        if (status != 0 || handle <= 0)
+        if (status != PICO_OK || handle <= 0)
         {
             selectedScope = NULL;
         }
@@ -432,31 +487,103 @@ bool ScopeSelector::InitializeScopeImpl( void )
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 //
 // Name: ScopeSelector::psXXXXEnumerateUnits
+//       ScopeSelector::psXXXXOpenUnit
 //
-// Purpose: Enumeration functions for legacy series scopes who's libraries don't have such functions
+// Purpose: Enumeration and Open functions for scopes with libraries that don't have 
+//          such functions (or signatures)
 //
 // Parameters: See PicoScope Programmers Manual for API's of the same signature 
 //
-// Notes: Currently not implemented.
+// Notes: 
 //
 ///////////////////////////////////////////////////////////////////////////////////////////////////
 
-PICO_STATUS ScopeSelector::ps2000EnumerateUnits( int16_t *count, int8_t  *serials, int16_t *serialLth )
+unordered_map<string, int16_t> ScopeSelector::ps2000Scopes;
+unordered_map<string, int16_t> ScopeSelector::ps3000Scopes;
+unordered_map<string, int16_t> ScopeSelector::ps5000Scopes;
+
+PICO_STATUS ScopeSelector::ps2000EnumerateUnits( int16_t *count, int8_t *serials, int16_t *serialLth )
+{
+    PICO_STATUS status = PICO_OK;
+    int16_t handle;
+    ps2000Scopes.clear();
+    *count = 0;
+    if (0 < (handle = ps2000_open_unit()))
+    {
+        if (0 != (*serialLth = ps2000_get_unit_info( handle, (char*)serials, *serialLth, PS_BATCH_AND_SERIAL )))
+        {
+            ps2000Scopes[(char*)serials] = handle;
+            *count = 1;
+        }
+    }
+    
+    return status;
+}
+
+PICO_STATUS ScopeSelector::ps2000OpenUnit( int16_t* handle, int8_t* serial )
+{
+    PICO_STATUS status;
+    unordered_map<string, int16_t>::const_iterator foundScope;
+
+    if ((foundScope = ps2000Scopes.find((char*)serial)) == ps2000Scopes.end())
+    {
+        status = PICO_NOT_FOUND;
+    }
+    else
+    {
+        *handle = foundScope->second;
+         status = PICO_OK;
+    }
+
+    return status;
+}
+
+PICO_STATUS ScopeSelector::ps3000EnumerateUnits( int16_t *count, int8_t *serials, int16_t *serialLth )
+{
+    PICO_STATUS status = PICO_OK;
+    int16_t handle;
+    ps3000Scopes.clear();
+    *count = 0;
+    if (0 < (handle = ps3000_open_unit()))
+    {
+        if (0 != (*serialLth = ps3000_get_unit_info( handle, serials, *serialLth, PS_BATCH_AND_SERIAL )))
+        {
+            ps2000Scopes[(char*)serials] = handle;
+            *count = 1;
+        }
+    }
+    
+    return status;
+}
+
+PICO_STATUS ScopeSelector::ps3000OpenUnit( int16_t* handle, int8_t* serial )
+{
+    PICO_STATUS status;
+    unordered_map<string, int16_t>::const_iterator foundScope;
+
+    if ((foundScope = ps3000Scopes.find((char*)serial)) == ps3000Scopes.end())
+    {
+        status = PICO_NOT_FOUND;
+    }
+    else
+    {
+        *handle = foundScope->second;
+         status = PICO_OK;
+    }
+
+    return status;
+}
+
+PICO_STATUS ScopeSelector::ps5000EnumerateUnits( int16_t *count, int8_t *serials, int16_t *serialLth )
 {
     *count = 0;
     return PICO_OK;
 }
 
-PICO_STATUS ScopeSelector::ps3000EnumerateUnits( int16_t *count, int8_t  *serials, int16_t *serialLth )
+PICO_STATUS ScopeSelector::ps5000OpenUnit( int16_t* handle, int8_t* serial )
 {
-    *count = 0;
-    return PICO_OK;
-}
-
-PICO_STATUS ScopeSelector::ps5000EnumerateUnits( int16_t *count, int8_t  *serials, int16_t *serialLth )
-{
-    *count = 0;
-    return PICO_OK;
+	*handle = 0;
+	return PICO_NOT_FOUND;
 }
 
 const ScopeImplRecord_T ScopeSelector::scopeImplTable[] =
