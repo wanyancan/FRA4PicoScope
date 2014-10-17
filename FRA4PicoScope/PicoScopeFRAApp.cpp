@@ -41,7 +41,7 @@
 #include "FRAPlotter.h"
 #include "PlotAxesDialog.h"
 
-char* appVersionString = "0.2b";
+char* appVersionString = "0.3b";
 char* appNameString = "Frequency Response Analyzer for PicoScope";
 
 #define MAX_LOADSTRING 100
