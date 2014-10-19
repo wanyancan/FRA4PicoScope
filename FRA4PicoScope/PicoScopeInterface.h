@@ -118,7 +118,8 @@ typedef enum
     PS6403B,
     PS6404A,
     PS6404B,
-    PS_MAX_SCOPE_MODELS = PS6404B
+    PS_MAX_SCOPE_MODELS = PS6404B,
+    PS_NO_MODEL
 } ScopeModel_T;
 
 typedef uint8_t PS_RANGE;
@@ -174,7 +175,8 @@ class PicoScope
         friend class ScopeSelector;
 
     public:
-        PicoScope() {};
+        PicoScope() : initialized(false), model(PS_NO_MODEL), family(PS_NO_FAMILY), numChannels(2), minFuncGenFreq(0.0), maxFuncGenFreq(0.0), minFuncGenVpp(0.0), maxFuncGenVpp(0.0), compatible(false) {};
+        virtual ~PicoScope() {};
 
         virtual bool Initialized(void) = 0;
         virtual uint8_t GetNumChannels( void ) = 0;
@@ -210,17 +212,12 @@ class PicoScope
 
     private:
         virtual bool InitializeScope( void ) = 0;
+
     protected:
-        int16_t handle;
         bool initialized;
         ScopeModel_T model;
         ScopeDriverFamily_T family;
         uint8_t numChannels;
-        PS_RANGE minRange;
-        PS_RANGE maxRange;
-        uint32_t timebaseNoiseRejectMode;
-        double fSampNoiseRejectMode;
-        double signalGeneratorPrecision;
         double minFuncGenFreq;
         double maxFuncGenFreq;
         double minFuncGenVpp;

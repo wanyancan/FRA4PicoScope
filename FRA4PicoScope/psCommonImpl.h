@@ -56,7 +56,12 @@ bool Close( void );
 const RANGE_INFO_T* GetRangeCaps( void );
 private:
 static const RANGE_INFO_T rangeInfo[];
-bool InitializeScope( void );
+int16_t handle;
+PS_RANGE minRange;
+PS_RANGE maxRange;
+uint32_t timebaseNoiseRejectMode;
+double fSampNoiseRejectMode;
+double signalGeneratorPrecision;
 #if !defined(NEW_PS_DRIVER_MODEL)
 static DWORD WINAPI CheckStatus(LPVOID lpThreadParameter);
 bool InitStatusChecking(void);
@@ -66,3 +71,4 @@ psBlockReady readyCB;
 int32_t currentTimeIndisposedMs;
 void* cbParam;
 #endif
+bool InitializeScope( void );

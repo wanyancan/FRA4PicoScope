@@ -1184,7 +1184,11 @@ DWORD WINAPI ExecuteFRA(LPVOID lpdwThreadParam)
     {
         // Place these here because this is where we'll always return whether the FRA executes completely or not.
         EnableAllMenus();
-        ResetEvent( hExecuteFraEvent );
+        if (!ResetEvent( hExecuteFraEvent ))
+        {
+            LogMessage( L"Fatal error: Failed to reset FRA execution start event" );
+            return -1;
+        }
 
         dwWaitResult = WaitForSingleObject( hExecuteFraEvent, INFINITE );
 
@@ -1318,6 +1322,11 @@ DWORD WINAPI ExecuteFRA(LPVOID lpdwThreadParam)
             {
                 LogMessage( L"Error: DeleteObject failed while painting plot. Plot image may be stale." );
             }
+        }
+        else
+        {
+            LogMessage( L"Fatal error: Invalid result from waiting on FRA execution start event" );
+            return -1;
         }
     }
 

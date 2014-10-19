@@ -50,7 +50,10 @@
 
 void __stdcall DataReady( short handle, PICO_STATUS status, void * pParameter)
 {
-    SetEvent( *(HANDLE*)pParameter );
+    if (PICO_OK == status)
+    {
+        SetEvent( *(HANDLE*)pParameter );
+    }
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -86,6 +89,33 @@ PicoScopeFRA::PicoScopeFRA(FRA_STATUS_CALLBACK statusCB)
     {
         throw runtime_error( "Failed to create Capture Event" );
     }
+
+    mOutputDcOffset = 0.0;
+    actualSampFreqHz = 0.0;
+    numSamples = 0;
+    timeIndisposedMs = 0;
+    currentInputMagnitude = 0.0;
+    currentOutputMagnitude = 0.0;
+    currentInputPhase = 0.0;
+    currentOutputPhase = 0.0;
+    currentInputPurity = 0.0;
+    currentOutputPurity = 0.0;
+    mPurityLowerLimit = 0.0;
+    minAllowedAmplitudeRatio = 0.0;
+    minAmplitudeRatioTolerance = 0.0;
+    maxAmplitudeRatio = 0.0;
+    maxAutorangeRetries = 0;
+    mExtraSettlingTimeMs = 0;
+    mMinCyclesCaptured = 0;
+    fSampNoiseRejectMode = 0.0;
+    timebaseNoiseRejectMode = 0;
+    rangeCounts = 0.0;
+    signalGeneratorPrecision = 0.0;
+    autorangeRetryCounter = 0;
+    mDiagnosticsOn = false;
+    rangeInfo = NULL;
+    minRange = 0;
+    maxRange = 0;
 
     cancel = false;
 }
@@ -1272,4 +1302,8 @@ void PicoScopeFRA::Goertzel( int16_t* samples, uint32_t N, double fSamp, double 
 
 PicoScopeFRA::~PicoScopeFRA(void)
 {
+    if (NULL != hCaptureEvent)
+    {
+        (void)CloseHandle(hCaptureEvent);
+    }
 }

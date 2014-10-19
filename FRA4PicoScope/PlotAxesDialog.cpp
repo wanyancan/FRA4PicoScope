@@ -725,6 +725,8 @@ INT_PTR CALLBACK PlotAxesDialogHandler(HWND hDlg, UINT message, WPARAM wParam, L
                         Button_SetCheck( hndCtrl, BST_UNCHECKED );
                         Button_Enable( hndCtrl, false );
                     }
+                    return 0;
+                    break;
                 }
                 case IDC_GAIN_AXIS_MAJOR_GRIDS:
                 {

@@ -123,6 +123,13 @@ CommonCtor(SCOPE_FAMILY_LT)( int16_t _handle ) : PicoScope()
 {
     handle = _handle;
     initialized = false;
+#if !defined(NEW_PS_DRIVER_MODEL)
+    hCheckStatusEvent = NULL;
+    hCheckStatusThread = NULL;
+    readyCB = NULL;
+    currentTimeIndisposedMs = 0;
+    cbParam = NULL;
+#endif
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -670,41 +677,52 @@ DWORD WINAPI CommonMethod(SCOPE_FAMILY_LT, CheckStatus)(LPVOID lpThreadParameter
     CommonClass(SCOPE_FAMILY_LT)* inst = (CommonClass(SCOPE_FAMILY_LT)*)lpThreadParameter;
     do
     {
-        WaitForSingleObject( inst->hCheckStatusEvent, INFINITE );
-        // Check that the handle is valid and implement a delay limit here, because unfortunately the ready function return
-        // does not distinguish between an invalid handle and not ready
-        if (inst->handle > 0)
+        if (WAIT_OBJECT_0 == WaitForSingleObject( inst->hCheckStatusEvent, INFINITE ))
         {
-            delayCounter = 0;
-            while (0 == (readyStatus = CommonApi(SCOPE_FAMILY_LT, _ready)(inst->handle)))
+            // Check that the handle is valid and implement a delay limit here, because unfortunately the ready function return
+            // does not distinguish between an invalid handle and not ready
+            if (inst->handle > 0)
             {
-                Sleep(100);
-                delayCounter += 100;
-                // delay with a safety factor of 1.5x and never let it go less than 3 seconds
-                if (delayCounter >= max( 3000, ((inst->currentTimeIndisposedMs)*3)/2 ))
+                delayCounter = 0;
+                while (0 == (readyStatus = CommonApi(SCOPE_FAMILY_LT, _ready)(inst->handle)))
                 {
-                    break;
+                    Sleep(100);
+                    delayCounter += 100;
+                    // delay with a safety factor of 1.5x and never let it go less than 3 seconds
+                    if (delayCounter >= max( 3000, ((inst->currentTimeIndisposedMs)*3)/2 ))
+                    {
+                        break;
+                    }
                 }
-            }
-            if (readyStatus == 0)
-            {
-                continue; // Don't call the callback to help avoid races between this expiry and the one in PicoScopeFRA
-            }
-            if (readyStatus < 0)
-            {
-                status = PICO_DATA_NOT_AVAILABLE;
+                if (readyStatus == 0)
+                {
+                    continue; // Don't call the callback to help avoid races between this expiry and the one in PicoScopeFRA
+                }
+                if (readyStatus < 0)
+                {
+                    status = PICO_DATA_NOT_AVAILABLE;
+                }
+                else
+                {
+                    status = PICO_OK;
+                }
             }
             else
             {
-                status = PICO_OK;
+                status = PICO_DATA_NOT_AVAILABLE;
             }
+            // Call the callback
+            inst->readyCB(inst->handle, status, inst->cbParam);
         }
         else
         {
-            status = PICO_DATA_NOT_AVAILABLE;
+            // Soemthing has gone catastrophically wrong, so just exit the thread.  At this point no callbacks will work
+            // and the upper level code should detect the failure by timing out.
+            wstringstream fraStatusText;
+            fraStatusText << L"Fatal error: Invalid result from waiting on status checking start event";
+            LogMessage( fraStatusText.str() );
+            return -1;
         }
-        // Call the callback
-        inst->readyCB(inst->handle, status, inst->cbParam);
 
     } while (1);
 }

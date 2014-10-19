@@ -31,7 +31,7 @@
 #include <unordered_map>
 
 // Struct to describe a scope that's available to open
-typedef struct
+typedef struct AvalaibleScopeDescription
 {
     ScopeModel_T model;
     ScopeDriverFamily_T driverFamily;
@@ -40,6 +40,10 @@ typedef struct
     string serialNumber;
     bool compatible;
     bool connected;
+    AvalaibleScopeDescription() : model(PS_NO_MODEL), driverFamily(PS_NO_FAMILY), 
+                                  wFamilyName(L""), wSerialNumber(L""), serialNumber(""), 
+                                  compatible(false), connected(false)
+    {}
 } AvalaibleScopeDescription_T;
 
 // Struct to describe a scope's implementation capabilites

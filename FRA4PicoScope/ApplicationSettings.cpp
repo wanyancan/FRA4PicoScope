@@ -55,6 +55,7 @@ ApplicationSettings::ApplicationSettings( wstring _appDataFolder ) : appDataFold
     scopeSettingsOpened = false;
     scopeSettingsDirty = false;
 
+    numChannels = 2;
     appDataFilename = appDataFolder + L"\\FRA4PicoScope\\Fra4PicoScopeSettings.xml";
 }
 

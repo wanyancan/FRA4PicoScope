@@ -96,6 +96,26 @@ FRAPlotter::FRAPlotter( uint16_t width, uint16_t height )
     plotHeight = height;
     plotBmBuffer.resize(plotWidth*plotHeight*bytesPerPixel);
     plotDataAvailable = false;
+    currentFreqAxisMin = 0.0;
+    currentFreqAxisMax = 0.0;
+    currentGainAxisMin = 0.0;
+    currentGainAxisMax = 0.0;
+    currentPhaseAxisMin = 0.0;
+    currentPhaseAxisMax = 0.0;
+    currentFreqAxisMajorTickInterval = 0.0;
+    currentFreqAxisMinorTicksPerMajorInterval = 0;
+    currentGainAxisMajorTickInterval = 0.0;
+    currentGainAxisMinorTicksPerMajorInterval = 0;
+    currentGainMasterIntervals = false;
+    currentPhaseAxisMajorTickInterval = 0.0;
+    currentPhaseAxisMinorTicksPerMajorInterval = 0;
+    currentPhaseMasterIntervals = false;
+    cmd = CMD_EXIT;
+    workingBuffer = NULL;
+    workingBufferSize = 0;
+    hFraPlotterExecuteCommandEvent = NULL;
+    hFraPlotterCommandCompleteEvent = NULL;
+    hFraPlotterWorkerThread = NULL;
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -994,8 +1014,8 @@ DWORD WINAPI FRAPlotter::WorkerThread(LPVOID lpThreadParameter)
     HRESULT hr;
     DWORD dwWaitResult;
     FRAPlotter* instance = (FRAPlotter*)lpThreadParameter;
-    IWICImagingFactory     *pIWICFactory = NULL;
-    IWICBitmap             *pPlotBitmap24RGB;
+    IWICImagingFactory* pIWICFactory = NULL;
+    IWICBitmap* pPlotBitmap24RGB = NULL;
 
     // Initialize Com
     if(FAILED(hr = CoInitializeEx(NULL, COINIT_APARTMENTTHREADED)))
@@ -1025,7 +1045,7 @@ DWORD WINAPI FRAPlotter::WorkerThread(LPVOID lpThreadParameter)
             // Decode the command
             if (instance->cmd == CMD_MAKE_SCREEN_BITMAP_32BPP_BGRA)
             {
-                IWICBitmapSource       *pPlotBitmap32BGRA;
+                IWICBitmapSource* pPlotBitmap32BGRA = NULL;
 
                 if (FAILED(hr = pIWICFactory -> CreateBitmapFromMemory( instance->plotWidth, instance->plotHeight, GUID_WICPixelFormat24bppRGB,
                                 (instance->bytesPerPixel)*(instance->plotWidth),
