@@ -90,6 +90,7 @@ PicoScopeFRA::PicoScopeFRA(FRA_STATUS_CALLBACK statusCB)
         throw runtime_error( "Failed to create Capture Event" );
     }
 
+    mInputDcOffset = 0.0;
     mOutputDcOffset = 0.0;
     actualSampFreqHz = 0.0;
     numSamples = 0;
@@ -116,6 +117,18 @@ PicoScopeFRA::PicoScopeFRA(FRA_STATUS_CALLBACK statusCB)
     rangeInfo = NULL;
     minRange = 0;
     maxRange = 0;
+    ps = NULL;
+    numChannels = 2;
+    maxScopeSamplesPerChannel = 0;
+    currentFreqHz = 0.0;
+    currentOutputVolts = 0.0;
+    mStartFreqHz = 0.0;
+    mStopFreqHz = 0.0;
+    mStepsPerDecade = 10;
+    mInputChannel = PS_CHANNEL_A;
+    mOutputChannel = PS_CHANNEL_B;
+    mInputChannelCoupling = PS_AC;
+    mOutputChannelCoupling = PS_AC;
 
     cancel = false;
 }

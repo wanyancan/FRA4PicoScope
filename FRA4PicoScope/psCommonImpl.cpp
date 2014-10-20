@@ -130,6 +130,11 @@ CommonCtor(SCOPE_FAMILY_LT)( int16_t _handle ) : PicoScope()
     currentTimeIndisposedMs = 0;
     cbParam = NULL;
 #endif
+    minRange = 0;
+    maxRange = 0;
+    timebaseNoiseRejectMode = 0;
+    fSampNoiseRejectMode = 0.0;
+    signalGeneratorPrecision = 0.0;
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////

@@ -176,3 +176,7 @@ UpgradeLog*.htm
 
 # Microsoft Fakes
 FakesAssemblies/
+
+# Coverity Scan Files
+cov-int/
+*.tgz
