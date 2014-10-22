@@ -55,7 +55,7 @@ wstring dataDirectoryName;
 TCHAR szTitle[MAX_LOADSTRING];					// The title bar text
 TCHAR szWindowClass[MAX_LOADSTRING];			// the main window class name
 
-const int numAttens = 3;
+const int numAttens = 6;
 const int numCouplings = 2;
 
 // Application Objects
@@ -85,29 +85,28 @@ POINT ptZoomBegin;
 POINT ptZoomEnd;               
 
 // Forward declarations of functions included in this code module:
-ATOM				MyRegisterClass(HINSTANCE hInstance);
-BOOL				InitInstance(HINSTANCE, int);
+ATOM                MyRegisterClass(HINSTANCE hInstance);
+BOOL                InitInstance(HINSTANCE, int);
 BOOL CALLBACK       WndProc(HWND hwnd, UINT message, WPARAM wParam, LPARAM lParam);
-void				Cleanup( HWND hWnd );
-INT_PTR CALLBACK	About(HWND, UINT, WPARAM, LPARAM);
+void                Cleanup( HWND hWnd );
+INT_PTR CALLBACK    About(HWND, UINT, WPARAM, LPARAM);
 INT_PTR CALLBACK    ScopeSelectHandler(HWND, UINT, WPARAM, LPARAM);
-BOOL				InitializeControls(HWND hDlg);
-BOOL				LoadControlsData(HWND hDlg);
-void				CopyLog(void);
-void				ClearLog(void);
+BOOL                InitializeControls(HWND hDlg);
+BOOL                LoadControlsData(HWND hDlg);
+void                CopyLog(void);
+void                ClearLog(void);
 
-BOOL				GetMostRecentSettings(void);
 DWORD WINAPI        ExecuteFRA(LPVOID lpdwThreadParam);
-void				InitScope( void );
-void				SelectNewScope( uint8_t index );
+void                InitScope( void );
+void                SelectNewScope( uint8_t index );
 bool                FraStatusCallback( FRA_STATUS_MESSAGE_T& fraStatus );
-bool				ValidateSettings(void);
-bool				StoreSettings(void);
+bool                ValidateSettings(void);
+bool                StoreSettings(void);
 
 void                SaveRawData( wstring dataFilePath );
-void				SavePlotImageFile( wstring dataFilePath );
-void				EnableAllMenus( void );
-void				DisableAllMenus( void );
+void                SavePlotImageFile( wstring dataFilePath );
+void                EnableAllMenus( void );
+void                DisableAllMenus( void );
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 //
@@ -1002,9 +1001,9 @@ void Cleanup( HWND hWnd )
 BOOL LoadControlsData(HWND hDlg)
 {
 
-    TCHAR attenText[numAttens][5] =
+    TCHAR attenText[numAttens][6] =
     {
-        TEXT("1x"), TEXT("10x"), TEXT("100x")
+        TEXT("1x"), TEXT("10x"), TEXT("20x"), TEXT("100x"), TEXT("200x"), TEXT("1000x")
     };
 
     TCHAR couplingText[numCouplings][3] =

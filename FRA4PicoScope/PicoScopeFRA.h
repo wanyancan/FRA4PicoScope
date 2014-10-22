@@ -29,10 +29,6 @@
 #include <vector>
 #include <string>
 
-// Keep this out of the scope of the class since putting it in scope would
-// make it specific to the scope family.  Later it may go into a super class
-// or interface class.
-
 typedef enum
 {
     ATTEN_1X,
@@ -168,6 +164,8 @@ class PicoScopeFRA
         PS_CHANNEL mOutputChannel;
         PS_COUPLING mInputChannelCoupling;
         PS_COUPLING mOutputChannelCoupling;
+        ATTEN_T mInputChannelAttenuation;
+        ATTEN_T mOutputChannelAttenuation;
         PS_RANGE currentInputChannelRange;
         PS_RANGE currentOutputChannelRange;
         double mInputDcOffset;
@@ -203,7 +201,7 @@ class PicoScopeFRA
         double maxAmplitudeRatio;           // Max we want an amplitude to be before switching ranges
         int maxAutorangeRetries;            // max number of tries to auto-range before failing
         uint16_t mExtraSettlingTimeMs;      // Extra settling time between auto-range tries
-        uint16_t mMinCyclesCaptured;		// Minimum whole stimulus signal cycles to capture
+        uint16_t mMinCyclesCaptured;        // Minimum whole stimulus signal cycles to capture
 
         // Some parameters for noise reject mode
         double fSampNoiseRejectMode;
@@ -246,6 +244,8 @@ class PicoScopeFRA
         const RANGE_INFO_T* rangeInfo;
         PS_RANGE minRange;
         PS_RANGE maxRange;
+
+        static const double attenInfo[];
 
         HANDLE hCaptureEvent;
         bool cancel;

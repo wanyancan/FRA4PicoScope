@@ -56,6 +56,8 @@ void __stdcall DataReady( short handle, PICO_STATUS status, void * pParameter)
     }
 }
 
+const double PicoScopeFRA::attenInfo[] = {1.0, 10.0, 20.0, 100.0, 200.0, 1000.0};
+
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 //
 // Name: PicoScopeFRA::PicoScopeFRA
@@ -129,6 +131,8 @@ PicoScopeFRA::PicoScopeFRA(FRA_STATUS_CALLBACK statusCB)
     mOutputChannel = PS_CHANNEL_B;
     mInputChannelCoupling = PS_AC;
     mOutputChannelCoupling = PS_AC;
+    mInputChannelAttenuation = ATTEN_1X;
+    mOutputChannelAttenuation = ATTEN_1X;
 
     cancel = false;
 }
@@ -264,6 +268,9 @@ bool PicoScopeFRA::SetupChannels( int inputChannel, int inputChannelCoupling, in
 
     mInputChannelCoupling = (PS_COUPLING)inputChannelCoupling;
     mOutputChannelCoupling = (PS_COUPLING)outputChannelCoupling;
+
+    mInputChannelAttenuation = (ATTEN_T)inputChannelAttenuation;
+    mOutputChannelAttenuation = (ATTEN_T)outputChannelAttenuation;
 
     mInputDcOffset = inputDcOffset;
     mOutputDcOffset = outputDcOffset;
@@ -1198,7 +1205,8 @@ bool PicoScopeFRA::CalculateGainAndPhase( double* gain, double* phase)
 
     // Compute gain as dB
     // Compute channel range gain factor
-    double channelGainFactor = rangeInfo[currentOutputChannelRange].rangeVolts / rangeInfo[currentInputChannelRange].rangeVolts;
+    double channelGainFactor = (rangeInfo[currentOutputChannelRange].rangeVolts * attenInfo[mOutputChannelAttenuation]) / 
+                               (rangeInfo[currentInputChannelRange].rangeVolts * attenInfo[mInputChannelAttenuation]);
     *gain = 20.0 * log10( channelGainFactor * currentOutputMagnitude / currentInputMagnitude );
 
     // Compute phase in degrees, limiting to +/-180
@@ -1243,10 +1251,10 @@ bool PicoScopeFRA::CalculateGainAndPhase( double* gain, double* phase)
 // The following reference:
 //    - derives the generalized Gortzel
 //    - is the source of the algorithm used in this method
-//			doi:10.1186/1687-6180-2012-56
-//			Sysel and Rajmic:
-//			Goertzel algorithm generalized to non-integer multiples of fundamental frequency.
-//			EURASIP Journal on Advances in Signal Processing 2012 2012:56.
+//          doi:10.1186/1687-6180-2012-56
+//          Sysel and Rajmic:
+//          Goertzel algorithm generalized to non-integer multiples of fundamental frequency.
+//          EURASIP Journal on Advances in Signal Processing 2012 2012:56.
 //
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
