@@ -479,6 +479,12 @@ bool ScopeSelector::InitializeScopeImpl( void )
         {
             retVal = false;
         }
+        else
+        {
+            // If the scopeImplTable value for minFuncGenFreq is less than the signal generator precision,
+            // then it may be an illegal value for sine generation, so patch it up.
+            selectedScope->minFuncGenFreq = max( selectedScope->minFuncGenFreq, selectedScope->signalGeneratorPrecision );
+        }
     }
 
     return retVal;

@@ -196,6 +196,7 @@ class PicoScope
         virtual bool SetupChannel( PS_CHANNEL channel, PS_COUPLING coupling, PS_RANGE range, float offset ) = 0;
         virtual bool DisableChannel( PS_CHANNEL channel ) = 0;
         virtual bool SetSignalGenerator( double vPP, double frequency ) = 0;
+        virtual bool DisableSignalGenerator( void ) = 0;
         virtual bool DisableChannelTriggers( void ) = 0;
         virtual bool GetMaxSamples( uint32_t* maxSamples ) = 0;
         virtual bool GetTimebase( double desiredFrequency, double* actualFrequency, uint32_t* timebase ) = 0;
@@ -222,5 +223,6 @@ class PicoScope
         double maxFuncGenFreq;
         double minFuncGenVpp;
         double maxFuncGenVpp;
+        double signalGeneratorPrecision;
         bool compatible;
 };

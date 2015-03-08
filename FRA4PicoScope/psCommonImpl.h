@@ -42,6 +42,7 @@ bool GetSerialNumber( wstring &sn );
 bool SetupChannel( PS_CHANNEL channel, PS_COUPLING coupling, PS_RANGE range, float offset );
 bool DisableChannel( PS_CHANNEL channel );
 bool SetSignalGenerator( double vPP, double frequency );
+bool DisableSignalGenerator( void );
 bool DisableChannelTriggers( void );
 bool GetMaxSamples( uint32_t* maxSamples );
 bool GetTimebase( double desiredFrequency, double* actualFrequency, uint32_t* timebase );
@@ -61,7 +62,6 @@ PS_RANGE minRange;
 PS_RANGE maxRange;
 uint32_t timebaseNoiseRejectMode;
 double fSampNoiseRejectMode;
-double signalGeneratorPrecision;
 #if !defined(NEW_PS_DRIVER_MODEL)
 static DWORD WINAPI CheckStatus(LPVOID lpThreadParameter);
 bool InitStatusChecking(void);

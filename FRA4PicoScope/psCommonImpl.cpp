@@ -473,9 +473,9 @@ bool CommonMethod(SCOPE_FAMILY_LT, SetSignalGenerator)( double vPP, double frequ
                                                                  1.0, 1.0, (CommonEnum(SCOPE_FAMILY_UT,SWEEP_TYPE))0, 0 )))
 #elif defined(PS3000)
     UNREFERENCED_PARAMETER(vPP);
-    // Avoid truncation of frequency to 0 since that will disable the generator.  However, for PS3000 this function should never be called with values less than 100 Hz.
+    // Truncation of frequency to 0 will disable the generator.  However, for PS3000 this function should never be called with values less than 100 Hz, unless
+    // actually attempting to disable.
     int32_t intFreq = saturation_cast<int32_t,double>(frequency);
-    min( 1, intFreq );
     if (PICO_ERROR(CommonApi(SCOPE_FAMILY_LT, _set_siggen)( handle, CommonSine(SCOPE_FAMILY_UT), intFreq, intFreq, 1.0, 1, 0, 0 )))
 #else
     if (PICO_ERROR(CommonApi(SCOPE_FAMILY_LT, SetSigGenBuiltIn)( handle, 0, (uint32_t)(vPP*1.0e6), CommonSine(SCOPE_FAMILY_UT), (float)frequency, (float)frequency,
@@ -497,6 +497,36 @@ bool CommonMethod(SCOPE_FAMILY_LT, SetSignalGenerator)( double vPP, double frequ
         retVal = false;
     }
 #endif
+
+    return retVal;
+}
+
+////////////////////////////////////////////////////////////////////////////////////////////////////
+//
+// Name: Common method DisableSignalGenerator
+//
+// Purpose: Disable the signal generator
+//
+// Parameters: N/A
+//
+// Notes: 
+//
+///////////////////////////////////////////////////////////////////////////////////////////////////
+
+bool CommonMethod(SCOPE_FAMILY_LT, DisableSignalGenerator)( void )
+{
+    bool retVal = true;
+    wstringstream fraStatusText;
+#if defined(PS3000)
+    if (!SetSignalGenerator( 0.0, 0.0 )) // Set to 0.0 Hz, volts peak to peak are ignored
+#else
+    if (!SetSignalGenerator( 0.0, GetMinFuncGenFreq() )) // Set to 0.0 volts and minimum frequency;
+#endif
+    {
+        fraStatusText << L"Error: Failed to disable signal generator.";
+        LogMessage( fraStatusText.str() );
+        retVal = false;
+    }
 
     return retVal;
 }
