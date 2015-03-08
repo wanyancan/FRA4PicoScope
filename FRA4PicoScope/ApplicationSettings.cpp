@@ -432,7 +432,7 @@ bool ApplicationSettings::InitializeScopeSettingsFile(PicoScope* pScope)
     ScopeSettingsPropTree.put( L"picoScope.outputChannel.coupling", PS_AC );
     ScopeSettingsPropTree.put( L"picoScope.outputChannel.dcOffset", L"0.0" );
 
-    midSigGenVpp = floor((pScope->GetMinFuncGenFreq() + pScope->GetMaxFuncGenVpp()) / 2.0);
+    midSigGenVpp = floor((pScope->GetMinFuncGenVpp() + pScope->GetMaxFuncGenVpp()) / 2.0);
 
     signalVppSS << fixed << setprecision(1) << midSigGenVpp;
     startFreqSS << fixed << setprecision(1) << (max(1.0, pScope->GetMinFuncGenFreq())); // Make frequency at least 1.0 since 0.0 (DC) makes no sense for FRA
