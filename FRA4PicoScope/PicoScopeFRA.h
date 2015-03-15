@@ -250,6 +250,8 @@ class PicoScopeFRA
         HANDLE hCaptureEvent;
         bool cancel;
 
+        class FraFault : public exception {};
+
         bool GetNumChannels(void);
         bool StartCapture( double measFreqHz );
         void GenerateFrequencyPoints();

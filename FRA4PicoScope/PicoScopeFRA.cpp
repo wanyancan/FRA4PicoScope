@@ -337,6 +337,7 @@ bool PicoScopeFRA::SetupChannels( int inputChannel, int inputChannelCoupling, in
 
 bool PicoScopeFRA::ExecuteFRA(double startFreqHz, double stopFreqHz, int stepsPerDecade )
 {
+    bool retVal = true;
     mStartFreqHz = startFreqHz;
     mStopFreqHz = stopFreqHz;
     mStepsPerDecade = stepsPerDecade;
@@ -347,111 +348,129 @@ bool PicoScopeFRA::ExecuteFRA(double startFreqHz, double stopFreqHz, int stepsPe
     FRA_STATUS_MESSAGE_T fraStatusMsg;
     wchar_t fraStatusText[128];
 
-    GenerateFrequencyPoints();
-    AllocateFraData();
-
-    cancel = false;
-    if (TRUE != (ResetEvent( hCaptureEvent )))
+    try
     {
-        winError = GetLastError();
-        wsprintf( fraStatusText, L"Fatal error: Failed to reset capture event: %d", winError );
-        UpdateStatus( fraStatusMsg, FRA_STATUS_FATAL_ERROR, fraStatusText );
-        return false;
-    }
+        GenerateFrequencyPoints();
+        AllocateFraData();
 
-    // Update the status to indicate the FRA has started
-    UpdateStatus( fraStatusMsg, FRA_STATUS_PROGRESS, 0, numSteps );
-
-    for (freqStepCounter = 0; freqStepCounter < numSteps; freqStepCounter++)
-    {
-        currentFreqHz = freqsHz[freqStepCounter];
-        for (autorangeRetryCounter = 0; autorangeRetryCounter < maxAutorangeRetries; autorangeRetryCounter++)
+        cancel = false;
+        if (TRUE != (ResetEvent( hCaptureEvent )))
         {
-            wsprintf( fraStatusText, L"Status: Starting frequency step %d, range try %d", freqStepCounter+1, autorangeRetryCounter+1 );
-            UpdateStatus( fraStatusMsg, FRA_STATUS_MESSAGE, fraStatusText );
-            if (true != StartCapture( currentFreqHz ))
+            winError = GetLastError();
+            wsprintf( fraStatusText, L"Fatal error: Failed to reset capture event: %d", winError );
+            UpdateStatus( fraStatusMsg, FRA_STATUS_FATAL_ERROR, fraStatusText );
+            throw FraFault();
+        }
+
+        // Update the status to indicate the FRA has started
+        UpdateStatus( fraStatusMsg, FRA_STATUS_PROGRESS, 0, numSteps );
+
+        for (freqStepCounter = 0; freqStepCounter < numSteps; freqStepCounter++)
+        {
+            currentFreqHz = freqsHz[freqStepCounter];
+            for (autorangeRetryCounter = 0; autorangeRetryCounter < maxAutorangeRetries; autorangeRetryCounter++)
             {
-                return false;
+                wsprintf( fraStatusText, L"Status: Starting frequency step %d, range try %d", freqStepCounter+1, autorangeRetryCounter+1 );
+                UpdateStatus( fraStatusMsg, FRA_STATUS_MESSAGE, fraStatusText );
+                if (true != StartCapture( currentFreqHz ))
+                {
+                    throw FraFault();
+                }
+                // Adjust the delay time for a safety factor of 1.5x and never let it go less than 3 seconds
+                timeIndisposedMs = max( 3000, (timeIndisposedMs*3)/2);
+                dwWaitResult = WaitForSingleObject( hCaptureEvent, timeIndisposedMs );
+
+                if (cancel)
+                {
+                    // Notify of cancellation
+                    UpdateStatus( fraStatusMsg, FRA_STATUS_CANCELED, freqStepCounter, numSteps );
+                    throw FraFault();
+                }
+
+                if (dwWaitResult == WAIT_OBJECT_0)
+                {
+                    if (true != GetData())
+                    {
+                        throw FraFault();
+                    }
+
+                    if (false == CheckSignalOverflows())
+                    {
+                        // Both channels are over-range, don't bother with further analysis.
+                        continue; // Try again on a different range
+                    }
+                    if (false == CheckSignalRanges())
+                    {
+                        // At least one of the channels needs adjustment
+                        continue; // Try again on a different range
+                    }
+                    else // Data is good, calculate and move on to next frequency
+                    {
+                        // Currently no error is possible so just cast to void
+                        (void)CalculateGainAndPhase( &gainsDb[freqStepCounter], &phasesDeg[freqStepCounter] );
+                        autorangeRetryCounter++; // reflect the attempt that succeeded
+
+                        // Notify progress
+                        UpdateStatus( fraStatusMsg, FRA_STATUS_PROGRESS, freqStepCounter+1, numSteps );
+                        break;
+                    }
+                }
+                else
+                {
+                    UpdateStatus( fraStatusMsg, FRA_STATUS_FATAL_ERROR, L"Fatal Error: Data capture wait timed out" );
+                    throw FraFault();
+                }
             }
-            // Adjust the delay time for a safety factor of 1.5x and never let it go less than 3 seconds
-            timeIndisposedMs = max( 3000, (timeIndisposedMs*3)/2);
-            dwWaitResult = WaitForSingleObject( hCaptureEvent, timeIndisposedMs );
 
-            if (cancel)
+            // Make records for diagnostics
+            sampleInterval[freqStepCounter] = 1.0 / actualSampFreqHz;
+            diagNumSamples[freqStepCounter] = inputMinData[freqStepCounter][0].size();
+            autoRangeTries[freqStepCounter] = autorangeRetryCounter;
+
+            if (autorangeRetryCounter == maxAutorangeRetries)
             {
-                // Notify of cancellation
-                UpdateStatus( fraStatusMsg, FRA_STATUS_CANCELED, freqStepCounter, numSteps );
-                return false;
-            }
-
-            if (dwWaitResult == WAIT_OBJECT_0)
-            {
-                if (true != GetData())
+                // This is a temporary solution until we implement a fully interactive one.
+                UpdateStatus( fraStatusMsg, FRA_STATUS_AUTORANGE_LIMIT, inputChannelAutorangeStatus, outputChannelAutorangeStatus );
+                if (true == fraStatusMsg.responseData.proceed)
                 {
-                    return false;
-                }
-
-                if (false == CheckSignalOverflows())
-                {
-                    // Both channels are over-range, don't bother with further analysis.
-                    continue; // Try again on a different range
-                }
-                if (false == CheckSignalRanges())
-                {
-                    // At least one of the channels needs adjustment
-                    continue; // Try again on a different range
-                }
-                else // Data is good, calculate and move on to next frequency
-                {
-                    // Currently no error is possible so just cast to void
-                    (void)CalculateGainAndPhase( &gainsDb[freqStepCounter], &phasesDeg[freqStepCounter] );
-                    autorangeRetryCounter++; // reflect the attempt that succeeded
-
+                    gainsDb[freqStepCounter] = 0.0;
+                    phasesDeg[freqStepCounter] = 0.0;
                     // Notify progress
                     UpdateStatus( fraStatusMsg, FRA_STATUS_PROGRESS, freqStepCounter+1, numSteps );
-                    break;
+                }
+                else
+                {
+                    // Notify of cancellation
+                    UpdateStatus( fraStatusMsg, FRA_STATUS_CANCELED, freqStepCounter, numSteps );
+                    throw FraFault();
                 }
             }
-            else
-            {
-                UpdateStatus( fraStatusMsg, FRA_STATUS_FATAL_ERROR, L"Fatal Error: Data capture wait timed out" );
-                return false;
-            }
         }
 
-        // Make records for diagnostics
-        sampleInterval[freqStepCounter] = 1.0 / actualSampFreqHz;
-        diagNumSamples[freqStepCounter] = inputMinData[freqStepCounter][0].size();
-        autoRangeTries[freqStepCounter] = autorangeRetryCounter;
+        TransferLatestResults();
 
-        if (autorangeRetryCounter == maxAutorangeRetries)
+        if (mDiagnosticsOn)
         {
-            // This is a temporary solution until we implement a fully interactive one.
-            UpdateStatus( fraStatusMsg, FRA_STATUS_AUTORANGE_LIMIT, inputChannelAutorangeStatus, outputChannelAutorangeStatus );
-            if (true == fraStatusMsg.responseData.proceed)
-            {
-                gainsDb[freqStepCounter] = 0.0;
-                phasesDeg[freqStepCounter] = 0.0;
-                // Notify progress
-                UpdateStatus( fraStatusMsg, FRA_STATUS_PROGRESS, freqStepCounter+1, numSteps );
-            }
-            else
-            {
-                // Notify of cancellation
-                UpdateStatus( fraStatusMsg, FRA_STATUS_CANCELED, freqStepCounter, numSteps );
-                return false;
-            }
+            GenerateDiagnosticOutput();
         }
     }
-
-    TransferLatestResults();
-
-    if (mDiagnosticsOn)
+    catch (const FraFault& e)
     {
-        GenerateDiagnosticOutput();
+        UNREFERENCED_PARAMETER(e);
+        retVal = false;
+    }
+    catch (const bad_alloc& e)
+    {
+        UNREFERENCED_PARAMETER(e);
+        wstringstream wssError;
+        wssError << L"Fatal error: Failed to allocate memory.";
+        UpdateStatus( fraStatusMsg, FRA_STATUS_FATAL_ERROR, wssError.str().c_str() );
+        retVal = false;
     }
 
-    return true;
+    ps->DisableSignalGenerator();
+
+    return retVal;
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -733,7 +752,7 @@ void PicoScopeFRA::TransferLatestResults(void)
 // Parameters: N/A
 //
 // Notes: Because the scopes have output frequency precision limits, this function also 
-//        "patches up" the results to align to freuencies the scope is capable of
+//        "patches up" the results to align to frequencies the scope is capable of
 //
 ///////////////////////////////////////////////////////////////////////////////////////////////////
 
