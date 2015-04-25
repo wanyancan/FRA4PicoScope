@@ -67,15 +67,15 @@ bool ps2000Impl::GetTimebase( double desiredFrequency, double* actualFrequency, 
             switch (model)
             {
                 case PS2203:
-                    maxFrequency = 20e6;
+                    maxFrequency = 40e6;
                     break;
                 case PS2204:
                 case PS2204A:
-                    maxFrequency = 50e6;
+                    maxFrequency = 100e6;
                     break;
                 case PS2205: 
                 case PS2205A:
-                    maxFrequency = 100e6;
+                    maxFrequency = 200e6;
                     break;
             }
 
@@ -116,7 +116,8 @@ bool ps2000Impl::InitializeScope(void)
 {
     bool retVal = true;
 
-    timebaseNoiseRejectMode = 0; // All PS2000 scopes support timebase 0 which is the fastest sampling
+    timebaseNoiseRejectMode = 1; // Because two channels are used, the maximum available frequency 
+                                 // is half the scope's absolute maximum frequency => timebase=1
 
     switch (model)
     {

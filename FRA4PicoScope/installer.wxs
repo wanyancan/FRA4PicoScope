@@ -32,6 +32,13 @@
                         <RemoveFolder Id="FRA4PicoScopeUserDataFolder" On="uninstall" />
                         <CreateFolder />
                     </Component>
+                    <Directory Id="FRA4PicoScopeUserDiagDataFolder" Name="diag">
+                        <Component Id="UserDiagData" Guid="">
+                            <RegistryValue Root="HKCU" Key="Software\[Manufacturer]\[ProductName]" Name="installed" Type="integer" Value="1" KeyPath="yes" />
+                            <RemoveFolder Id="FRA4PicoScopeUserDiagDataFolder" On="uninstall" />
+                            <CreateFolder />
+                        </Component>
+                    </Directory>
                 </Directory>
             </Directory>
             <Directory Id="ProgramMenuFolder">
@@ -48,7 +55,8 @@
             <ComponentRef Id="ApplicationFiles" />
             <ComponentRef Id="StartMenuShortcuts" />
             <ComponentRef Id="ApplicationData" />
-            <ComponentRef Id="UserData" />        
+            <ComponentRef Id="UserData" />
+            <ComponentRef Id="UserDiagData" />
         </Feature>
         <UI />
         <Icon Id="StartMenuIcon.exe" SourceFile="..\Release\FRA4PicoScope.exe" />

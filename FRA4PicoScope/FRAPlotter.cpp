@@ -1192,9 +1192,23 @@ DWORD WINAPI FRAPlotter::WorkerThread(LPVOID lpThreadParameter)
     return 0;
 }
 
+////////////////////////////////////////////////////////////////////////////////////////////////////
+//
+// Name: FRAPlotter::HandlePLplotError
+//
+// Purpose: Function that gets installed to handle PLplot errors more gracefully.  Normally
+//          PLplot just calls abort(), silently terminating the whole application.  We'll 
+//          report the error via exceptions and handle them at a higher level.
+//
+// Parameters: [in] error - string containing error message from PLplot
+//
+// Notes: This function must not return and must throw an exception
+//
+///////////////////////////////////////////////////////////////////////////////////////////////////
+
 int FRAPlotter::HandlePLplotError(const char* error)
 {
-    string plplotErrorString = "PLplot error: ";
+    string plplotErrorString = "PLplot error generating Bode plot: ";
     plplotErrorString += error;
     plend();
     throw runtime_error( plplotErrorString.c_str() );

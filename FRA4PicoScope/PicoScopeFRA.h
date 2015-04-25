@@ -237,8 +237,9 @@ class PicoScopeFRA
         vector<vector<double>> outputPurity;
 
         bool mDiagnosticsOn;
-        string mBaseDataPath;
+        wstring mBaseDataPath;
         void GenerateDiagnosticOutput(void);
+        static int HandlePLplotError(const char* error);
 
         // Treated as an array where indices here correspond to range enums/indices
         const RANGE_INFO_T* rangeInfo;
