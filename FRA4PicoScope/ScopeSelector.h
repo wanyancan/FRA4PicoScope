@@ -31,7 +31,7 @@
 #include <unordered_map>
 
 // Struct to describe a scope that's available to open
-typedef struct AvalaibleScopeDescription
+typedef struct AvailableScopeDescription
 {
     ScopeModel_T model;
     ScopeDriverFamily_T driverFamily;
@@ -40,11 +40,11 @@ typedef struct AvalaibleScopeDescription
     string serialNumber;
     bool compatible;
     bool connected;
-    AvalaibleScopeDescription() : model(PS_NO_MODEL), driverFamily(PS_NO_FAMILY), 
+    AvailableScopeDescription() : model(PS_NO_MODEL), driverFamily(PS_NO_FAMILY), 
                                   wFamilyName(L""), wSerialNumber(L""), serialNumber(""), 
                                   compatible(false), connected(false)
     {}
-} AvalaibleScopeDescription_T;
+} AvailableScopeDescription_T;
 
 // Struct to describe a scope's implementation capabilites
 typedef struct
@@ -79,20 +79,21 @@ class ScopeSelector
         ~ScopeSelector();
 
         // Gets information about available scopes
-        bool GetAvailableScopes( vector<AvalaibleScopeDescription_T>& _avaliableScopes, bool refresh = true );
+        bool GetAvailableScopes( vector<AvailableScopeDescription_T>& _avaliableScopes, bool refresh = true );
 
         // Factory method to create scopes for the PicoScopeFRA to use
-        PicoScope* OpenScope( AvalaibleScopeDescription_T scope );
+        PicoScope* OpenScope( AvailableScopeDescription_T scope );
 
         PicoScope* GetSelectedScope( void );
 
     private:
         PicoScope* selectedScope;
-        vector<AvalaibleScopeDescription_T> availableScopes;
+        vector<AvailableScopeDescription_T> availableScopes;
         static const ScopeImplRecord_T scopeImplTable[];
         static const wstring wFamilyNames[];
 
         void AddEnumeratedScopes( ScopeDriverFamily_T family, string serials );
+        void ScopeSelector::CloseScopesFromSimulatedEnumeration( AvailableScopeDescription_T* doNotClose );
         bool InitializeScopeImpl( void );
 
         typedef PICO_STATUS  (__stdcall *psEnumerateUnits)( int16_t *count, int8_t  *serials, int16_t *serialLth );

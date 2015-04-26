@@ -176,7 +176,7 @@ int APIENTRY _tWinMain(HINSTANCE hInstance,
 //
 ///////////////////////////////////////////////////////////////////////////////////////////////////
 
-void SelectNewScope( AvalaibleScopeDescription_T scope, bool mruScope = false )
+void SelectNewScope( AvailableScopeDescription_T scope, bool mruScope = false )
 {
     PicoScope* pScope;
 
@@ -255,7 +255,7 @@ void InitScope( void )
 
     if (0 != mostRecentScopeSN.compare("None")) // If there is a most recently used Scope
     {
-        AvalaibleScopeDescription_T mruScope;
+        AvailableScopeDescription_T mruScope;
         mruScope.driverFamily = mostRecentScopeFamily;
         mruScope.serialNumber = mostRecentScopeSN;
         SelectNewScope( mruScope, true );
@@ -265,7 +265,7 @@ void InitScope( void )
     // If not, look for other available scopes.
     if (!(pScopeSelector->GetSelectedScope()))
     {
-        vector<AvalaibleScopeDescription_T> scopes;
+        vector<AvailableScopeDescription_T> scopes;
 
         pScopeSelector -> GetAvailableScopes( scopes );
 
@@ -450,7 +450,7 @@ BOOL CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
     HDC hdc;
     HDC hdcMem;
     HBITMAP hbmOld;
-    vector<AvalaibleScopeDescription_T> scopes;
+    vector<AvailableScopeDescription_T> scopes;
 
     switch (message)
     {
@@ -1776,7 +1776,7 @@ INT_PTR CALLBACK ScopeSelectHandler(HWND hDlg, UINT message, WPARAM wParam, LPAR
     {
         case WM_INITDIALOG:
 
-            vector<AvalaibleScopeDescription_T>* pScopes;
+            vector<AvailableScopeDescription_T>* pScopes;
             HWND hndLvCtrl;
             hndLvCtrl = GetDlgItem( hDlg, IDC_SCOPE_SELECT_LIST );
 
@@ -1804,7 +1804,7 @@ INT_PTR CALLBACK ScopeSelectHandler(HWND hDlg, UINT message, WPARAM wParam, LPAR
             listViewCol.iSubItem = 2;
             ListView_InsertColumn(hndLvCtrl, 2, &listViewCol );
 
-            pScopes = (vector<AvalaibleScopeDescription_T>*)lParam;
+            pScopes = (vector<AvailableScopeDescription_T>*)lParam;
 
             listViewItem.mask = LVIF_TEXT;
             for (uint8_t idx = 0; idx < pScopes->size(); idx++)
@@ -1848,7 +1848,7 @@ INT_PTR CALLBACK ScopeSelectHandler(HWND hDlg, UINT message, WPARAM wParam, LPAR
             NMHDR* nmhdr = (NMHDR*)lParam;
             if ( nmhdr->code == LVN_ITEMCHANGED )
             {
-                vector<AvalaibleScopeDescription_T> scopes;
+                vector<AvailableScopeDescription_T> scopes;
                 HWND hndConnectButton;
                 hndConnectButton = GetDlgItem( hDlg, IDOK );
 

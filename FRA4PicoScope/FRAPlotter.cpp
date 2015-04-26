@@ -35,7 +35,7 @@
 using namespace boost;
 #include <Wincodec.h>
 
-// Use of strnpy in this program is safe, since it is bounded and explicitly null terminated
+// Use of strncpy in this program is safe, since it is bounded and explicitly null terminated
 #if defined(_MSC_VER)
 #pragma warning(disable: 4996)
 #endif
