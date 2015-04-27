@@ -185,7 +185,7 @@ bool ScopeSelector::GetAvailableScopes( vector<AvailableScopeDescription_T>& _av
         desc.serialNumber = "5678";
         availableScopes.push_back(desc);
 #endif
-        // Enumeration functions don't find scopes already open, so add that one
+        // Native enumeration functions don't find scopes already open, so add that one
         if (selectedScope)
         {
             desc.connected = true;
@@ -262,6 +262,8 @@ PicoScope* ScopeSelector::OpenScope( AvailableScopeDescription_T scope )
         {
             selectedScope = new ps2000Impl( handle );
         }
+        // Part of simulating that open scopes don't show up during enumeration
+        ps2000Scopes.erase(scope.serialNumber.c_str());
     }
     else if (scope.driverFamily == PS2000A)
     {
@@ -298,6 +300,8 @@ PicoScope* ScopeSelector::OpenScope( AvailableScopeDescription_T scope )
         {
             selectedScope = new ps3000Impl( handle );
         }
+        // Part of simulating that open scopes don't show up during enumeration
+        ps3000Scopes.erase(scope.serialNumber.c_str());
     }
     else if (scope.driverFamily == PS3000A)
     {
@@ -337,6 +341,8 @@ PicoScope* ScopeSelector::OpenScope( AvailableScopeDescription_T scope )
     {
         // The scope is already open
         selectedScope = NULL; // For now, until we implement PS5000
+        // Part of simulating that open scopes don't show up during enumeration
+        ps5000Scopes.erase(scope.serialNumber.c_str());
     }
     else if (scope.driverFamily == PS5000A)
     {
@@ -529,9 +535,39 @@ PICO_STATUS ScopeSelector::ps2000EnumerateUnits( int16_t *count, int8_t *serials
     char _serials[32];
     int16_t totalSerialLth = 0;
     
-    ps2000Scopes.clear();
     *count = 0;
     serials[0] = '\0';
+
+    auto it = ps2000Scopes.begin();
+    while (it != ps2000Scopes.end())
+    {
+        // See if it's still open
+        _serialLth = ps2000_get_unit_info( it->second, _serials, sizeof(_serials), PS_BATCH_AND_SERIAL );
+        if (0 != _serialLth)
+        {
+            if ((totalSerialLth + _serialLth + 1) < (*serialLth-1)) // +1 to account for comma, -1 to account for null terminator
+            {
+                if (*count > 0)
+                {
+                    serials[totalSerialLth] = ',';
+                    totalSerialLth++;
+                }
+                strcat( (char*)&serials[totalSerialLth], _serials );
+                totalSerialLth += _serialLth;
+
+                (*count)++;
+            }
+            else // We're out of space
+            {
+                break;
+            }
+            it++;
+        }
+        else // It's no longer around, so remove it.
+        {
+            it = ps2000Scopes.erase(it);
+        }
+    }
 
     while (0 < (handle = ps2000_open_unit()))
     {
@@ -551,7 +587,7 @@ PICO_STATUS ScopeSelector::ps2000EnumerateUnits( int16_t *count, int8_t *serials
                 ps2000Scopes[_serials] = handle;
                 (*count)++;
             }
-            else
+            else  // We're out of space
             {
                 break;
             }
@@ -600,9 +636,39 @@ PICO_STATUS ScopeSelector::ps3000EnumerateUnits( int16_t *count, int8_t *serials
     char _serials[32];
     int16_t totalSerialLth = 0;
     
-    ps3000Scopes.clear();
     *count = 0;
     serials[0] = '\0';
+
+    auto it = ps3000Scopes.begin();
+    while (it != ps3000Scopes.end())
+    {
+        // See if it's still open
+        _serialLth = ps3000_get_unit_info( it->second, (int8_t*)_serials, sizeof(_serials), PS_BATCH_AND_SERIAL );
+        if (0 != _serialLth)
+        {
+            if ((totalSerialLth + _serialLth + 1) < (*serialLth-1)) // +1 to account for comma, -1 to account for null terminator
+            {
+                if (*count > 0)
+                {
+                    serials[totalSerialLth] = ',';
+                    totalSerialLth++;
+                }
+                strcat( (char*)&serials[totalSerialLth], _serials );
+                totalSerialLth += _serialLth;
+
+                (*count)++;
+            }
+            else // We're out of space
+            {
+                break;
+            }
+            it++;
+        }
+        else // It's no longer around, so remove it.
+        {
+            it = ps3000Scopes.erase(it);
+        }
+    }
 
     while (0 < (handle = ps3000_open_unit()))
     {
@@ -622,7 +688,7 @@ PICO_STATUS ScopeSelector::ps3000EnumerateUnits( int16_t *count, int8_t *serials
                 ps3000Scopes[_serials] = handle;
                 (*count)++;
             }
-            else
+            else  // We're out of space
             {
                 break;
             }
@@ -691,32 +757,56 @@ PICO_STATUS ScopeSelector::ps5000OpenUnit( int16_t* handle, int8_t* serial )
 
 void ScopeSelector::CloseScopesFromSimulatedEnumeration( AvailableScopeDescription_T* doNotClose )
 {
-    for (auto it = ps2000Scopes.begin(); it != ps2000Scopes.end(); ++it)
     {
-        if (NULL == doNotClose ||
-            doNotClose->driverFamily != PS2000 ||
-            doNotClose->serialNumber.compare(it->first))
+        auto it = ps2000Scopes.begin();
+        while( it != ps2000Scopes.end())
         {
-            ps2000_close_unit( it->second );
+            if (NULL == doNotClose ||
+                doNotClose->driverFamily != PS2000 ||
+                doNotClose->serialNumber.compare(it->first))
+            {
+                ps2000_close_unit( it->second );
+                it = ps2000Scopes.erase( it );
+            }
+            else
+            {
+                it++;
+            }
         }
     }
-    for (auto it = ps3000Scopes.begin(); it != ps3000Scopes.end(); ++it)
     {
-        if (NULL == doNotClose ||
-            doNotClose->driverFamily != PS3000 ||
-            doNotClose->serialNumber.compare(it->first))
+        auto it = ps3000Scopes.begin(); 
+        while (it != ps3000Scopes.end())
         {
-            ps3000_close_unit( it->second );
+            if (NULL == doNotClose ||
+                doNotClose->driverFamily != PS3000 ||
+                doNotClose->serialNumber.compare(it->first))
+            {
+                ps3000_close_unit( it->second );
+                it = ps3000Scopes.erase( it );
+            }
+            else
+            {
+                it++;
+            }
         }
     }
-    for (auto it = ps5000Scopes.begin(); it != ps5000Scopes.end(); ++it)
     {
-        if (NULL == doNotClose ||
-            doNotClose->driverFamily != PS5000 ||
-            doNotClose->serialNumber.compare(it->first))
+        auto it = ps5000Scopes.begin();
+        while (it != ps5000Scopes.end())
         {
-            // PS5000 not implemented yet
-            // ps5000CloseUnit( it->second );
+            if (NULL == doNotClose ||
+                doNotClose->driverFamily != PS5000 ||
+                doNotClose->serialNumber.compare(it->first))
+            {
+                // PS5000 not implemented yet
+                // ps5000CloseUnit( it->second );
+                it = ps5000Scopes.erase( it );
+            }
+            else
+            {
+                it++;
+            }
         }
     }
 }
