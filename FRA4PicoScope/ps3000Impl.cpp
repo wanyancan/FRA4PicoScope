@@ -68,11 +68,11 @@ bool ps3000Impl::GetTimebase( double desiredFrequency, double* actualFrequency, 
             switch (model)
             {
                 case PS3205:
-                    maxFrequency = 100e6; // with 2 channels enabled
+                    maxFrequency = 100e6;
                     maxTimebase = PS3205_MAX_TIMEBASE;
                     break;
                 case PS3206:
-                    maxFrequency = 100e6; // with 2 channels enabled
+                    maxFrequency = 200e6;
                     maxTimebase = PS3206_MAX_TIMEBASE;
                     break;
             }
