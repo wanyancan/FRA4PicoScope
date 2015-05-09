@@ -178,7 +178,7 @@ void PicoScopeFRA::SetInstrument( PicoScope* _ps )
 //             [in] autorangeTriesPerStep - Number of range tries allowed
 //             [in] autorangeTolerance - Hysterysis used to determine when the switch
 //             [in] smallSignalResolutionTolerance - Lower limit on signal amplitide before we 
-//                                                   take aciton
+//                                                   take action
 //             [in] maxAutorangeAmplitude - Amplitude before we switch to next higher range.
 //             [in] minCyclesCaptured - Minimum cycles captured for stmulus signal
 //             [in] diagnosticsOn - Whether to output plots of time domain data
@@ -192,7 +192,6 @@ void PicoScopeFRA::SetFraSettings( SamplingMode_T samplingMode, double purityLow
                                    double autorangeTolerance, double smallSignalResolutionTolerance, double maxAutorangeAmplitude, uint16_t minCyclesCaptured,
                                    bool diagnosticsOn, wstring baseDataPath )
 {
-    char path[MAX_PATH];
     mSamplingMode = samplingMode;
     mPurityLowerLimit = purityLowerLimit;
     mExtraSettlingTimeMs = extraSettlingTimeMs;
@@ -202,8 +201,7 @@ void PicoScopeFRA::SetFraSettings( SamplingMode_T samplingMode, double purityLow
     maxAmplitudeRatio = maxAutorangeAmplitude;
     mMinCyclesCaptured = minCyclesCaptured;
     mDiagnosticsOn = diagnosticsOn;
-    WideCharToMultiByte( CP_UTF8, 0, baseDataPath.c_str(), -1, path, sizeof(path), NULL, NULL );
-    mBaseDataPath = path;
+    mBaseDataPath = baseDataPath;
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -451,7 +449,17 @@ bool PicoScopeFRA::ExecuteFRA(double startFreqHz, double stopFreqHz, int stepsPe
 
         if (mDiagnosticsOn)
         {
-            GenerateDiagnosticOutput();
+            // Don't let failure to generate diagnostic plots be fatal.
+            try
+            {
+                GenerateDiagnosticOutput();
+            }
+            catch (const runtime_error& e)
+            {
+                wstringstream wssError;
+                wssError << e.what();
+                UpdateStatus( fraStatusMsg, FRA_STATUS_FATAL_ERROR, wssError.str().c_str() );
+            }
         }
     }
     catch (const FraFault& e)
@@ -459,11 +467,18 @@ bool PicoScopeFRA::ExecuteFRA(double startFreqHz, double stopFreqHz, int stepsPe
         UNREFERENCED_PARAMETER(e);
         retVal = false;
     }
+    catch (const runtime_error& e)
+    {
+        wstringstream wssError;
+        wssError << L"FRA execution error: " << e.what();
+        UpdateStatus( fraStatusMsg, FRA_STATUS_FATAL_ERROR, wssError.str().c_str() );
+        retVal = false;
+    }
     catch (const bad_alloc& e)
     {
         UNREFERENCED_PARAMETER(e);
         wstringstream wssError;
-        wssError << L"Fatal error: Failed to allocate memory.";
+        wssError << L"FRA execution error: Failed to allocate memory.";
         UpdateStatus( fraStatusMsg, FRA_STATUS_FATAL_ERROR, wssError.str().c_str() );
         retVal = false;
     }
@@ -922,6 +937,7 @@ void PicoScopeFRA::GenerateDiagnosticOutput(void)
     stringstream fileName;
     stringstream inputTitle;
     stringstream outputTitle;
+    wstring diagDataPath;
     int maxSamples;
     vector<double> times;
     vector<double> inputMinVoltages;
@@ -929,6 +945,9 @@ void PicoScopeFRA::GenerateDiagnosticOutput(void)
     vector<double> inputMaxVoltages;
     vector<double> outputMaxVoltages;
     double inputAmplitude, outputAmplitude;
+    FRA_STATUS_MESSAGE_T fraStatusMsg;    
+
+    UpdateStatus( fraStatusMsg, FRA_STATUS_MESSAGE, L"Status: Generating diagnostic time domain plots." );
 
     maxSamples = *max_element(begin(diagNumSamples),end(diagNumSamples));
     times.resize(maxSamples);
@@ -938,6 +957,17 @@ void PicoScopeFRA::GenerateDiagnosticOutput(void)
     {
         inputMaxVoltages.resize(maxSamples);
         outputMaxVoltages.resize(maxSamples);
+    }
+
+    diagDataPath = mBaseDataPath + L"\\diag";
+    if (0 == SetCurrentDirectory( diagDataPath.c_str() ))
+    {
+        // Try to create it if it doesn't exist
+        CreateDirectory( diagDataPath.c_str(), NULL );
+        if (0 == SetCurrentDirectory( diagDataPath.c_str() ))
+        {
+            throw runtime_error( "Error generating diagnostic plots.  Could not find diagnostic data directory." );
+        }
     }
 
     for( int il = 0; il < numSteps; il++)
@@ -952,7 +982,8 @@ void PicoScopeFRA::GenerateDiagnosticOutput(void)
             outputTitle.str("");
 
             plsdev( "svg" );
-            fileName << mBaseDataPath << "diag\\step" << il << "try" << jl << ".svg";
+            plsexit(HandlePLplotError);
+            fileName << "step" << il << "try" << jl << ".svg";
             plsfnam( fileName.str().c_str() );
 
             plstar( 1, 2 ); // Setup to stack the input and output plots
@@ -1055,6 +1086,28 @@ void PicoScopeFRA::GenerateDiagnosticOutput(void)
             plend();
         }
     }
+}
+
+////////////////////////////////////////////////////////////////////////////////////////////////////
+//
+// Name: PicoScopeFRA::HandlePLplotError
+//
+// Purpose: Function that gets installed to handle PLplot errors more gracefully.  Normally
+//          PLplot just calls abort(), silently terminating the whole application.  We'll 
+//          report the error via exceptions and handle them at a higher level.
+//
+// Parameters: [in] error - string containing error message from PLplot
+//
+// Notes: This function must not return and must throw an exception
+//
+///////////////////////////////////////////////////////////////////////////////////////////////////
+
+int PicoScopeFRA::HandlePLplotError(const char* error)
+{
+    string plplotErrorString = "PLplot error generating diagnostic plots: ";
+    plplotErrorString += error;
+    plend();
+    throw runtime_error( plplotErrorString.c_str() );
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////

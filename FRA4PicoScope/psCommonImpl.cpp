@@ -910,12 +910,13 @@ bool CommonMethod(SCOPE_FAMILY_LT, GetData)( uint32_t numSamples, uint32_t downs
     }
 
     // Now manually aggregate, if necessary
-    if (compressedBufferSize == numSamples)
+    if (compressedBufferSize == numSamples) // No need to aggregate, just copy
     {
-        inputCompressedMinBuffer = inputFullBuffer;
-        inputCompressedMaxBuffer = inputFullBuffer;
-        outputCompressedMinBuffer = outputFullBuffer;
-        outputCompressedMaxBuffer = outputFullBuffer;
+        // Using explicit copy instead of assignment to avoid unwanted resize
+        copy(inputFullBuffer.begin(), inputFullBuffer.begin() + compressedBufferSize, inputCompressedMinBuffer.begin());
+        copy(inputFullBuffer.begin(), inputFullBuffer.begin() + compressedBufferSize, inputCompressedMaxBuffer.begin());
+        copy(outputFullBuffer.begin(), outputFullBuffer.begin() + compressedBufferSize, outputCompressedMinBuffer.begin());
+        copy(outputFullBuffer.begin(), outputFullBuffer.begin() + compressedBufferSize, outputCompressedMaxBuffer.begin());
     }
     else
     {
@@ -947,8 +948,10 @@ bool CommonMethod(SCOPE_FAMILY_LT, GetData)( uint32_t numSamples, uint32_t downs
     if (compressedBufferSize == numSamples)
     {
         // Simply copy the aggregated samples to the full buffer. It doesn't matter which since they should be the same.
-        inputFullBuffer = inputCompressedMaxBuffer;
-        outputFullBuffer = outputCompressedMaxBuffer;
+        // Using explicit copy instead of assignment to avoid unwanted resize
+        copy( inputCompressedMaxBuffer.begin(), inputCompressedMaxBuffer.end(), inputFullBuffer.begin() );
+        copy( outputCompressedMaxBuffer.begin(), outputCompressedMaxBuffer.end(), outputFullBuffer.begin() );
+
     }
     else
     {
