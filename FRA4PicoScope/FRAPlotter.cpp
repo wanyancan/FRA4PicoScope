@@ -387,10 +387,13 @@ void FRAPlotter::PlotFRA(void)
         bufferElem = 230; // Set to a light gray background
     }
 
-    plsdev( "mem" );
+    plsdev( "memqt" );
     plsmem(plotWidth, plotHeight, plotBmBuffer.data());
-    plinit();
+    
     plsexit(HandlePLplotError);
+    plinit();
+
+    plsfont( PL_FCI_SANS, PL_FCI_UPRIGHT, PL_FCI_MEDIUM );
 
     pladv( 0 );
 
@@ -403,6 +406,7 @@ void FRAPlotter::PlotFRA(void)
     // Set the color of the viewport box
     plcol0( 0 );
     // Setup box and axes for frequency
+    plschr( 0.0, 0.95 );  // Text size less than 1.0 because in memqt, 1.0 results in exponents touching the graph box
     plbox( currentFreqAxisOpts.c_str(), currentFreqAxisMajorTickInterval, currentFreqAxisMinorTicksPerMajorInterval, "", 0.0, 0 );
 
     // Plot axis for gain
@@ -467,16 +471,20 @@ void FRAPlotter::PlotFRA(void)
     // Set the color of the gain data
     plcol0( 9 );
     // Plot the gain data
+    plwidth( 1.5 );
     plline( currentFreqs.size(), currentFreqs.data(), currentGains.data() );
+    plwidth( 1.0 );
 
     // Start Labeling
+    plschr( 0.0, 1.1 );
+
     plcol0( 0 );
-    plmtex( "b", 3.2, 0.5, 0.5, "Frequency Log(Hz)" );
+    plmtex( "b", 3.0, 0.5, 0.5, "Frequency Log(Hz)" );
     plmtex( "t", 2.0, 0.5, 0.5, "Frequency Response Bode Plot" );
     plcol0( 9 );
     
     plgyax( &digmax, &digits );
-    plmtex( "l", digits+2, 0.5, 0.5, "Gain (dB)" );
+    plmtex( "l", 0.8*digits+2.0, 0.5, 0.5, "Gain (dB)" );
 
     // Specify the coordinates of the viewport boundaries for phase
     plwind( currentFreqAxisMin, currentFreqAxisMax, currentPhaseAxisMin, currentPhaseAxisMax );
@@ -484,6 +492,7 @@ void FRAPlotter::PlotFRA(void)
     plcol0( 0 );
     
     // Plot axis for phase
+    plschr( 0.0, 1.0 );
     scientific = false;
     yAxisScale = 0;
     if (currentGainMasterIntervals)
@@ -544,12 +553,15 @@ void FRAPlotter::PlotFRA(void)
     // Set the color of the phase data
     plcol1(0.9); // Something near red
     // Plot the phase data
+    plwidth( 1.5 );
     plline( currentFreqs.size(), currentFreqs.data(), currentPhases.data() );
+    plwidth( 1.0 );
 
     // Label phase data
     plcol1(0.9); // Something near red
     plgyax( &digmax, &digits );
-    plmtex( "r", digits+2, 0.5, 0.5, "Phase (degrees)" );
+    plschr( 0.0, 1.1 );
+    plmtex( "r", 0.8*digits+2.0, 0.5, 0.5, "Phase (degrees)" );
 
     // Close PLplot library
     plend();
@@ -1203,5 +1215,5 @@ int FRAPlotter::HandlePLplotError(const char* error)
 // Setup the viewport to take up +/- 15% horizontal and +/- 10% vertical
 const double FRAPlotter::viewPortLeftEdge = 0.15;
 const double FRAPlotter::viewPortRightEdge = 0.85;
-const double FRAPlotter::viewPortBottomEdge = 0.1;
+const double FRAPlotter::viewPortBottomEdge = 0.12;
 const double FRAPlotter::viewPortTopEdge = 0.9;

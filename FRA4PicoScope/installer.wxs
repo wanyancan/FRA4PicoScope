@@ -51,6 +51,6 @@
             <ComponentRef Id="UserData" />        
         </Feature>
         <UI />
-        <Icon Id="StartMenuIcon.exe" SourceFile="..\Release\FRA4PicoScope.exe" />
+        <Icon Id="StartMenuIcon.exe" SourceFile="Fra4PS.ico" />
     </Product>
 </Wix>

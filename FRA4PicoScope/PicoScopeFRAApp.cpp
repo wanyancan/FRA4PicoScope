@@ -41,7 +41,7 @@
 #include "FRAPlotter.h"
 #include "PlotAxesDialog.h"
 
-char* appVersionString = "0.3b";
+char* appVersionString = "0.4b";
 char* appNameString = "Frequency Response Analyzer for PicoScope";
 
 #define MAX_LOADSTRING 100
@@ -495,8 +495,8 @@ BOOL CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
             psFRA->SetFraSettings( pSettings->GetSamplingMode(), pSettings->GetPurityLowerLimit(), pSettings->GetExtraSettlingTimeMs(),
                                    pSettings->GetAutorangeTriesPerStep(), pSettings->GetAutorangeTolerance(), pSettings->GetSmallSignalResolutionLimit(),
                                    pSettings->GetMaxAutorangeAmplitude(), pSettings->GetMinCyclesCaptured(), pSettings->GetTimeDomainPlotsEnabled(), dataDirectoryName );
-#endif
             InitScope();
+#endif
 
             fraPlotter = new FRAPlotter(pxPlotWidth, pxPlotHeight);
             if (!fraPlotter || !(fraPlotter->Initialize()))
