@@ -60,6 +60,7 @@ bool ps3000Impl::GetTimebase( double desiredFrequency, double* actualFrequency, 
     bool retVal = false;
     double maxFrequency;
     uint32_t maxTimebase;
+    uint32_t minTimebase;
 
     if (desiredFrequency != 0.0 && actualFrequency && timebase)
     {
@@ -70,18 +71,22 @@ bool ps3000Impl::GetTimebase( double desiredFrequency, double* actualFrequency, 
                 case PS3205:
                     maxFrequency = 100e6;
                     maxTimebase = PS3205_MAX_TIMEBASE;
+                    minTimebase = 0;
                     break;
                 case PS3206:
                     maxFrequency = 200e6;
                     maxTimebase = PS3206_MAX_TIMEBASE;
+                    minTimebase = 1;
                     break;
             }
 
             *timebase = saturation_cast<uint32_t,double>(log(maxFrequency/desiredFrequency) / M_LN2); // ps3000pg.en r4 p27; log2(n) implemented as log(n)/log(2)
 
-            // Bound to (0, maxTimebase)
+            // Bound to maxTimebase
             // Doing this step in integer space to avoid potential for impossibility to reach maxTimebase caused by floating point precision issues
             *timebase = min(*timebase, maxTimebase);
+            // Bound to minTimebase
+            *timebase = max(*timebase, minTimebase);
 
             *actualFrequency = maxFrequency / (double)(1 << *timebase);
             retVal = true;
@@ -114,8 +119,16 @@ bool ps3000Impl::InitializeScope(void)
 {
     bool retVal;
 
-    timebaseNoiseRejectMode = 0; // All PS3000 scopes support timebase 0 which is the fastest sampling
-    fSampNoiseRejectMode = 100e6; // Both compatible scopes support 100 MS/s
+    fSampNoiseRejectMode = 100e6; // Both compatible scopes support 100 MS/s with 2 channels enabled
+
+    if (model == PS3205)
+    {
+        timebaseNoiseRejectMode = 0; // On the PS3205, 100 MS/s is timebase 0
+    }
+    if (model == PS3206)
+    {
+        timebaseNoiseRejectMode = 1; // On the PS3206, 100 MS/s is timebase 1
+    }
 
     signalGeneratorPrecision = 1.0; // Because the frequency passed to ps3000_set_siggen is an integer
 

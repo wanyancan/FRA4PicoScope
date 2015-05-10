@@ -84,6 +84,8 @@ bool ps2000Impl::GetTimebase( double desiredFrequency, double* actualFrequency, 
             // Bound to PS2200_MAX_TIMEBASE
             // Doing this step in integer space to avoid potential for impossibility to reach PS2200_MAX_TIMEBASE caused by floating point precision issues
             *timebase = min(*timebase, PS2200_MAX_TIMEBASE);
+            // Bound to 1, because none of these scopes can do the maximum frequency with both channels enabled
+            *timebase = max(*timebase, 1);
 
             *actualFrequency = maxFrequency / (double)(1 << *timebase);
             retVal = true;
