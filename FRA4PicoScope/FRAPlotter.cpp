@@ -135,7 +135,7 @@ bool FRAPlotter::Initialize(void)
 {
     hFraPlotterExecuteCommandEvent = CreateEventW( NULL, false, false, L"ExecutePlotterCommand" );
 
-    if ((HANDLE)NULL == hFraPlotterExecuteCommandEvent)
+    if ((HANDLE)NULL == hFraPlotterExecuteCommandEvent || 0 != GetLastError())
     {
         return false;
     }
@@ -147,7 +147,7 @@ bool FRAPlotter::Initialize(void)
 
     hFraPlotterCommandCompleteEvent = CreateEventW( NULL, false, false, L"PlotterCommandComplete" );
 
-    if ((HANDLE)NULL == hFraPlotterCommandCompleteEvent)
+    if ((HANDLE)NULL == hFraPlotterCommandCompleteEvent || 0 != GetLastError())
     {
         return false;
     }
@@ -159,7 +159,7 @@ bool FRAPlotter::Initialize(void)
 
     hFraPlotterWorkerThread = CreateThread( NULL, 0, WorkerThread, this, 0, NULL );
 
-    if (0 != GetLastError())
+    if ((HANDLE)NULL == hFraPlotterWorkerThread)
     {
         return false;
     }

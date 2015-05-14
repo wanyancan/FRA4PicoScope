@@ -47,13 +47,13 @@ char* appNameString = "Frequency Response Analyzer for PicoScope";
 #define MAX_LOADSTRING 100
 
 // Global Variables:
-HINSTANCE hInst;								// current instance
+HINSTANCE hInst;                                // current instance
 HWND hMainWnd;
 
 wstring dataDirectoryName;
 
-TCHAR szTitle[MAX_LOADSTRING];					// The title bar text
-TCHAR szWindowClass[MAX_LOADSTRING];			// the main window class name
+TCHAR szTitle[MAX_LOADSTRING];                  // The title bar text
+TCHAR szWindowClass[MAX_LOADSTRING];            // the main window class name
 
 const int numAttens = 6;
 const int numCouplings = 2;
@@ -82,7 +82,7 @@ HANDLE hExecuteFraEvent;
 bool detectingZoom = false;
 bool zooming = false;
 POINT ptZoomBegin;
-POINT ptZoomEnd;               
+POINT ptZoomEnd;
 
 // Forward declarations of functions included in this code module:
 ATOM                MyRegisterClass(HINSTANCE hInstance);
@@ -332,6 +332,12 @@ BOOL InitInstance(HINSTANCE hInstance, int nCmdShow)
         delete pSettings;
         exit(-1);
     }
+    else if (ERROR_ALREADY_EXISTS == GetLastError())
+    {
+        MessageBox( 0, L"Cannot run multiple instances of FRA4PicoScope.", L"Fatal Error", MB_OK );
+        delete pSettings;
+        exit(-1);
+    }
 
     if( !ResetEvent( hExecuteFraEvent ) )
     {
@@ -342,7 +348,7 @@ BOOL InitInstance(HINSTANCE hInstance, int nCmdShow)
 
     hExecuteFraThread = CreateThread( NULL, 0, ExecuteFRA, NULL, 0, NULL );
 
-    if (0 != GetLastError())
+    if ((HANDLE)NULL == hExecuteFraThread)
     {
         MessageBox( 0, L"Could not initialize application FRA execution thread.", L"Fatal Error", MB_OK );
         delete pSettings;
