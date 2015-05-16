@@ -115,12 +115,14 @@ ScopeSelector::ScopeSelector() : selectedScope(NULL)
 //
 // Parameters: N/A
 //
-// Notes: Cleans up any currently selected scope
+// Notes: Cleans up currently selected scope, or any scopes remaining open from enumeration.
 //
 ///////////////////////////////////////////////////////////////////////////////////////////////////
 
 ScopeSelector::~ScopeSelector()
 {
+    CloseScopesFromSimulatedEnumeration( NULL );
+
     if (selectedScope)
     {
         delete selectedScope;

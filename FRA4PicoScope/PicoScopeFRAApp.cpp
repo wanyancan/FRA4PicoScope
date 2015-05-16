@@ -24,6 +24,7 @@
 //////////////////////////////////////////////////////////////////////////////////////////////////
 
 #include "stdafx.h"
+#include <csignal>
 #include <windowsx.h>
 #include <Shlobj.h>
 #include <Shlwapi.h>
@@ -48,7 +49,7 @@ char* appNameString = "Frequency Response Analyzer for PicoScope";
 
 // Global Variables:
 HINSTANCE hInst;                                // current instance
-HWND hMainWnd;
+HWND hMainWnd = (HWND)NULL;
 
 wstring dataDirectoryName;
 
@@ -110,6 +111,24 @@ void                DisableAllMenus( void );
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 //
+// Name: SignalHandler
+//
+// Purpose: Handle signals SIGABRT, SIGTERM, and SIGINT
+//
+// Parameters: signal being handled
+//
+// Notes: 
+//
+///////////////////////////////////////////////////////////////////////////////////////////////////
+
+void SignalHandler( int signum )
+{
+    Cleanup( hMainWnd );
+    exit( signum );
+}
+
+////////////////////////////////////////////////////////////////////////////////////////////////////
+//
 // Name: _tWinMain
 //
 // Purpose: Application Entry point
@@ -131,6 +150,11 @@ int APIENTRY _tWinMain(HINSTANCE hInstance,
     MSG msg;
     int status;
     HACCEL hAccelTable;
+
+    // Install signal handler for abort, terminate, and interrupt
+    signal( SIGABRT, SignalHandler );
+    signal( SIGTERM, SignalHandler );
+    signal( SIGINT, SignalHandler );
 
     // Initialize global strings
     LoadString(hInstance, IDS_APP_TITLE, szTitle, MAX_LOADSTRING);
