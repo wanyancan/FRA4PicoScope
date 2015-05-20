@@ -183,6 +183,7 @@ class PicoScope
         virtual uint32_t GetNoiseRejectModeTimebase( void ) = 0;
         virtual double GetNoiseRejectModeSampleRate( void ) = 0;
         virtual double GetSignalGeneratorPrecision( void ) = 0;
+        virtual double GetClosestSignalGeneratorFrequency( double requestedFreq ) = 0;
         virtual PS_RANGE GetMinRange( void ) = 0;
         virtual PS_RANGE GetMaxRange( void ) = 0;
         virtual int16_t GetMaxValue( void ) = 0;

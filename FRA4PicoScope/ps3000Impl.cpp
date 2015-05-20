@@ -130,7 +130,7 @@ bool ps3000Impl::InitializeScope(void)
         timebaseNoiseRejectMode = 1; // On the PS3206, 100 MS/s is timebase 1
     }
 
-    signalGeneratorPrecision = 1.0; // Because the frequency passed to ps3000_set_siggen is an integer
+    signalGeneratorPrecision = 25.0e6 / (1<<28); // Per conversation related to support ticket TS00062849
 
     minRange = (PS_RANGE)PS3000_100MV;
     maxRange = (PS_RANGE)PS3000_20V;

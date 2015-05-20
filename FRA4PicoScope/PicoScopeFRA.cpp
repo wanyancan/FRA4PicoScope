@@ -803,8 +803,7 @@ void PicoScopeFRA::GenerateFrequencyPoints(void)
     // limitations of the signal generator
     for (int i = 0; i < numSteps; i++)
     {
-        uint32_t N = (uint32_t)(freqsHz[i] / signalGeneratorPrecision);
-        freqsHz[i] = N * signalGeneratorPrecision;
+        freqsHz[i] = ps->GetClosestSignalGeneratorFrequency( freqsHz[i] );
         freqsLogHz[i] = log10( freqsHz[i] );
     }
 

@@ -25,6 +25,8 @@
 
 #include <sstream>
 #include <algorithm>
+#include <boost/math/special_functions/round.hpp>
+using namespace boost::math;
 
 // Define lower case and upper case tokens
 #if defined(PS2000)
@@ -277,6 +279,27 @@ bool CommonMethod(SCOPE_FAMILY_LT,IsCompatible)( void )
 const RANGE_INFO_T* CommonMethod(SCOPE_FAMILY_LT,GetRangeCaps)( void )
 {
     return rangeInfo;
+}
+
+double CommonMethod(SCOPE_FAMILY_LT,GetClosestSignalGeneratorFrequency)( double requestedFreq )
+{
+#if defined(PS3000) // Unique because the ps3000_set_siggen function takes integers for frequency
+    double actualFreq;
+    uint32_t N, M; // integers below and above the requested frequency
+    double fClosestToN, fClosestToM; // frequencies closest to N and M that generator is capable of producing
+    N = (uint32_t)requestedFreq;
+    M = N+1;
+    // Find closest signalGeneratorPrecision to each of N and M
+    fClosestToN = round((double)N / signalGeneratorPrecision)*signalGeneratorPrecision;
+    fClosestToM = round((double)M / signalGeneratorPrecision)*signalGeneratorPrecision;
+    actualFreq = fabs(requestedFreq-fClosestToN) < fabs(requestedFreq-fClosestToM) ? fClosestToN : fClosestToM;
+#else
+    double actualFreq = lround(requestedFreq / signalGeneratorPrecision) * signalGeneratorPrecision;
+#endif
+    // Bound in case any rounding caused us to go outside the capabilities of the generator
+    actualFreq = min(actualFreq, maxFuncGenFreq);
+    actualFreq = max(actualFreq, minFuncGenFreq);
+    return actualFreq;
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////

@@ -29,6 +29,7 @@ uint8_t GetNumChannels( void );
 uint32_t GetNoiseRejectModeTimebase( void );
 double GetNoiseRejectModeSampleRate( void );
 double GetSignalGeneratorPrecision( void );
+double GetClosestSignalGeneratorFrequency( double requestedFreq );
 PS_RANGE GetMinRange( void );
 PS_RANGE GetMaxRange( void );
 int16_t GetMaxValue( void );
