@@ -27,7 +27,9 @@
 #include "PicoScopeInterface.h"
 #include <memory>
 #include <vector>
+#include <array>
 #include <string>
+#include <complex>
 
 typedef enum
 {
@@ -42,8 +44,8 @@ typedef enum
     OK, // Measurement is acceptable
     HIGHEST_RANGE_LIMIT_REACHED, // Overflow or amplitude too high and already on the highest range
     LOWEST_RANGE_LIMIT_REACHED, // Amplitude too low for good measurement precision and already on lowest range
-    CHANNEL_OVERFLOW, // Overflow flag set and greater than X% samples railed.
-    AMPLITUDE_TOO_HIGH, // Amplitide is close enough to full scale that it would be best to increase the range
+    CHANNEL_OVERFLOW, // Overflow flag set
+    AMPLITUDE_TOO_HIGH, // Amplitude is close enough to full scale that it would be best to increase the range
     AMPLITUDE_TOO_LOW // Amplitude is low enough that range can be decreased to increase the measurement precision.
 } AUTORANGE_STATUS_T;
 
@@ -180,7 +182,7 @@ class PicoScopeFRA
         vector<double> latestCompletedPhasesDeg;
         vector<double> latestCompletedGainsDb;
         double actualSampFreqHz; // Scope sampling frequency
-        int32_t numSamples;
+        uint32_t numSamples;
         int32_t timeIndisposedMs;
         double currentInputMagnitude;
         double currentOutputMagnitude;
@@ -216,8 +218,8 @@ class PicoScopeFRA
         // These variables are for keeping diagnostic data and sample data.
         int autorangeRetryCounter;
         int freqStepCounter;
-        vector<int16_t> inputBuffer;
-        vector<int16_t> outputBuffer;
+        vector<int16_t>* pInputBuffer;
+        vector<int16_t>* pOutputBuffer;
         vector<vector<double>> inAmps;
         vector<vector<double>> outAmps;
         vector<vector<bool>> inOV;
@@ -228,8 +230,8 @@ class PicoScopeFRA
         vector<vector<vector<int16_t>>> outputMinData;
         vector<vector<vector<int16_t>>> inputMaxData;
         vector<vector<vector<int16_t>>> outputMaxData;
-        vector<vector<int16_t>> inputAbsMax;
-        vector<vector<int16_t>> outputAbsMax;
+        vector<vector<uint16_t>> inputAbsMax;
+        vector<vector<uint16_t>> outputAbsMax;
         vector<int> diagNumSamples;
         vector<int> autoRangeTries;
         vector<double> sampleInterval;
@@ -256,11 +258,14 @@ class PicoScopeFRA
         bool GetNumChannels(void);
         bool StartCapture( double measFreqHz );
         void GenerateFrequencyPoints();
-        bool GetData();
+        bool ProcessData();
         bool CheckSignalRanges(void);
         bool CheckSignalOverflows(void);
         bool CalculateGainAndPhase( double* gain, double* phase );
-        void Goertzel(int16_t* samples, uint32_t N, double fSamp, double fDetect, double& magnitude, double& phase, double& amplitude, double& purity);
+        void InitGoertzel( uint32_t N, double fSamp, double fDetect );
+        void FeedGoertzel( int16_t* inputSamples, int16_t* outputSamples, uint32_t n );
+        void GetGoertzelResults( double& inputMagnitude, double& inputPhase, double& inputAmplitude, double& inputPurity,
+                                 double& outputMagnitude, double& outputPhase, double& outputAmplitude, double& outputPurity );
         void TransferLatestResults(void);
 
         // Utilities for sending a message via the callback

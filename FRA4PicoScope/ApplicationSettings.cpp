@@ -217,7 +217,7 @@ bool ApplicationSettings::InitializeApplicationSettingsFile( void )
 
         if (settingsFileOutputStream)
         {
-            xml_writer_settings<char> settings(' ', 4);
+            xml_writer_settings<std::string> settings(' ', 4);
             write_xml(settingsFileOutputStream, AppSettingsPropTree, settings);
             appSettingsOpened = true;
             appSettingsDirty = false;
@@ -299,7 +299,7 @@ bool ApplicationSettings::WriteApplicationSettings( void )
 
             if (settingsFileOutputStream)
             {
-                xml_writer_settings<char> settings(' ', 4);
+                xml_writer_settings<std::string> settings(' ', 4);
                 write_xml(settingsFileOutputStream, AppSettingsPropTree, settings);
                 appSettingsDirty = false;
             }
@@ -454,7 +454,7 @@ bool ApplicationSettings::InitializeScopeSettingsFile(PicoScope* pScope)
 
         try
         {
-            xml_writer_settings<wchar_t> settings(wchar_t(' '), 4);
+            xml_writer_settings<std::wstring> settings(wchar_t(' '), 4);
             write_xml(settingsFileOutputStream, ScopeSettingsPropTree, settings);
             appSettingsOpened = true;
             appSettingsDirty = false;
@@ -534,7 +534,7 @@ bool ApplicationSettings::WriteScopeSettings(void)
 
             try
             {
-                xml_writer_settings<wchar_t> settings(wchar_t(' '), 4);
+                xml_writer_settings<std::wstring> settings(wchar_t(' '), 4);
                 write_xml(settingsFileOutputStream, ScopeSettingsPropTree, settings);
                 scopeSettingsDirty = false;
             }

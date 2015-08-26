@@ -30,6 +30,7 @@ uint32_t GetNoiseRejectModeTimebase( void );
 double GetNoiseRejectModeSampleRate( void );
 double GetSignalGeneratorPrecision( void );
 double GetClosestSignalGeneratorFrequency( double requestedFreq );
+uint32_t GetMaxDataRequestSize( void );
 PS_RANGE GetMinRange( void );
 PS_RANGE GetMaxRange( void );
 int16_t GetMaxValue( void );
@@ -48,12 +49,12 @@ bool DisableChannelTriggers( void );
 bool GetMaxSamples( uint32_t* maxSamples );
 bool GetTimebase( double desiredFrequency, double* actualFrequency, uint32_t* timebase );
 bool RunBlock( int32_t numSamples, uint32_t timebase, int32_t *timeIndisposedMs, psBlockReady lpReady, void *pParameter );
-// Abstracts set buffers and get data
-bool GetData( uint32_t numSamples, uint32_t downsampleTo, PS_CHANNEL inputChannel, PS_CHANNEL outputChannel,
-              vector<int16_t>& inputFullBuffer, vector<int16_t>& outputFullBuffer,
-              vector<int16_t>& inputCompressedMinBuffer, vector<int16_t>& outputCompressedMinBuffer,
-              vector<int16_t>& inputCompressedMaxBuffer, vector<int16_t>& outputCompressedMaxBuffer, int16_t& inputAbsMax, int16_t& outputAbsMax,
-              bool* inputOv, bool* outputOv );
+void SetChannelDesignations( PS_CHANNEL inputChannel, PS_CHANNEL outputChannel );
+bool GetData( uint32_t numSamples, uint32_t startIndex, vector<int16_t>** inputBuffer, vector<int16_t>** outputBuffer );
+bool GetCompressedData( uint32_t numSamples, 
+                        vector<int16_t>& inputCompressedMinBuffer, vector<int16_t>& outputCompressedMinBuffer,
+                        vector<int16_t>& inputCompressedMaxBuffer, vector<int16_t>& outputCompressedMaxBuffer );
+bool GetPeakValues( uint16_t& inputPeak, uint16_t& outputPeak, bool& inputOv, bool& outputOv );
 bool Close( void );
 const RANGE_INFO_T* GetRangeCaps( void );
 private:
@@ -63,6 +64,13 @@ PS_RANGE minRange;
 PS_RANGE maxRange;
 uint32_t timebaseNoiseRejectMode;
 double fSampNoiseRejectMode;
+PS_CHANNEL mInputChannel;
+PS_CHANNEL mOutputChannel;
+vector<int16_t> mInputBuffer;
+vector<int16_t> mOutputBuffer;
+bool buffersDirty;
+uint32_t mNumSamples;
+static const uint32_t maxDataRequestSize;
 #if !defined(NEW_PS_DRIVER_MODEL)
 static DWORD WINAPI CheckStatus(LPVOID lpThreadParameter);
 bool InitStatusChecking(void);

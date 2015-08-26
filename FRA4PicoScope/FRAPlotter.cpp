@@ -959,7 +959,7 @@ unique_ptr<uint8_t[]> FRAPlotter::GetScreenBitmapPlot32BppBGRA(void)
 
     if (dwWaitResult == WAIT_OBJECT_0)
     {
-        return move(buffer);
+        return std::move(buffer);
     }
     else
     {
@@ -999,7 +999,7 @@ unique_ptr<uint8_t[]> FRAPlotter::GetPNGBitmapPlot(size_t* size)
             *size = 0;
         }
         unique_ptr<uint8_t[]> buffer(workingBuffer);
-        return move(buffer);
+        return std::move(buffer);
     }
     else
     {

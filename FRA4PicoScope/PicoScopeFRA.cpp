@@ -32,6 +32,7 @@
 #include <algorithm>
 #include <memory>
 #include <vector>
+#include <intrin.h>
 #include <sstream>
 #include <iomanip>
 #include "plplot.h" // For creating diagnostic graphs
@@ -315,6 +316,9 @@ bool PicoScopeFRA::SetupChannels( int inputChannel, int inputChannelCoupling, in
         return false;
     }
 
+    // Tell the PicoScope which channels are input and output
+    ps->SetChannelDesignations( mInputChannel, mOutputChannel );
+
     return true;
 }
 
@@ -387,17 +391,7 @@ bool PicoScopeFRA::ExecuteFRA(double startFreqHz, double stopFreqHz, int stepsPe
 
                 if (dwWaitResult == WAIT_OBJECT_0)
                 {
-                    if (true != GetData())
-                    {
-                        throw FraFault();
-                    }
-
-                    if (false == CheckSignalOverflows())
-                    {
-                        // Both channels are over-range, don't bother with further analysis.
-                        continue; // Try again on a different range
-                    }
-                    if (false == CheckSignalRanges())
+                    if (false == ProcessData())
                     {
                         // At least one of the channels needs adjustment
                         continue; // Try again on a different range
@@ -420,10 +414,13 @@ bool PicoScopeFRA::ExecuteFRA(double startFreqHz, double stopFreqHz, int stepsPe
                 }
             }
 
-            // Make records for diagnostics
-            sampleInterval[freqStepCounter] = 1.0 / actualSampFreqHz;
-            diagNumSamples[freqStepCounter] = inputMinData[freqStepCounter][0].size();
-            autoRangeTries[freqStepCounter] = autorangeRetryCounter;
+            if (mDiagnosticsOn)
+            {
+                // Make records for diagnostics
+                sampleInterval[freqStepCounter] = 1.0 / actualSampFreqHz;
+                diagNumSamples[freqStepCounter] = inputMinData[freqStepCounter][0].size();
+                autoRangeTries[freqStepCounter] = autorangeRetryCounter;
+            }
 
             if (autorangeRetryCounter == maxAutorangeRetries)
             {
@@ -591,8 +588,6 @@ bool PicoScopeFRA::CheckSignalRanges(void)
 {
 
     bool retVal = true;
-    double inputAmplitude = 0.0;
-    double outputAmplitude = 0.0;
 
     // Want amplitude to be above a lower threshold to avoid excessive quantization noise.
     // Want the signal to be below an upper threshold to avoid being close to overflow.
@@ -600,9 +595,6 @@ bool PicoScopeFRA::CheckSignalRanges(void)
     // Check Input
     if (inputChannelAutorangeStatus == OK)
     {
-        Goertzel( inputBuffer.data(), numSamples, actualSampFreqHz, currentFreqHz,
-                  currentInputMagnitude, currentInputPhase, inputAmplitude, currentInputPurity );
-
         if (((double)inputAbsMax[freqStepCounter][autorangeRetryCounter]/rangeCounts) > maxAmplitudeRatio)
         {
             if (currentInputChannelRange < maxRange)
@@ -646,15 +638,11 @@ bool PicoScopeFRA::CheckSignalRanges(void)
     else
     {
         retVal = false; // Still need to adjust for the overflow on this channel
-        inputAmplitude = 0.0;
     }
 
     // Check Output
     if (outputChannelAutorangeStatus == OK)
     {
-        Goertzel( outputBuffer.data(), numSamples, actualSampFreqHz, currentFreqHz,
-                  currentOutputMagnitude, currentOutputPhase, outputAmplitude, currentOutputPurity );
-
         if (((double)outputAbsMax[freqStepCounter][autorangeRetryCounter]/rangeCounts) > maxAmplitudeRatio)
         {
             if (currentOutputChannelRange < maxRange)
@@ -698,14 +686,7 @@ bool PicoScopeFRA::CheckSignalRanges(void)
     else
     {
         retVal = false; // Still need to adjust for the overflow on this channel
-        outputAmplitude = 0.0;
     }
-
-    // Make records for diagnostics
-    inAmps[freqStepCounter][autorangeRetryCounter] = inputAmplitude;
-    outAmps[freqStepCounter][autorangeRetryCounter] = outputAmplitude;
-    inputPurity[freqStepCounter][autorangeRetryCounter] = currentInputPurity;
-    outputPurity[freqStepCounter][autorangeRetryCounter] = currentOutputPurity;
 
     return retVal;
 }
@@ -825,9 +806,6 @@ void PicoScopeFRA::GenerateFrequencyPoints(void)
 void PicoScopeFRA::AllocateFraData(void)
 {
     int i;
-
-    inputBuffer.resize(maxScopeSamplesPerChannel);
-    outputBuffer.resize(maxScopeSamplesPerChannel);
 
     inAmps.resize(numSteps);
     for (i = 0; i < numSteps; i++)
@@ -1221,9 +1199,9 @@ bool PicoScopeFRA::StartCapture( double measFreqHz )
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 //
-// Name: PicoScopeFRA::GetData
+// Name: PicoScopeFRA::ProcessData
 //
-// Purpose: Retrieve the data the scope has captured.
+// Purpose: Retrieve the data the scope has captured and run signal processing
 //
 // Parameters: [out] return - Whether the function was successful.
 //
@@ -1231,29 +1209,79 @@ bool PicoScopeFRA::StartCapture( double measFreqHz )
 //
 ///////////////////////////////////////////////////////////////////////////////////////////////////
 
-bool PicoScopeFRA::GetData(void)
+bool PicoScopeFRA::ProcessData(void)
 {
     bool retVal = true;
     FRA_STATUS_MESSAGE_T fraStatusMsg;
     wchar_t fraStatusText[128];
-    uint32_t compressedBufferSize;
 
-    wsprintf( fraStatusText, L"Status: Transferring %d samples", numSamples );
+    wsprintf( fraStatusText, L"Status: Transferring and processing %d samples", numSamples );
     UpdateStatus( fraStatusMsg, FRA_STATUS_MESSAGE, fraStatusText );
 
-    compressedBufferSize = (mSamplingMode == LOW_NOISE) ? 0 : 1024;
-
-    if (!(ps->GetData(numSamples, compressedBufferSize, mInputChannel, mOutputChannel, inputBuffer, outputBuffer,
-                      inputMinData[freqStepCounter][autorangeRetryCounter], outputMinData[freqStepCounter][autorangeRetryCounter],
-                      inputMaxData[freqStepCounter][autorangeRetryCounter], outputMaxData[freqStepCounter][autorangeRetryCounter],
-                      inputAbsMax[freqStepCounter][autorangeRetryCounter], outputAbsMax[freqStepCounter][autorangeRetryCounter],
-                      &ovIn, &ovOut)))
+    if (!(ps->GetPeakValues( inputAbsMax[freqStepCounter][autorangeRetryCounter], outputAbsMax[freqStepCounter][autorangeRetryCounter], ovIn, ovOut )))
     {
-        retVal = false;
+        throw FraFault();
+    }
+    else if (false == CheckSignalOverflows())
+    {
+        // Both channels are over-range, don't bother with further analysis.
+        retVal = false; // Signal to try again on a different range
+    }
+    else if (false == CheckSignalRanges())
+    {
+        // At least one of the channels needs adjustment
+        retVal = false; // Signal to try again on a different range
+    }
+
+    // Run signal processing
+    // 1) If both signal's ranges are acceptable
+    //    OR
+    // 2) If diagnostics are on and at least one of the signal's range is acceptable
+    if (retVal == true || (mDiagnosticsOn && (OK == inputChannelAutorangeStatus || OK == outputChannelAutorangeStatus)))
+    {
+        uint32_t currentSampleIndex = 0;
+        uint32_t maxDataRequestSize = ps->GetMaxDataRequestSize();
+        uint32_t numSamplesToFeed;
+        double inputAmplitude, outputAmplitude;
+        
+        InitGoertzel( numSamples, actualSampFreqHz, currentFreqHz );
+        
+        for (currentSampleIndex = 0; currentSampleIndex < numSamples; currentSampleIndex+=numSamplesToFeed)
+        {
+            numSamplesToFeed = min(maxDataRequestSize, numSamples-currentSampleIndex);
+
+            if (false == ps->GetData( numSamplesToFeed, currentSampleIndex, &pInputBuffer, &pOutputBuffer ))
+            {
+                throw FraFault();
+            }
+            else
+            {
+                FeedGoertzel(pInputBuffer->data(), pOutputBuffer->data(), numSamplesToFeed);
+            }
+        }
+
+        GetGoertzelResults( currentInputMagnitude, currentInputPhase, inputAmplitude, currentInputPurity, 
+                            currentOutputMagnitude, currentOutputPhase, outputAmplitude, currentOutputPurity );
+
+        if (mDiagnosticsOn)
+        {
+            // Make records for diagnostics
+            inAmps[freqStepCounter][autorangeRetryCounter] = inputAmplitude;
+            outAmps[freqStepCounter][autorangeRetryCounter] = outputAmplitude;
+            inputPurity[freqStepCounter][autorangeRetryCounter] = currentInputPurity;
+            outputPurity[freqStepCounter][autorangeRetryCounter] = currentOutputPurity;
+        }
+    }
+    if (mDiagnosticsOn)
+    {
+        uint32_t compressedSize = mSamplingMode == LOW_NOISE ? 0 : 1024;
+        ps->GetCompressedData( compressedSize, inputMinData[freqStepCounter][autorangeRetryCounter],
+                                               outputMinData[freqStepCounter][autorangeRetryCounter],
+                                               inputMaxData[freqStepCounter][autorangeRetryCounter],
+                                               outputMaxData[freqStepCounter][autorangeRetryCounter] );
     }
 
     return retVal;
-
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -1298,28 +1326,34 @@ bool PicoScopeFRA::CalculateGainAndPhase( double* gain, double* phase)
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 //
-// Name: PicoScopeFRA::Goertzel
+// Name: PicoScopeFRA::XXXXGoertzel
 //
 // Purpose: The Goertzel algorithm is a fast method of computing a single point DFT.  This is a generalized Goertzel
 // algorithm which allows for a non-integer bin (and thus is really a single point DTFT).  Both magnitude and phase
 // are returned.  The advantage of performing the Goertzel algorithm vs an FFT is that for our application we're only
 // interested in a single frequency per measurement, and thus Goertzel is faster than FFT.  The advantage of the generalized
 // Goertzel (k ∈ R) is that we don't have to adjust the number of samples or sampling rate to maintain accuracy of the
-// frequency selection.  This function also computes other useful parameters such as amplitude and purity, which can be used 
+// frequency selection.  These functions also compute other useful parameters such as amplitude and purity, which can be used 
 // for data quality decisions.
 //
-// Parameters: [in] samples - data sample points
-//             [in] N - number of data points
+// Parameters: 
+//    InitGoertzel
+//             [in] totalSamples - Total number of samples in the full signal
 //             [in] fSamp - frequency of the sampling
 //             [in] fDetect - frequency to detect  
-//             [output] magnitude - The Goertzel magnitude
-//             [output] phase - The Goertzel phase
-//             [output] amplitude - The measured amplitude of the signal
-//             [output] purity - The purity of the signal (signal power over total power)
+//    FeedGoertzel
+//             [in] inputSamples - input channel data sample points
+//             [in] outputSamples - output channel data sample points
+//             [in] n - number of samples in this block of samples
+//    GetGoertzelResults
+//             [output] [in/out]putMagnitude - The Goertzel magnitude
+//             [output] [in/out]putPhase - The Goertzel phase
+//             [output] [in/out]putAmplitude - The measured amplitude of the signal
+//             [output] [in/out]putPurity - The purity of the signal (signal power over total power)
 //
 // Notes: 
 //
-// The following reference:
+// - The following reference:
 //    - derives the generalized Gortzel
 //    - is the source of the algorithm used in this method
 //          doi:10.1186/1687-6180-2012-56
@@ -1327,57 +1361,139 @@ bool PicoScopeFRA::CalculateGainAndPhase( double* gain, double* phase)
 //          Goertzel algorithm generalized to non-integer multiples of fundamental frequency.
 //          EURASIP Journal on Advances in Signal Processing 2012 2012:56.
 //
+// - The benefit of processing the input and output signals together is that we can take advantage of SIMD 
+//   parallelism (SSE, AVX, etc);  However, since the MSVC auto-vectorizer seems unable to vectorize the core
+//   loop, we're going to code it with intrinsics.
+//
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-void PicoScopeFRA::Goertzel( int16_t* samples, uint32_t N, double fSamp, double fDetect, double& magnitude, double& phase, double& amplitude, double& purity )
-{
-    double A, B;
-    complex<double> C, D, y;
-    double s0 = 0.0, s1 = 0.0, s2 = 0.0;
-    double totalPower = 0.0;
-    double signalPower = 0.0;
-    long long sum = 0;
-    double average = 0.0;
-    uint32_t i;
+// Making these non class members to help simplify alignment
+// Goertzel coefficient and state data
+static __declspec(align(16)) double B;
+static complex<double> C, D;
+static __declspec(align(16)) double s1[2], s2[2];
+static __declspec(align(16)) double totalPower[2];
+static uint32_t samplesProcessed;
+static uint32_t N;
+// Goertzel outputs
+static array<double,2> magnitude, phase, amplitude, purity;
 
-    // Calculate average to subtract out DC, because we will not count DC as noise
-    for (i = 0; i < N; i++)
-    {
-        sum+=samples[i];
-    }
-    average = (double)sum/(double)N;
+void PicoScopeFRA::InitGoertzel( uint32_t totalSamples, double fSamp, double fDetect )
+{
+    double A;
+    std::array<double,2> zeros = {0.0, 0.0};
+    s1[0] = s1[1] = s2[0] = s2[1] = 0.0;
+    totalPower[0] = totalPower[1] = 0.0;
+    samplesProcessed = 0;
+    magnitude = phase = amplitude = purity = zeros;
+
+    N = totalSamples;
 
     A = 2.0 * M_PI * fDetect / fSamp; // A condensed version of: k = N * fDetect / fSamp; A = 2.0 * M_PI * k / N
     B = 2.0 * cos( A );
     C = exp( complex<double>(0.0,-A) );
     D = exp( complex<double>(0.0,-A*(N-1)) );
+}
 
-    for (i = 0; i < N-1; i++)
+void PicoScopeFRA::FeedGoertzel( int16_t* inputSamples, int16_t* outputSamples, uint32_t n )
+{
+    uint32_t i;
+    bool lastBlock = false;
+    uint32_t iterLimit;
+
+    // Vectors
+    __m128d BVec, s0Vec, s1Vec, s2Vec, totalPowerVec, sampVec;
+
+    // Determine if this is the last block.  If it is, there is special processing.
+    if ((samplesProcessed + n) == N)
     {
-        totalPower += ((samples[i]-average)*(samples[i]-average));
-
-        s0 = (samples[i]-average) + B * s1 - s2;
-        s2 = s1;
-        s1 = s0;
+        lastBlock = true;
+        iterLimit = n-1;
+    }
+    else
+    {
+        lastBlock = false;
+        iterLimit = n;
     }
 
-    totalPower += ((samples[i]-average)*(samples[i]-average));
+    // Load vectors
+    BVec = _mm_load1_pd( &B );
+    s1Vec = _mm_load_pd( s1 );
+    s2Vec = _mm_load_pd( s2 );
+    totalPowerVec = _mm_load_pd( totalPower );
 
-    s0 = (samples[i]-average) + B * s1 - s2;
+    // Execute the filter and Parseval energy time domain calculation
+    for (i = 0; i < iterLimit; i++)
+    {
+        // Load and convert samples to packed doubles
+        sampVec = _mm_cvtepi32_pd( _mm_set_epi32( 0, 0, outputSamples[i], inputSamples[i] ) );
+        
+        //totalPower += samples[i]*samples[i];
+        totalPowerVec = _mm_add_pd( totalPowerVec, _mm_mul_pd( sampVec, sampVec ) );
 
-    y = s0 - s1 * C;
+        //s0 = samples[i] + B * s1 - s2;
+        s0Vec = _mm_sub_pd( _mm_add_pd( _mm_mul_pd( BVec, s1Vec ), sampVec ), s2Vec );
 
-    y = y * D;
+        //s2 = s1;
+        s2Vec = s1Vec;
+        
+        //s1 = s0;
+        s1Vec = s0Vec;
+    }
+    samplesProcessed += n;
 
-    magnitude = abs( y );
-    phase = arg( y );
+    // Unvectorize
+    _mm_store_pd(s1, s1Vec);
+    _mm_store_pd(s2, s2Vec);
+    _mm_store_pd(totalPower, totalPowerVec);
 
-    // Using N+1 because this form of the Goertzel iterates N+1 times, with x[N] = 0, thus effectively using N+1 samples.
-    // The x[N]=0 sample has no effect on the time domain Parseval's energy calculation.
-    amplitude = 2.0 * magnitude / (N+1);
-    signalPower = 2.0 * (magnitude * magnitude) / (N+1);
+    if (lastBlock)
+    {
+        array<complex<double>,2> y;
+        array<double,2> signalPower;
+        double s0[2];
 
-    purity = signalPower/totalPower;
+        totalPower[0] += ((inputSamples[i])*(inputSamples[i]));
+        totalPower[1] += ((outputSamples[i])*(outputSamples[i]));
+
+        s0[0] = (inputSamples[i]) + B * s1[0] - s2[0];
+        s0[1] = (outputSamples[i]) + B * s1[1] - s2[1];
+
+        y[0] = s0[0] - s1[0] * C;
+        y[1] = s0[1] - s1[1] * C;
+        
+        y[0] = y[0] * D;
+        y[1] = y[1] * D;
+
+        magnitude[0]= abs(y[0]);
+        magnitude[1]= abs(y[1]);
+        phase[0] = arg(y[0]);
+        phase[1] = arg(y[1]);
+
+        // Using N+1 because this form of the Goertzel iterates N+1 times, with x[N] = 0, thus effectively using N+1 samples.
+        // The x[N]=0 sample has no effect on the time domain Parseval's energy calculation.
+        amplitude[0] = 2.0 * magnitude[0] / (N+1);
+        amplitude[1] = 2.0 * magnitude[1] / (N+1);
+        signalPower[0] = 2.0 * (magnitude[0] * magnitude[0]) / (N+1);
+        signalPower[1] = 2.0 * (magnitude[1] * magnitude[1]) / (N+1);
+
+        purity[0] = signalPower[0]/totalPower[0];
+        purity[1] = signalPower[1]/totalPower[1];
+    }
+}
+
+void PicoScopeFRA::GetGoertzelResults( double& inputMagnitude, double& inputPhase, double& inputAmplitude, double& inputPurity,
+                                       double& outputMagnitude, double& outputPhase, double& outputAmplitude, double& outputPurity )
+{
+    inputMagnitude = magnitude[0];
+    inputPhase = phase[0];
+    inputAmplitude = amplitude[0];
+    inputPurity = purity[0];
+
+    outputMagnitude = magnitude[1];
+    outputPhase = phase[1];
+    outputAmplitude = amplitude[1];
+    outputPurity = purity[1];
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////

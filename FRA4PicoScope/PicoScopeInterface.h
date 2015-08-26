@@ -141,7 +141,8 @@ typedef enum
     PS_CHANNEL_E,
     PS_CHANNEL_F,
     PS_CHANNEL_G,
-    PS_CHANNEL_H
+    PS_CHANNEL_H,
+    PS_CHANNEL_INVALID
 } PS_CHANNEL;
 
 typedef enum
@@ -184,6 +185,7 @@ class PicoScope
         virtual double GetNoiseRejectModeSampleRate( void ) = 0;
         virtual double GetSignalGeneratorPrecision( void ) = 0;
         virtual double GetClosestSignalGeneratorFrequency( double requestedFreq ) = 0;
+        virtual uint32_t GetMaxDataRequestSize( void ) = 0;
         virtual PS_RANGE GetMinRange( void ) = 0;
         virtual PS_RANGE GetMaxRange( void ) = 0;
         virtual int16_t GetMaxValue( void ) = 0;
@@ -202,12 +204,12 @@ class PicoScope
         virtual bool GetMaxSamples( uint32_t* maxSamples ) = 0;
         virtual bool GetTimebase( double desiredFrequency, double* actualFrequency, uint32_t* timebase ) = 0;
         virtual bool RunBlock( int32_t numSamples, uint32_t timebase, int32_t *timeIndisposedMs, psBlockReady lpReady, void *pParameter ) = 0;
-        // Abstracts set buffers and get data
-        virtual bool GetData( uint32_t numSamples, uint32_t downsampleTo, PS_CHANNEL inputChannel, PS_CHANNEL outputChannel,
-                              vector<int16_t>& inputFullBuffer, vector<int16_t>& outputFullBuffer,
-                              vector<int16_t>& inputCompressedMinBuffer, vector<int16_t>& outputCompressedMinBuffer,
-                              vector<int16_t>& inputCompressedMaxBuffer, vector<int16_t>& outputCompressedMaxBuffer, int16_t& inputAbsMax, int16_t& outputAbsMax,
-                              bool* inputOv, bool* outputOv ) = 0;
+        virtual void SetChannelDesignations( PS_CHANNEL inputChannel, PS_CHANNEL outputChannel ) = 0;
+        virtual bool GetData( uint32_t numSamples, uint32_t startIndex, vector<int16_t>** inputBuffer, vector<int16_t>** outputBuffer ) = 0;
+        virtual bool GetCompressedData( uint32_t numSamples, 
+                                        vector<int16_t>& inputCompressedMinBuffer, vector<int16_t>& outputCompressedMinBuffer,
+                                        vector<int16_t>& inputCompressedMaxBuffer, vector<int16_t>& outputCompressedMaxBuffer ) = 0;
+        virtual bool GetPeakValues( uint16_t& inputPeak, uint16_t& outputPeak, bool& inputOv, bool& outputOv ) = 0;
         virtual bool Close( void ) = 0;
 
         virtual const RANGE_INFO_T* GetRangeCaps( void ) = 0;

@@ -109,6 +109,10 @@ const RANGE_INFO_T CommonClass(SCOPE_FAMILY_LT)::rangeInfo[] =
     {20.0, 0.0, 2.0, L"20 V"}
 };
 
+// It is imperative that this value be greater than (half) the largest buffer in the scope family for
+// scopes not implementing the new driver model.  Currently this is 1MB (PS3206)
+const uint32_t CommonClass(SCOPE_FAMILY_LT)::maxDataRequestSize = 16 * 1024 * 1024; // 16 MSamp (32 MB)
+
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 //
 // Name: Common Constructor
@@ -137,6 +141,15 @@ CommonCtor(SCOPE_FAMILY_LT)( int16_t _handle ) : PicoScope()
     timebaseNoiseRejectMode = 0;
     fSampNoiseRejectMode = 0.0;
     signalGeneratorPrecision = 0.0;
+    mInputChannel = PS_CHANNEL_INVALID;
+    mOutputChannel = PS_CHANNEL_INVALID;
+
+    uint32_t bufferSize;
+    GetMaxSamples( &bufferSize );
+    bufferSize = min( maxDataRequestSize, bufferSize );
+    mInputBuffer.resize( bufferSize );
+    mOutputBuffer.resize( bufferSize );
+    buffersDirty = true;
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -218,6 +231,11 @@ double CommonMethod(SCOPE_FAMILY_LT,GetSignalGeneratorPrecision)( void )
     return signalGeneratorPrecision;
 }
 
+uint32_t CommonMethod(SCOPE_FAMILY_LT,GetMaxDataRequestSize)(void)
+{
+    return maxDataRequestSize;
+}
+
 PS_RANGE CommonMethod(SCOPE_FAMILY_LT,GetMinRange)( void )
 {
     return minRange;
@@ -280,6 +298,31 @@ const RANGE_INFO_T* CommonMethod(SCOPE_FAMILY_LT,GetRangeCaps)( void )
 {
     return rangeInfo;
 }
+
+////////////////////////////////////////////////////////////////////////////////////////////////////
+//
+// Name: Common method GetClosestSignalGeneratorFrequency
+//
+// Purpose: Calculates the frequency closest to the requested frequency that the signal generator
+//          is capable of generating.
+//
+// Parameters: [in] requestedFreq - desired frequency
+//             [out] return - closest frequency the scope is capable of generating.
+//
+// Notes: Frequency generator capabilities are governed by the scope's DDS implementation.  The
+//        frequency precision is encoded in the PicoScope object's implementation (signalGeneratorPrecision).
+//
+//        For PS3000, we need to implement special logic because the API takes an integer, but
+//        the scope rounds that to the closest DDS-producable frequency (which is not an integer).
+//        The frequency precision is normally far smaller than 1 (true for PS3000).  So, we find
+//        the two integers adjacent to the requested frequency, then find the actual frequencies to
+//        which those integers will get rounded by the API/scope.  Then we find which of those
+//        actual frequencies is closest to the requested frequency.  When the prpgram uses the
+//        returned value to setup the generator, which is a double, the value will get truncated
+//        back to an integer before passing to the API, but the API/scope will implement the
+//        actual frequency desired.
+//
+///////////////////////////////////////////////////////////////////////////////////////////////////
 
 double CommonMethod(SCOPE_FAMILY_LT,GetClosestSignalGeneratorFrequency)( double requestedFreq )
 {
@@ -707,6 +750,10 @@ bool CommonMethod(SCOPE_FAMILY_LT, RunBlock)( int32_t numSamples, uint32_t timeb
     }
 #endif
 
+    // Remember number of samples for later operations
+    mNumSamples = numSamples;
+    buffersDirty = true;
+
     return retVal;
 }
 
@@ -814,26 +861,25 @@ bool CommonMethod(SCOPE_FAMILY_LT, InitStatusChecking)(void)
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 //
-// Name: Common method GetData
+// Name: Common method SetChannelDesignations
 //
-// Purpose: Gets data from the scope that was captured in block mode.
+// Purpose: Tells the PicoScope object which channel is input and which is output
 //
-// Parameters: [in] numSamples - number of samples to retrieve in the uncompressed buffer
-//             [in] downsampleTo - number of samples to store in a compressed aggregate buffer
-//             [in] inputChannel - input channel number
+// Parameters: [in] inputChannel - input channel number
 //             [in] outputChannel - output channel number
-//             [in] inputFullBuffer - buffer to store uncompressed input samples
-//             [in] outputFullBuffer - buffer to store uncompressed output samples
-//             [in] inputCompressedMinBuffer - buffer to store aggregated min input samples
-//             [in] outputCompressedMinBuffer - buffer to store aggregated min ouput samples
-//             [in] inputCompressedMaxBuffer - buffer to store aggregated max input samples
-//             [in] outputCompressedMaxBuffer - buffer to store aggregated max ouput samples
-//             [in] inputAbsMax - absolute max value in all input samples
-//             [in] outputAbsMax - absolute max value in all output samples
-//             [in] inputOv - whether the input channel is over-voltage
-//             [in] outputOv - whether the output channel is over-voltage 
-//             [out] return - whether the function succeeded
 //
+// Notes:
+//
+////////////////////////////////////////////////////////////////////////////////////////////////////
+void CommonMethod(SCOPE_FAMILY_LT, SetChannelDesignations)( PS_CHANNEL inputChannel, PS_CHANNEL outputChannel )
+{
+    mInputChannel = inputChannel;
+    mOutputChannel = outputChannel;
+}
+
+////////////////////////////////////////////////////////////////////////////////////////////////////
+//
+// Name: Methods associated with getting data
 // Notes: PS2000 and PS3000 drivers support an aggregation mode that works with "fast streaming"
 //        which may be able to mimic block mode (using auto_stop).  None the the PS3000 scopes that
 //        support fast streaming also have a signal generator, so are irrelevant.  All of the 
@@ -842,7 +888,7 @@ bool CommonMethod(SCOPE_FAMILY_LT, InitStatusChecking)(void)
 //        speed and just use block mode which has no aggregation.  The aggregation will be done
 //        in software on the PC-side.
 //
-///////////////////////////////////////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////////////////////////////////////
 
 #if defined(PS2000A) || defined(PS3000A) || defined(PS5000A)
 #define RATIO_MODE_NONE_ARG , CommonEnum(SCOPE_FAMILY_UT, RATIO_MODE_NONE)
@@ -854,33 +900,140 @@ bool CommonMethod(SCOPE_FAMILY_LT, InitStatusChecking)(void)
 #define SEGMENT_ARG
 #endif
 
+////////////////////////////////////////////////////////////////////////////////////////////////////
+//
+// Name: Common method GetData
+//
+// Purpose: Gets data from the scope that was captured in block mode.
+//
+// Parameters: [in] numSamples - number of samples to retrieve
+//             [in] startIndex - at what index to start retrieving
+//             [in] inputBuffer - buffer to store input samples
+//             [in] outputBuffer - buffer to store output samples
+//             [out] return - whether the function succeeded
+//
+// Notes:
+//
+////////////////////////////////////////////////////////////////////////////////////////////////////
+
 // GetData
-bool CommonMethod(SCOPE_FAMILY_LT, GetData)( uint32_t numSamples, uint32_t downsampleTo, PS_CHANNEL inputChannel, PS_CHANNEL outputChannel,
-                                             vector<int16_t>& inputFullBuffer, vector<int16_t>& outputFullBuffer,
-                                             vector<int16_t>& inputCompressedMinBuffer, vector<int16_t>& outputCompressedMinBuffer,
-                                             vector<int16_t>& inputCompressedMaxBuffer, vector<int16_t>& outputCompressedMaxBuffer, 
-                                             int16_t& inputAbsMax, int16_t& outputAbsMax, bool* inputOv, bool* outputOv )
+bool CommonMethod(SCOPE_FAMILY_LT, GetData)( uint32_t numSamples, uint32_t startIndex,
+                                             vector<int16_t>** inputBuffer, vector<int16_t>** outputBuffer )
 {
     PICO_STATUS status;
     bool retVal = true;
     wstringstream fraStatusText;
-
-    uint32_t compressedBufferSize;
-    uint32_t initialAggregation;
     int16_t overflow;
 
-    // For NEW_PS_DRIVER_MODEL: Determine whether the channels are overvoltage and get the downsampled (compressed) buffer in one step by using the scope's aggregation function
+    // First check for the programming error of not setting the channel designations
+    if ( PS_CHANNEL_INVALID == mInputChannel ||
+         PS_CHANNEL_INVALID == mOutputChannel )
+    {
+        fraStatusText << L"Fatal error: invalid internal state: input and/or output channel number invalid.";
+        LogMessage( fraStatusText.str() );
+        return false;
+    }
+#if defined(NEW_PS_DRIVER_MODEL)
+    uint32_t numSamplesInOut;
+
+    if (PICO_ERROR(CommonApi(SCOPE_FAMILY_LT,SetDataBuffer)( handle, (CommonEnum(SCOPE_FAMILY_UT,CHANNEL))mInputChannel, mInputBuffer.data(),
+                                                                numSamples SEGMENT_ARG RATIO_MODE_NONE_ARG )))
+    {
+        fraStatusText << L"Fatal error: Failed to set input data capture buffer: " << status;
+        LogMessage( fraStatusText.str() );
+        retVal = false;
+    }
+
+    if (PICO_ERROR(CommonApi(SCOPE_FAMILY_LT,SetDataBuffer)( handle, (CommonEnum(SCOPE_FAMILY_UT,CHANNEL))mOutputChannel, mOutputBuffer.data(),
+                                                                numSamples SEGMENT_ARG RATIO_MODE_NONE_ARG )))
+    {
+        fraStatusText << L"Fatal error: Failed to set output data capture buffer: " << status;
+        LogMessage( fraStatusText.str() );
+        retVal = false;
+    }
+
+    numSamplesInOut = numSamples;
+    if (PICO_ERROR(CommonApi(SCOPE_FAMILY_LT, GetValues)( handle, startIndex, &numSamplesInOut, 1, CommonEnum(SCOPE_FAMILY_UT, RATIO_MODE_NONE), 0, &overflow )))
+    {
+        fraStatusText << L"Fatal error: Failed to retrieve data capture buffer(s): " << status;
+        LogMessage( fraStatusText.str() );
+        retVal = false;
+    }
+#else // !defined(NEW_PS_DRIVER_MODEL)
+    if (buffersDirty)
+    {
+        // Just use block mode without aggregation to get all the data.
+
+        int16_t* buffer[PS_CHANNEL_D+1] = {NULL};
+
+        buffer[mInputChannel] = mInputBuffer.data();
+        buffer[mOutputChannel] = mOutputBuffer.data();
+
+        if (PICO_ERROR(CommonApi(SCOPE_FAMILY_LT, _get_values)( handle, buffer[PS_CHANNEL_A], buffer[PS_CHANNEL_B], buffer[PS_CHANNEL_C], buffer[PS_CHANNEL_D], &overflow, numSamples )))
+        {
+            fraStatusText << L"Fatal error: Failed to retrieve data capture buffer: " << status;
+            LogMessage( fraStatusText.str() );
+            retVal = false;
+        }
+    }
+#endif
+    *inputBuffer = &mInputBuffer;
+    *outputBuffer = &mOutputBuffer;
+
+    return retVal;
+}
+
+////////////////////////////////////////////////////////////////////////////////////////////////////
+//
+// Name: Common method GetCompressedData
+//
+// Purpose: Gets a compressed form of the data from the scope that was captured in block mode.
+//          The compressed form is an aggregation where a range of samples is provided as the min
+//          and max value in that range.
+//
+// Parameters: [in] downsampleTo - number of samples to store in a compressed aggregate buffer
+//                                 if 0, it means don't compress, just copy
+//             [in] inputCompressedMinBuffer - buffer to store aggregated min input samples
+//             [in] outputCompressedMinBuffer - buffer to store aggregated min ouput samples
+//             [in] inputCompressedMaxBuffer - buffer to store aggregated max input samples
+//             [in] outputCompressedMaxBuffer - buffer to store aggregated max ouput samples
+//             [out] return - whether the function succeeded
+//
+// Notes: For old driver model, need to call GetData first for this to function correctly
+//
+////////////////////////////////////////////////////////////////////////////////////////////////////
+
+// GetCompressedData
+bool CommonMethod(SCOPE_FAMILY_LT, GetCompressedData)( uint32_t downsampleTo,
+                                                       vector<int16_t>& inputCompressedMinBuffer, vector<int16_t>& outputCompressedMinBuffer,
+                                                       vector<int16_t>& inputCompressedMaxBuffer, vector<int16_t>& outputCompressedMaxBuffer )
+{
+    bool retVal = true;
+    wstringstream fraStatusText;
+    uint32_t compressedBufferSize;
+    uint32_t initialAggregation;
+
+    // First check for the programming error of not setting the channel designations
+    if ( PS_CHANNEL_INVALID == mInputChannel ||
+         PS_CHANNEL_INVALID == mOutputChannel )
+    {
+        fraStatusText << L"Fatal error: invalid internal state: input and/or output channel number invalid.";
+        LogMessage( fraStatusText.str() );
+        return false;
+    }
+
+    // For NEW_PS_DRIVER_MODEL: Get the downsampled (compressed) buffer in one step by using the scope's aggregation function
     // For non-NEW_PS_DRIVER_MODEL: We're calculating an aggregation parameter for our own manual aggregation 
 
-    // Determine the aggregation parameter, rounding up to ensure that the actual size of the compressed is no more than requested
-    compressedBufferSize = (downsampleTo == 0 || numSamples <= downsampleTo) ? numSamples : downsampleTo;
-    initialAggregation = numSamples / compressedBufferSize;
-    if (numSamples % compressedBufferSize)
+    // Determine the aggregation parameter, rounding up to ensure that the actual size of the compressed buffer is no more than requested
+    compressedBufferSize = (downsampleTo == 0 || mNumSamples <= downsampleTo) ? mNumSamples : downsampleTo;
+    initialAggregation = mNumSamples / compressedBufferSize;
+    if (mNumSamples % compressedBufferSize)
     {
         initialAggregation++;
     }
     // Now compute actual size of aggregate buffer
-    compressedBufferSize = numSamples / initialAggregation;
+    compressedBufferSize = mNumSamples / initialAggregation;
 
     // And allocate the data for the compressed buffers
     inputCompressedMinBuffer.resize(compressedBufferSize);
@@ -889,22 +1042,24 @@ bool CommonMethod(SCOPE_FAMILY_LT, GetData)( uint32_t numSamples, uint32_t downs
     outputCompressedMaxBuffer.resize(compressedBufferSize);
 
 #if defined(NEW_PS_DRIVER_MODEL)
+    PICO_STATUS status;
     uint32_t numSamplesInOut;
+    int16_t overflow;
 
-    if (PICO_ERROR(CommonApi(SCOPE_FAMILY_LT, SetDataBuffers)( handle, (CommonEnum(SCOPE_FAMILY_UT,CHANNEL))inputChannel,
+    if (PICO_ERROR(CommonApi(SCOPE_FAMILY_LT, SetDataBuffers)( handle, (CommonEnum(SCOPE_FAMILY_UT,CHANNEL))mInputChannel,
                                                                inputCompressedMaxBuffer.data(), inputCompressedMinBuffer.data(), 
                                                                compressedBufferSize SEGMENT_ARG RATIO_MODE_AGGREGATE_ARG )))
     {
-        fraStatusText << L"Fatal error: Failed to set input data capture buffer: " << status;
+        fraStatusText << L"Fatal error: Failed to set input data capture aggregation buffers: " << status;
         LogMessage( fraStatusText.str() );
         retVal = false;
     }
 
-    if (PICO_ERROR(CommonApi(SCOPE_FAMILY_LT, SetDataBuffers)( handle, (CommonEnum(SCOPE_FAMILY_UT,CHANNEL))outputChannel,
+    if (PICO_ERROR(CommonApi(SCOPE_FAMILY_LT, SetDataBuffers)( handle, (CommonEnum(SCOPE_FAMILY_UT,CHANNEL))mOutputChannel,
                                                                outputCompressedMaxBuffer.data(), outputCompressedMinBuffer.data(), 
                                                                compressedBufferSize SEGMENT_ARG RATIO_MODE_AGGREGATE_ARG )))
     {
-        fraStatusText << L"Fatal error: Failed to set output data capture buffer: " << status;
+        fraStatusText << L"Fatal error: Failed to set output data capture aggregation buffers: " << status;
         LogMessage( fraStatusText.str() );
         retVal = false;
     }
@@ -912,143 +1067,142 @@ bool CommonMethod(SCOPE_FAMILY_LT, GetData)( uint32_t numSamples, uint32_t downs
     numSamplesInOut = compressedBufferSize;
     if (PICO_ERROR(CommonApi(SCOPE_FAMILY_LT, GetValues)( handle, 0, &numSamplesInOut, initialAggregation, CommonEnum(SCOPE_FAMILY_UT, RATIO_MODE_AGGREGATE), 0, &overflow )))
     {
-        fraStatusText << L"Fatal error: Failed to retrieve data capture buffer for OV detection: " << status;
+        fraStatusText << L"Fatal error: Failed to retrieve compressed data: " << status;
         LogMessage( fraStatusText.str() );
         retVal = false;
     }
 #else // !defined(NEW_PS_DRIVER_MODEL)
-
-    // Just use block mode without aggregation to get all the data.
-
-    int16_t* buffer[PS_CHANNEL_D+1] = {NULL};
-
-    buffer[inputChannel] = inputFullBuffer.data();
-    buffer[outputChannel] = outputFullBuffer.data();
-
-    if (PICO_ERROR(CommonApi(SCOPE_FAMILY_LT, _get_values)( handle, buffer[PS_CHANNEL_A], buffer[PS_CHANNEL_B], buffer[PS_CHANNEL_C], buffer[PS_CHANNEL_D], &overflow, numSamples )))
-    {
-        fraStatusText << L"Fatal error: Failed to retrieve data capture buffer: " << status;
-        LogMessage( fraStatusText.str() );
-        retVal = false;
-    }
-
-    // Now manually aggregate, if necessary
-    if (compressedBufferSize == numSamples) // No need to aggregate, just copy
+    // Manually aggregate, if necessary
+    if (compressedBufferSize == mNumSamples) // No need to aggregate, just copy
     {
         // Using explicit copy instead of assignment to avoid unwanted resize
-        copy(inputFullBuffer.begin(), inputFullBuffer.begin() + compressedBufferSize, inputCompressedMinBuffer.begin());
-        copy(inputFullBuffer.begin(), inputFullBuffer.begin() + compressedBufferSize, inputCompressedMaxBuffer.begin());
-        copy(outputFullBuffer.begin(), outputFullBuffer.begin() + compressedBufferSize, outputCompressedMinBuffer.begin());
-        copy(outputFullBuffer.begin(), outputFullBuffer.begin() + compressedBufferSize, outputCompressedMaxBuffer.begin());
+        copy(mInputBuffer.begin(), mInputBuffer.begin() + compressedBufferSize, inputCompressedMinBuffer.begin());
+        copy(mInputBuffer.begin(), mInputBuffer.begin() + compressedBufferSize, inputCompressedMaxBuffer.begin());
+        copy(mOutputBuffer.begin(), mOutputBuffer.begin() + compressedBufferSize, outputCompressedMinBuffer.begin());
+        copy(mOutputBuffer.begin(), mOutputBuffer.begin() + compressedBufferSize, outputCompressedMaxBuffer.begin());
     }
     else
     {
         uint32_t i;
         for (i = 0; i < compressedBufferSize-1; i++)
         {
-            auto minMaxIn = minmax_element( &inputFullBuffer[i*initialAggregation], &inputFullBuffer[(i+1)*initialAggregation] );
+            auto minMaxIn = minmax_element( &mInputBuffer[i*initialAggregation], &mInputBuffer[(i+1)*initialAggregation] );
             inputCompressedMinBuffer[i] = *minMaxIn.first;
             inputCompressedMaxBuffer[i] = *minMaxIn.second;
-            auto minMaxOut = minmax_element( &outputFullBuffer[i*initialAggregation], &outputFullBuffer[(i+1)*initialAggregation] );
+            auto minMaxOut = minmax_element( &mOutputBuffer[i*initialAggregation], &mOutputBuffer[(i+1)*initialAggregation] );
             outputCompressedMinBuffer[i] = *minMaxOut.first;
             outputCompressedMaxBuffer[i] = *minMaxOut.second;
         }
         // Handle the last few samples
-        auto minMaxIn = minmax_element( &inputFullBuffer[i*initialAggregation], &inputFullBuffer[numSamples] );
+        auto minMaxIn = minmax_element( &mInputBuffer[i*initialAggregation], &mInputBuffer[mNumSamples] );
         inputCompressedMinBuffer[i] = *minMaxIn.first;
         inputCompressedMaxBuffer[i] = *minMaxIn.second;
-        auto minMaxOut = minmax_element( &outputFullBuffer[i*initialAggregation], &outputFullBuffer[numSamples] );
+        auto minMaxOut = minmax_element( &mOutputBuffer[i*initialAggregation], &mOutputBuffer[mNumSamples] );
         outputCompressedMinBuffer[i] = *minMaxOut.first;
         outputCompressedMaxBuffer[i] = *minMaxOut.second;
     }
 #endif
+    return retVal;
+}
 
-    // Decode overflow
-    *inputOv = ((overflow & 1<<inputChannel) != 0);
-    *outputOv = ((overflow & 1<<outputChannel) != 0);
+////////////////////////////////////////////////////////////////////////////////////////////////////
+//
+// Name: Common method GetPeakValues
+//
+// Purpose: Gets channel peak data values as well as flags indicating channels in overvoltage 
+//          condition (ADC railed)
+//
+// Parameters: [in] inputPeak - Maximum absolute value of input data captured
+//             [in] outputPeak - Maximum absolute value of input data captured
+//             [in] inputOv - whether the input channel is over-voltage
+//             [in] outputOv - whether the output channel is over-voltage 
+//             [out] return - whether the function succeeded
+//
+// Notes:
+//
+////////////////////////////////////////////////////////////////////////////////////////////////////
+
+// GetPeakValues
+bool CommonMethod(SCOPE_FAMILY_LT, GetPeakValues)( uint16_t& inputPeak, uint16_t& outputPeak, bool& inputOv, bool& outputOv )
+{
+    PICO_STATUS status;
+    bool retVal = true;
+    wstringstream fraStatusText;
+    int16_t overflow;
+
+    // First check for the programming error of not setting the channel designations
+    if ( PS_CHANNEL_INVALID == mInputChannel ||
+         PS_CHANNEL_INVALID == mOutputChannel )
+    {
+        fraStatusText << L"Fatal error: invalid internal state: input and/or output channel number invalid.";
+        LogMessage( fraStatusText.str() );
+        return false;
+    }
 
 #if defined(NEW_PS_DRIVER_MODEL)
-    if (compressedBufferSize == numSamples)
-    {
-        // Simply copy the aggregated samples to the full buffer. It doesn't matter which since they should be the same.
-        // Using explicit copy instead of assignment to avoid unwanted resize
-        copy( inputCompressedMaxBuffer.begin(), inputCompressedMaxBuffer.end(), inputFullBuffer.begin() );
-        copy( outputCompressedMaxBuffer.begin(), outputCompressedMaxBuffer.end(), outputFullBuffer.begin() );
+    uint32_t numSamplesInOut;
 
+    int16_t inputDataMin;
+    int16_t inputDataMax;
+    int16_t outputDataMin;
+    int16_t outputDataMax;
+
+    if (PICO_ERROR(CommonApi(SCOPE_FAMILY_LT, SetDataBuffers)( handle, (CommonEnum(SCOPE_FAMILY_UT,CHANNEL))mInputChannel,
+                                                               &inputDataMax, &inputDataMin, 1 SEGMENT_ARG RATIO_MODE_AGGREGATE_ARG )))
+    {
+        fraStatusText << L"Fatal error: Failed to set input data capture aggregation buffers for peak/overvoltage detection: " << status;
+        LogMessage( fraStatusText.str() );
+        retVal = false;
+    }
+
+    if (PICO_ERROR(CommonApi(SCOPE_FAMILY_LT, SetDataBuffers)( handle, (CommonEnum(SCOPE_FAMILY_UT,CHANNEL))mOutputChannel,
+                                                               &outputDataMax, &outputDataMin, 1 SEGMENT_ARG RATIO_MODE_AGGREGATE_ARG )))
+    {
+        fraStatusText << L"Fatal error: Failed to set output data capture aggregation buffers for peak/overvoltage detection: " << status;
+        LogMessage( fraStatusText.str() );
+        retVal = false;
+    }
+
+    numSamplesInOut = 1;
+    if (PICO_ERROR(CommonApi(SCOPE_FAMILY_LT, GetValues)( handle, 0, &numSamplesInOut, mNumSamples, CommonEnum(SCOPE_FAMILY_UT, RATIO_MODE_AGGREGATE), 0, &overflow )))
+    {
+        fraStatusText << L"Fatal error: Failed to retrieve aggregated data for peak/overvoltage detection: " << status;
+        LogMessage( fraStatusText.str() );
+        retVal = false;
     }
     else
     {
-        // Setup buffers only for channels not overvoltage, to optimize transfer
-
-        // This code works, but still takes the same amount of time as transferring all samples.
-        // This is true in the first few attempts before we ever tell it about one of the buffers
-        // (input in the case of the HPF).  So it's like the lower level driver and scope aren't
-        // capable of transferring just one channel at a time.  Confirmed this with support, case
-        // number TS00062825.  Logged a feature request to allow only single channel transfer.
-        // It remains a valid optimization in the case where both channels are overvoltage.
-        if (!(*inputOv))
-        {
-            if (PICO_ERROR(CommonApi(SCOPE_FAMILY_LT,SetDataBuffer)( handle, (CommonEnum(SCOPE_FAMILY_UT,CHANNEL))inputChannel, inputFullBuffer.data(),
-                                                                     numSamples SEGMENT_ARG RATIO_MODE_NONE_ARG )))
-            {
-                fraStatusText << L"Fatal error: Failed to set input data capture buffer: " << status;
-                LogMessage( fraStatusText.str() );
-                retVal = false;
-            }
-        }
-        else
-        {
-            if (PICO_ERROR(CommonApi(SCOPE_FAMILY_LT,SetDataBuffer)( handle, (CommonEnum(SCOPE_FAMILY_UT,CHANNEL))inputChannel, NULL,
-                                                                     0 SEGMENT_ARG RATIO_MODE_NONE_ARG )))
-            {
-                fraStatusText << L"Fatal error: Failed to set input data capture buffer: " << status;
-                LogMessage( fraStatusText.str() );
-                retVal = false;
-            }
-        }
-
-        if (!(*outputOv))
-        {
-            if (PICO_ERROR(CommonApi(SCOPE_FAMILY_LT,SetDataBuffer)( handle, (CommonEnum(SCOPE_FAMILY_UT,CHANNEL))outputChannel, outputFullBuffer.data(),
-                                                                     numSamples SEGMENT_ARG RATIO_MODE_NONE_ARG )))
-            {
-                fraStatusText << L"Fatal error: Failed to set output data capture buffer: " << status;
-                LogMessage( fraStatusText.str() );
-                retVal = false;
-            }
-        }
-        else
-        {
-            if (PICO_ERROR(CommonApi(SCOPE_FAMILY_LT,SetDataBuffer)( handle, (CommonEnum(SCOPE_FAMILY_UT,CHANNEL))outputChannel, NULL,
-                                                                     0 SEGMENT_ARG RATIO_MODE_NONE_ARG )))
-            {
-                fraStatusText << L"Fatal error: Failed to set output data capture buffer: " << status;
-                LogMessage( fraStatusText.str() );
-                retVal = false;
-            }
-        }
-
-        // Only transfer data if at least one of the channels is not over-voltage
-        if (!(*inputOv) || !(*outputOv))
-        {
-            numSamplesInOut = numSamples;
-            if (PICO_ERROR(CommonApi(SCOPE_FAMILY_LT, GetValues)( handle, 0, &numSamplesInOut, 1, CommonEnum(SCOPE_FAMILY_UT, RATIO_MODE_NONE), 0, &overflow )))
-            {
-                fraStatusText << L"Fatal error: Failed to retrieve data capture buffer: " << status;
-                LogMessage( fraStatusText.str() );
-                retVal = false;
-            }
-        }
+        inputPeak = max(abs(inputDataMax), abs(inputDataMin));
+        outputPeak = max(abs(outputDataMax), abs(outputDataMin));
     }
+#else
+    // Just use block mode without aggregation to get all the data.
+
+    int16_t* buffer[PS_CHANNEL_D+1] = {NULL};
+
+    buffer[mInputChannel] = mInputBuffer.data();
+    buffer[mOutputChannel] = mOutputBuffer.data();
+
+    if (PICO_ERROR(CommonApi(SCOPE_FAMILY_LT, _get_values)( handle, buffer[PS_CHANNEL_A], buffer[PS_CHANNEL_B], buffer[PS_CHANNEL_C], buffer[PS_CHANNEL_D], &overflow, mNumSamples )))
+    {
+        fraStatusText << L"Fatal error: Failed to retrieve data capture buffer in peak/overvoltage detection: " << status;
+        LogMessage( fraStatusText.str() );
+        retVal = false;
+    }
+    else
+    {
+        buffersDirty = false;
+    }
+
+    // Get peak values
+    inputPeak = max( abs(*min_element(mInputBuffer.begin(), mInputBuffer.end())), abs(*max_element(mInputBuffer.begin(), mInputBuffer.end())) );
+    outputPeak = max(abs(*min_element(mOutputBuffer.begin(), mOutputBuffer.end())), abs(*max_element(mOutputBuffer.begin(), mOutputBuffer.end())) );
+    
 #endif
 
-    // Get overall min and max values
-    // Could use the scope to aggregate down to 1 min/max sample, but the compressed buffer is so small this way is as fast or faster.
-    inputAbsMax = abs(*min_element(inputCompressedMinBuffer.begin(), inputCompressedMinBuffer.end()));
-    inputAbsMax = max(inputAbsMax, abs(*max_element(inputCompressedMaxBuffer.begin(), inputCompressedMaxBuffer.end())));
-
-    outputAbsMax = abs(*min_element(outputCompressedMinBuffer.begin(), outputCompressedMinBuffer.end()));
-    outputAbsMax = max(outputAbsMax, abs(*max_element(outputCompressedMaxBuffer.begin(), outputCompressedMaxBuffer.end())));
+    // Decode overflow
+    inputOv = ((overflow & 1<<mInputChannel) != 0);
+    outputOv = ((overflow & 1<<mOutputChannel) != 0);
 
     return retVal;
 }
