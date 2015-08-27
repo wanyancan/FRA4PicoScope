@@ -1361,6 +1361,12 @@ bool PicoScopeFRA::CalculateGainAndPhase( double* gain, double* phase)
 //          Goertzel algorithm generalized to non-integer multiples of fundamental frequency.
 //          EURASIP Journal on Advances in Signal Processing 2012 2012:56.
 //
+// - The d.c. energy calculation is an execution of the Goertzel with Magic Circle Oscillator.  When the
+//   tuning frequency is 0Hz, the tuning parameter is 0.  Thus the energy calculation is simplified.
+//    - This idea comes from the work of Clay Turner on Oscillator theory and application to the Goertzel:
+//      Ref. http://www.claysturner.com/dsp/digital_resonators.pdf
+//      REf. http://www.claysturner.com/dsp/ResonatorTable.pdf
+//
 // - The benefit of processing the input and output signals together is that we can take advantage of SIMD 
 //   parallelism (SSE, AVX, etc);  However, since the MSVC auto-vectorizer seems unable to vectorize the core
 //   loop, we're going to code it with intrinsics.
@@ -1372,7 +1378,8 @@ bool PicoScopeFRA::CalculateGainAndPhase( double* gain, double* phase)
 static __declspec(align(16)) double B;
 static complex<double> C, D;
 static __declspec(align(16)) double s1[2], s2[2];
-static __declspec(align(16)) double totalPower[2];
+static __declspec(align(16)) double totalEnergy[2];
+static __declspec(align(16)) double dcEnergy[2];
 static uint32_t samplesProcessed;
 static uint32_t N;
 // Goertzel outputs
@@ -1383,7 +1390,8 @@ void PicoScopeFRA::InitGoertzel( uint32_t totalSamples, double fSamp, double fDe
     double A;
     std::array<double,2> zeros = {0.0, 0.0};
     s1[0] = s1[1] = s2[0] = s2[1] = 0.0;
-    totalPower[0] = totalPower[1] = 0.0;
+    totalEnergy[0] = totalEnergy[1] = 0.0;
+    dcEnergy[0] = dcEnergy[1] = 0.0;
     samplesProcessed = 0;
     magnitude = phase = amplitude = purity = zeros;
 
@@ -1402,7 +1410,7 @@ void PicoScopeFRA::FeedGoertzel( int16_t* inputSamples, int16_t* outputSamples, 
     uint32_t iterLimit;
 
     // Vectors
-    __m128d BVec, s0Vec, s1Vec, s2Vec, totalPowerVec, sampVec;
+    __m128d BVec, s0Vec, s1Vec, s2Vec, totalEnergyVec, dcEnergyVec, sampleVec;
 
     // Determine if this is the last block.  If it is, there is special processing.
     if ((samplesProcessed + n) == N)
@@ -1420,19 +1428,23 @@ void PicoScopeFRA::FeedGoertzel( int16_t* inputSamples, int16_t* outputSamples, 
     BVec = _mm_load1_pd( &B );
     s1Vec = _mm_load_pd( s1 );
     s2Vec = _mm_load_pd( s2 );
-    totalPowerVec = _mm_load_pd( totalPower );
+    totalEnergyVec = _mm_load_pd( totalEnergy );
+    dcEnergyVec = _mm_load_pd( dcEnergy );
 
-    // Execute the filter and Parseval energy time domain calculation
+    // Execute the filter, d.c. Energy and Parseval energy time domain calculations
     for (i = 0; i < iterLimit; i++)
     {
         // Load and convert samples to packed doubles
-        sampVec = _mm_cvtepi32_pd( _mm_set_epi32( 0, 0, outputSamples[i], inputSamples[i] ) );
+        sampleVec = _mm_cvtepi32_pd( _mm_set_epi32( 0, 0, outputSamples[i], inputSamples[i] ) );
         
-        //totalPower += samples[i]*samples[i];
-        totalPowerVec = _mm_add_pd( totalPowerVec, _mm_mul_pd( sampVec, sampVec ) );
+        //totalEnergy += samples[i]*samples[i];
+        totalEnergyVec = _mm_add_pd( totalEnergyVec, _mm_mul_pd( sampleVec, sampleVec ) );
+
+        //dcEnergy += samples[i];
+        dcEnergyVec = _mm_add_pd( dcEnergyVec, sampleVec );
 
         //s0 = samples[i] + B * s1 - s2;
-        s0Vec = _mm_sub_pd( _mm_add_pd( _mm_mul_pd( BVec, s1Vec ), sampVec ), s2Vec );
+        s0Vec = _mm_sub_pd( _mm_add_pd( _mm_mul_pd( BVec, s1Vec ), sampleVec ), s2Vec );
 
         //s2 = s1;
         s2Vec = s1Vec;
@@ -1443,18 +1455,22 @@ void PicoScopeFRA::FeedGoertzel( int16_t* inputSamples, int16_t* outputSamples, 
     samplesProcessed += n;
 
     // Unvectorize
-    _mm_store_pd(s1, s1Vec);
-    _mm_store_pd(s2, s2Vec);
-    _mm_store_pd(totalPower, totalPowerVec);
+    _mm_store_pd( s1, s1Vec );
+    _mm_store_pd( s2, s2Vec );
+    _mm_store_pd( totalEnergy, totalEnergyVec );
+    _mm_store_pd( dcEnergy, dcEnergyVec );
 
     if (lastBlock)
     {
         array<complex<double>,2> y;
-        array<double,2> signalPower;
+        array<double,2> signalEnergy;
         double s0[2];
 
-        totalPower[0] += ((inputSamples[i])*(inputSamples[i]));
-        totalPower[1] += ((outputSamples[i])*(outputSamples[i]));
+        totalEnergy[0] += ((inputSamples[i])*(inputSamples[i]));
+        totalEnergy[1] += ((outputSamples[i])*(outputSamples[i]));
+
+        dcEnergy[0] += inputSamples[i];
+        dcEnergy[1] += outputSamples[i];
 
         s0[0] = (inputSamples[i]) + B * s1[0] - s2[0];
         s0[1] = (outputSamples[i]) + B * s1[1] - s2[1];
@@ -1474,11 +1490,13 @@ void PicoScopeFRA::FeedGoertzel( int16_t* inputSamples, int16_t* outputSamples, 
         // The x[N]=0 sample has no effect on the time domain Parseval's energy calculation.
         amplitude[0] = 2.0 * magnitude[0] / (N+1);
         amplitude[1] = 2.0 * magnitude[1] / (N+1);
-        signalPower[0] = 2.0 * (magnitude[0] * magnitude[0]) / (N+1);
-        signalPower[1] = 2.0 * (magnitude[1] * magnitude[1]) / (N+1);
+        signalEnergy[0] = 2.0 * (magnitude[0] * magnitude[0]) / (N+1);
+        signalEnergy[1] = 2.0 * (magnitude[1] * magnitude[1]) / (N+1);
+        dcEnergy[0] = (dcEnergy[0] * dcEnergy[0]) / (N+1);
+        dcEnergy[1] = (dcEnergy[1] * dcEnergy[1]) / (N+1);
 
-        purity[0] = signalPower[0]/totalPower[0];
-        purity[1] = signalPower[1]/totalPower[1];
+        purity[0] = signalEnergy[0] / (totalEnergy[0] - dcEnergy[0]);
+        purity[1] = signalEnergy[1] / (totalEnergy[1] - dcEnergy[1]);
     }
 }
 
