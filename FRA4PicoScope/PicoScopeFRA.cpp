@@ -1328,19 +1328,21 @@ bool PicoScopeFRA::CalculateGainAndPhase( double* gain, double* phase)
 //
 // Name: PicoScopeFRA::XXXXGoertzel
 //
-// Purpose: The Goertzel algorithm is a fast method of computing a single point DFT.  This is a generalized Goertzel
-// algorithm which allows for a non-integer bin (and thus is really a single point DTFT).  Both magnitude and phase
+// Purpose: The Goertzel algorithm is a fast method of computing a single point DFT.  Both magnitude and phase
 // are returned.  The advantage of performing the Goertzel algorithm vs an FFT is that for our application we're only
-// interested in a single frequency per measurement, and thus Goertzel is faster than FFT.  The advantage of the generalized
-// Goertzel (k ∈ R) is that we don't have to adjust the number of samples or sampling rate to maintain accuracy of the
-// frequency selection.  These functions also compute other useful parameters such as amplitude and purity, which can be used 
-// for data quality decisions.
+// interested in a single frequency per measurement, and thus Goertzel is faster than FFT.  Also, an FFT requires the
+// full sample buffer to be stored.  Without an additional decimation, storing the whole sample buffer would be highly
+// impractical for some PicoScopes (up to 4GB of RAM needed).  This implementation is a generalized Goertzel algorithm
+// which allows for a non-integer bin (k ∈ R), and thus is really a single point DTFT.  An important advantage of the
+// generalized Goertzel is that we don't have to adjust the number of samples or sampling rate to maintain accuracy of
+// the frequency selection.  These functions also compute other useful parameters such as amplitude and purity, which
+// can be used for data quality decisions.
 //
 // Parameters: 
 //    InitGoertzel
 //             [in] totalSamples - Total number of samples in the full signal
 //             [in] fSamp - frequency of the sampling
-//             [in] fDetect - frequency to detect  
+//             [in] fDetect - frequency to detect
 //    FeedGoertzel
 //             [in] inputSamples - input channel data sample points
 //             [in] outputSamples - output channel data sample points
@@ -1353,19 +1355,36 @@ bool PicoScopeFRA::CalculateGainAndPhase( double* gain, double* phase)
 //
 // Notes: 
 //
-// - The following reference:
-//    - derives the generalized Gortzel
-//    - is the source of the algorithm used in this method
+// - The following reference derives the (k ∈ R) generalized Goertzel:
 //          doi:10.1186/1687-6180-2012-56
 //          Sysel and Rajmic:
 //          Goertzel algorithm generalized to non-integer multiples of fundamental frequency.
 //          EURASIP Journal on Advances in Signal Processing 2012 2012:56.
 //
+// - The standard recurrence used by the original Goertzel is known to have numerical stability
+//   issues - i.e. O(N^2) error growth for small k.  This can start to be a real problem for scopes with very
+//   large sample buffers (e.g. currently up to 1GS on the 6000 series).  The Reinsch modification (recurrence)
+//   is a well known modification to deal with error near k=0.  As k/N approaches pi/2, the Reinsch recurrence
+//   numerical accuracy becomes worse than Goertzel (Oliver 77).  However, for our application when k is
+//   significantly larger than 0, N is also small so as to minimize error concerns.  So, we can use Reinsch
+//   all the time and get good error performance.
+//
 // - The d.c. energy calculation is an execution of the Goertzel with Magic Circle Oscillator.  When the
 //   tuning frequency is 0Hz, the tuning parameter is 0.  Thus the energy calculation is simplified.
-//    - This idea comes from the work of Clay Turner on Oscillator theory and application to the Goertzel:
+//    - The idea to use alternate oscillators comes from the work of Clay Turner on Oscillator theory and
+//      application to the Goertzel:
 //      Ref. http://www.claysturner.com/dsp/digital_resonators.pdf
-//      REf. http://www.claysturner.com/dsp/ResonatorTable.pdf
+//      Ref. http://www.claysturner.com/dsp/ResonatorTable.pdf
+//
+// - Magic Circle could also be used for the main signal detecting Goertzel, but its speed performance is a little
+//   worse and numerical accuracy only a little better for sample buffers up to 1GS.  Its speed performance might be
+//   able to become on-par with Reinsch on a more modern SIMD unit.
+//
+// - In experimenting with different oscillators, it was found that the (k ∈ R) phase correction factor can
+//   differ from e^j*2pi*k, but it still remains dependent only on k.  However, since this application is only
+//   interested in phase shift between input and output signals, and these have the same frequency (k), we need
+//   not apply the (k ∈ R) phase correction factor.  So, this implementation does not produce a "mathematically
+//   correct" phase, but that's OK for our application.
 //
 // - The benefit of processing the input and output signals together is that we can take advantage of SIMD 
 //   parallelism (SSE, AVX, etc);  However, since the MSVC auto-vectorizer seems unable to vectorize the core
@@ -1373,11 +1392,11 @@ bool PicoScopeFRA::CalculateGainAndPhase( double* gain, double* phase)
 //
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-// Making these non class members to help simplify alignment
 // Goertzel coefficient and state data
-static __declspec(align(16)) double B;
-static complex<double> C, D;
-static __declspec(align(16)) double s1[2], s2[2];
+// Making these non class members to help simplify alignment
+double theta;
+static __declspec(align(16)) double Kappa;
+static __declspec(align(16)) double a[2], b[2];
 static __declspec(align(16)) double totalEnergy[2];
 static __declspec(align(16)) double dcEnergy[2];
 static uint32_t samplesProcessed;
@@ -1387,102 +1406,77 @@ static array<double,2> magnitude, phase, amplitude, purity;
 
 void PicoScopeFRA::InitGoertzel( uint32_t totalSamples, double fSamp, double fDetect )
 {
-    double A;
-    std::array<double,2> zeros = {0.0, 0.0};
-    s1[0] = s1[1] = s2[0] = s2[1] = 0.0;
+    double halfTheta;
+    a[0] = a[1] = b[0] = b[1] = 0.0;
     totalEnergy[0] = totalEnergy[1] = 0.0;
     dcEnergy[0] = dcEnergy[1] = 0.0;
     samplesProcessed = 0;
-    magnitude = phase = amplitude = purity = zeros;
 
     N = totalSamples;
 
-    A = 2.0 * M_PI * fDetect / fSamp; // A condensed version of: k = N * fDetect / fSamp; A = 2.0 * M_PI * k / N
-    B = 2.0 * cos( A );
-    C = exp( complex<double>(0.0,-A) );
-    D = exp( complex<double>(0.0,-A*(N-1)) );
+    theta = 2.0 * M_PI * (fDetect / fSamp);
+    halfTheta = M_PI * (fDetect / fSamp);
+    Kappa = 4.0 * pow( sin( halfTheta ), 2.0 );
 }
 
 void PicoScopeFRA::FeedGoertzel( int16_t* inputSamples, int16_t* outputSamples, uint32_t n )
 {
-    uint32_t i;
     bool lastBlock = false;
-    uint32_t iterLimit;
 
     // Vectors
-    __m128d BVec, s0Vec, s1Vec, s2Vec, totalEnergyVec, dcEnergyVec, sampleVec;
+    __m128d KappaVec, aVec, bVec, totalEnergyVec, dcEnergyVec, sampleVec;
 
     // Determine if this is the last block.  If it is, there is special processing.
-    if ((samplesProcessed + n) == N)
-    {
-        lastBlock = true;
-        iterLimit = n-1;
-    }
-    else
-    {
-        lastBlock = false;
-        iterLimit = n;
-    }
+    lastBlock = ((samplesProcessed + n) == N);
 
     // Load vectors
-    BVec = _mm_load1_pd( &B );
-    s1Vec = _mm_load_pd( s1 );
-    s2Vec = _mm_load_pd( s2 );
-    totalEnergyVec = _mm_load_pd( totalEnergy );
-    dcEnergyVec = _mm_load_pd( dcEnergy );
+    KappaVec = _mm_load1_pd(&Kappa);
+    aVec = _mm_load_pd(a);
+    bVec = _mm_load_pd(b);
+    totalEnergyVec = _mm_load_pd(totalEnergy);
+    dcEnergyVec = _mm_load_pd(dcEnergy);
 
-    // Execute the filter, d.c. Energy and Parseval energy time domain calculations
-    for (i = 0; i < iterLimit; i++)
+    // Execute the filter, d.c. Energy and Parseval energy time domain calculation
+    for (uint32_t i = 0; i < n; i++)
     {
         // Load and convert samples to packed doubles
         sampleVec = _mm_cvtepi32_pd( _mm_set_epi32( 0, 0, outputSamples[i], inputSamples[i] ) );
-        
+
         //totalEnergy += samples[i]*samples[i];
         totalEnergyVec = _mm_add_pd( totalEnergyVec, _mm_mul_pd( sampleVec, sampleVec ) );
 
         //dcEnergy += samples[i];
         dcEnergyVec = _mm_add_pd( dcEnergyVec, sampleVec );
 
-        //s0 = samples[i] + B * s1 - s2;
-        s0Vec = _mm_sub_pd( _mm_add_pd( _mm_mul_pd( BVec, s1Vec ), sampleVec ), s2Vec );
-
-        //s2 = s1;
-        s2Vec = s1Vec;
-        
-        //s1 = s0;
-        s1Vec = s0Vec;
+        //b = b - K*a + samples[i]
+        //a = a + b
+        bVec = _mm_add_pd( _mm_sub_pd(bVec, _mm_mul_pd(KappaVec, aVec)), sampleVec);
+        aVec = _mm_add_pd(aVec, bVec);
     }
-    samplesProcessed += n;
 
-    // Unvectorize
-    _mm_store_pd( s1, s1Vec );
-    _mm_store_pd( s2, s2Vec );
-    _mm_store_pd( totalEnergy, totalEnergyVec );
-    _mm_store_pd( dcEnergy, dcEnergyVec );
+    samplesProcessed += n;
 
     if (lastBlock)
     {
-        array<complex<double>,2> y;
-        array<double,2> signalEnergy;
-        double s0[2];
+        array<complex<double>, 2> y;
+        array<double, 2> signalEnergy;
 
-        totalEnergy[0] += ((inputSamples[i])*(inputSamples[i]));
-        totalEnergy[1] += ((outputSamples[i])*(outputSamples[i]));
+        // Iterate Goertzel once more with 0 input to get correct phase
+        bVec = _mm_sub_pd(bVec, _mm_mul_pd(KappaVec, aVec));
+        aVec = _mm_add_pd(aVec, bVec);
 
-        dcEnergy[0] += inputSamples[i];
-        dcEnergy[1] += outputSamples[i];
+        // Unvectorize
+        _mm_store_pd(a, aVec);
+        _mm_store_pd(b, bVec);
+        _mm_store_pd(totalEnergy, totalEnergyVec);
+        _mm_store_pd(dcEnergy, dcEnergyVec);
 
-        s0[0] = (inputSamples[i]) + B * s1[0] - s2[0];
-        s0[1] = (outputSamples[i]) + B * s1[1] - s2[1];
+        // Compute the complex output
+        y[0] = std::complex<double>(b[0] + a[0] * (cos(theta) - 1.0), a[0] * sin(theta));
+        y[1] = std::complex<double>(b[1] + a[1] * (cos(theta) - 1.0), a[1] * sin(theta));
 
-        y[0] = s0[0] - s1[0] * C;
-        y[1] = s0[1] - s1[1] * C;
-        
-        y[0] = y[0] * D;
-        y[1] = y[1] * D;
-
-        magnitude[0]= abs(y[0]);
-        magnitude[1]= abs(y[1]);
+        magnitude[0] = abs(y[0]);
+        magnitude[1] = abs(y[1]);
         phase[0] = arg(y[0]);
         phase[1] = arg(y[1]);
 
@@ -1497,6 +1491,14 @@ void PicoScopeFRA::FeedGoertzel( int16_t* inputSamples, int16_t* outputSamples, 
 
         purity[0] = signalEnergy[0] / (totalEnergy[0] - dcEnergy[0]);
         purity[1] = signalEnergy[1] / (totalEnergy[1] - dcEnergy[1]);
+    }
+    else
+    {
+        // Unvectorize
+        _mm_store_pd(a, aVec);
+        _mm_store_pd(b, bVec);
+        _mm_store_pd(totalEnergy, totalEnergyVec);
+        _mm_store_pd(dcEnergy, dcEnergyVec);
     }
 }
 
