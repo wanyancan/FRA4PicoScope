@@ -46,7 +46,7 @@ typedef struct
     tuple<double,uint8_t,bool,bool> phaseAxisIntervals;
     bool gainMasterIntervals; 
     bool phaseMasterIntervals;
-} PlotSettings_T;
+} PlotScaleSettings_T;
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 //
@@ -67,6 +67,8 @@ class FRAPlotter
         FRAPlotter(uint16_t width, uint16_t height);
         ~FRAPlotter(void);
         bool Initialize(void);
+        void SetPlotSettings( bool plotGain, bool plotPhase, bool plotGainMargin, bool plotPhaseMargin, bool replot );
+        void SetPlotData( double freqs[], double gains[], double phases[], int N );
         void PlotFRA(double freqs[], double gains[], double phases[], int N, 
                      tuple<bool,double,double> freqAxisScale,
                      tuple<bool,double,double> gainAxisScale, 
@@ -83,7 +85,7 @@ class FRAPlotter
 
         bool UndoOneZoom(void);
         bool ZoomToOriginal(void);
-        void GetPlotSettings(PlotSettings_T& plotSettings);
+        void GetPlotScaleSettings(PlotScaleSettings_T& plotSettings);
         bool PlotDataAvailable( void );
 
         unique_ptr<uint8_t[]> GetScreenBitmapPlot32BppBGRA(void);
@@ -92,6 +94,7 @@ class FRAPlotter
     private:
 
         void PlotFRA(void);
+        void CalculateGainAndPhaseMargins( void );
 
         uint16_t plotWidth;
         uint16_t plotHeight;
@@ -102,6 +105,7 @@ class FRAPlotter
         const static uint8_t bytesPerPixel = 3; // 24bpp RGB for PLPlot "mem" driver
 
         // Data describing the current plot
+        bool mPlotGain, mPlotPhase, mPlotGainMargin, mPlotPhaseMargin;
         double currentFreqAxisMin; // Log Hz
         double currentFreqAxisMax; // Log Hz
         double currentGainAxisMin;
@@ -118,11 +122,13 @@ class FRAPlotter
         bool currentPhaseMasterIntervals;
         string currentFreqAxisOpts, currentGainAxisOpts, currentPhaseAxisOpts;
         vector<double> currentFreqs, currentGains, currentPhases;
+        vector<pair<double,double>> gainMargins;
+        vector<pair<double,double>> phaseMargins;
 
         // A stack of zoom values (top is current)
         stack<tuple<tuple<bool,double,double>,tuple<bool,double,double>,tuple<bool,double,double>>> zoomStack;
 
-        PlotSettings_T currentPlotSettings;
+        PlotScaleSettings_T currentPlotScaleSettings;
 
         typedef enum
         {

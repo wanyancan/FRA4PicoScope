@@ -174,8 +174,11 @@ bool ApplicationSettings::InitializeApplicationSettingsFile( void )
         AppSettingsPropTree.put( "plot.phaseAxis.minorGrids", false );
         AppSettingsPropTree.put( "plot.phaseAxis.masterGrids", false );
 
+        AppSettingsPropTree.put( "plot.plotGain", true );
+        AppSettingsPropTree.put( "plot.plotPhase", true );
         AppSettingsPropTree.put( "plot.plotGainMargin", false );
         AppSettingsPropTree.put( "plot.plotPhaseMargin", false );
+        AppSettingsPropTree.put( "plot.plotUnwrappedPhase", false );
 
         AppSettingsPropTree.put( "plot.screenColor.background.red", 0 );
         AppSettingsPropTree.put( "plot.screenColor.background.green", 0 );

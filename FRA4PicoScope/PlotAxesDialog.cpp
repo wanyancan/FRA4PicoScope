@@ -31,7 +31,7 @@
 #include "PlotAxesDialog.h"
 #include "Resource.h"
 
-PlotSettings_T* plotSettings;
+PlotScaleSettings_T* plotSettings;
 
 // Strings to store initial values of the dialog edit controls to detect change.
 wstring initialMinFreqStr, initialMaxFreqStr, initialFreqMajorIntervalStr, initialFreqTicksPerMajorStr, 
@@ -173,7 +173,7 @@ bool ValidateAndStoreSettings( HWND hDlg )
     bool retVal = true;
     WCHAR numberStr[32];
     HWND hndCtrl;
-    PlotSettings_T dlgPlotSettings;
+    PlotScaleSettings_T dlgPlotSettings;
     wstring errorConditions[32];
     uint8_t numErrors = 0;
     bool minFreqValid = false;
@@ -389,7 +389,7 @@ INT_PTR CALLBACK PlotAxesDialogHandler(HWND hDlg, UINT message, WPARAM wParam, L
         case WM_INITDIALOG:
         {
             wstringstream wss;
-            plotSettings = (PlotSettings_T*)lParam;
+            plotSettings = (PlotScaleSettings_T*)lParam;
             
             //// Populate the Dialog Box
             //// Populate Frequency Axis Values

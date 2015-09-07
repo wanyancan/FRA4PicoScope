@@ -42,6 +42,8 @@
 #include "FRAPlotter.h"
 #include "PlotAxesDialog.h"
 
+//#define TEST_PLOTTING
+
 char* appVersionString = "0.4b";
 char* appNameString = "Frequency Response Analyzer for PicoScope";
 
@@ -98,6 +100,7 @@ void                CopyLog(void);
 void                ClearLog(void);
 
 DWORD WINAPI        ExecuteFRA(LPVOID lpdwThreadParam);
+void                RepaintPlot();
 void                InitScope( void );
 void                SelectNewScope( uint8_t index );
 bool                FraStatusCallback( FRA_STATUS_MESSAGE_T& fraStatus );
@@ -526,6 +529,16 @@ BOOL CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
                                    pSettings->GetAutorangeTriesPerStep(), pSettings->GetAutorangeTolerance(), pSettings->GetSmallSignalResolutionLimit(),
                                    pSettings->GetMaxAutorangeAmplitude(), pSettings->GetMinCyclesCaptured(), pSettings->GetTimeDomainPlotsEnabled(), dataDirectoryName );
             InitScope();
+#else
+            HWND hndCtrl;
+            hndCtrl = GetDlgItem(hWnd, IDC_FRA_DRAW_GAIN);
+            Button_SetCheck( hndCtrl, true );
+            hndCtrl = GetDlgItem(hWnd, IDC_FRA_DRAW_PHASE);
+            Button_SetCheck( hndCtrl, true );
+            hndCtrl = GetDlgItem(hWnd, IDC_FRA_DRAW_GM);
+            Button_SetCheck( hndCtrl, true );
+            hndCtrl = GetDlgItem(hWnd, IDC_FRA_DRAW_PM);
+            Button_SetCheck( hndCtrl, true );
 #endif
 
             fraPlotter = new FRAPlotter(pxPlotWidth, pxPlotHeight);
@@ -615,9 +628,9 @@ BOOL CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
                 case IDM_EXPORTDATAAS:
                 {
                     int numSteps;
-                    double *freqsLogHz, *phasesDeg, *gainsDb;
+                    double *freqsLogHz, *phasesDeg, *unwrappedPhasesDeg, *gainsDb;
 
-                    psFRA->GetResults( &numSteps, &freqsLogHz, &gainsDb, &phasesDeg );
+                    psFRA->GetResults( &numSteps, &freqsLogHz, &gainsDb, &phasesDeg, &unwrappedPhasesDeg );
 
                     if (numSteps == 0)
                     {
@@ -667,6 +680,58 @@ BOOL CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
                 case IDC_CLEAR:
                     ClearLog();
                     return TRUE;
+                case IDC_FRA_DRAW_GAIN:
+                case IDC_FRA_DRAW_PHASE:
+                case IDC_FRA_DRAW_GM:
+                case IDC_FRA_DRAW_PM:
+                case IDC_FRA_UNWRAP_PHASE:
+                    HWND hndCtrl;
+                    StoreSettings();
+
+                    hndCtrl = GetDlgItem(hWnd, IDC_FRA_UNWRAP_PHASE);
+                    Button_Enable( hndCtrl, pSettings->GetPlotPhase() );
+
+                    if (pSettings->GetPlotGain() && pSettings->GetPlotPhase() && !pSettings->GetPlotUnwrappedPhase())
+                    {
+                        hndCtrl = GetDlgItem(hWnd, IDC_FRA_DRAW_GM);
+                        Button_Enable( hndCtrl, true );
+                        hndCtrl = GetDlgItem(hWnd, IDC_FRA_DRAW_PM);
+                        Button_Enable( hndCtrl, true );
+                    }
+                    else
+                    {
+                        hndCtrl = GetDlgItem(hWnd, IDC_FRA_DRAW_GM);
+                        Button_SetCheck( hndCtrl, false );
+                        Button_Enable( hndCtrl, false );
+                        hndCtrl = GetDlgItem(hWnd, IDC_FRA_DRAW_PM);
+                        Button_SetCheck( hndCtrl, false );
+                        Button_Enable( hndCtrl, false );
+                    }
+
+                    // Store again since they may have changed
+                    StoreSettings();
+
+                    if (fraPlotter->PlotDataAvailable())
+                    {
+                        if (wmId == IDC_FRA_UNWRAP_PHASE)
+                        {
+                            fraPlotter -> SetPlotSettings( pSettings->GetPlotGain(), pSettings->GetPlotPhase(),
+                                                           pSettings->GetPlotGainMargin(), pSettings->GetPlotPhaseMargin(), false );
+                            // Need to switch to the right phase data
+                            int numSteps;
+                            double *freqsLogHz, *phasesDeg, *unwrappedPhasesDeg, *gainsDb, *phases;
+                            psFRA->GetResults( &numSteps, &freqsLogHz, &gainsDb, &phasesDeg, &unwrappedPhasesDeg );
+                            phases = pSettings->GetPlotUnwrappedPhase() ? unwrappedPhasesDeg : phasesDeg;
+                            fraPlotter -> SetPlotData( freqsLogHz, gainsDb, phases, numSteps );
+                        }
+                        else
+                        {
+                            fraPlotter -> SetPlotSettings( pSettings->GetPlotGain(), pSettings->GetPlotPhase(),
+                                                           pSettings->GetPlotGainMargin(), pSettings->GetPlotPhaseMargin(), true );
+                        }
+                        RepaintPlot();
+                    }
+                    return TRUE;
                 case IDCANCEL:
                     {
                         // Esc key was pressed.  Cancel zoom operation if it's happening.
@@ -676,7 +741,7 @@ BOOL CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
                             ReleaseCapture();
                             SetCursor(LoadCursor(NULL, IDC_ARROW));
                             zooming = false;
-                            detectingZoom = false;   
+                            detectingZoom = false;
                         }
                     }
                     return TRUE;
@@ -826,9 +891,9 @@ BOOL CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
                         // Check to see if it was a click on the plot area.
                         if (pt.x >= pxPlotXStart && pt.x < pxPlotXStart+pxPlotWidth && pt.y >= pxPlotYStart && pt.y < pxPlotYStart+pxPlotHeight)
                         {
-                            PlotSettings_T plotSettings;
+                            PlotScaleSettings_T plotSettings;
                             DWORD dwDlgResp;
-                            fraPlotter->GetPlotSettings(plotSettings);
+                            fraPlotter->GetPlotScaleSettings(plotSettings);
                             dwDlgResp = DialogBoxParam(hInst, MAKEINTRESOURCE(IDD_AXES_DIALOG), hWnd, PlotAxesDialogHandler, (LPARAM)&plotSettings);
                             if (LOWORD(dwDlgResp) == IDOK)
                             {
@@ -1129,6 +1194,39 @@ BOOL LoadControlsData(HWND hDlg)
     Edit_LimitText( hndCtrl, 3 );
     Edit_SetText( hndCtrl, pSettings->GetStepsPerDecade().c_str() );
 
+    hndCtrl = GetDlgItem( hDlg, IDC_FRA_DRAW_GAIN );
+    Button_SetCheck( hndCtrl, pSettings->GetPlotGain() );
+
+    hndCtrl = GetDlgItem( hDlg, IDC_FRA_DRAW_PHASE );
+    Button_SetCheck( hndCtrl, pSettings->GetPlotPhase() );
+
+    hndCtrl = GetDlgItem( hDlg, IDC_FRA_UNWRAP_PHASE );
+    Button_SetCheck( hndCtrl, pSettings->GetPlotUnwrappedPhase() );
+
+    if (!pSettings->GetPlotPhase())
+    {
+        Button_Enable( hndCtrl, false );
+    }
+
+    if (pSettings->GetPlotGain() && pSettings->GetPlotPhase() && !pSettings->GetPlotUnwrappedPhase())
+    {
+        hndCtrl = GetDlgItem(hDlg, IDC_FRA_DRAW_GM);
+        Button_Enable( hndCtrl, true );
+        Button_SetCheck( hndCtrl, pSettings->GetPlotGainMargin() );
+        hndCtrl = GetDlgItem(hDlg, IDC_FRA_DRAW_PM);
+        Button_Enable( hndCtrl, true );
+        Button_SetCheck( hndCtrl, pSettings->GetPlotPhaseMargin() );
+    }
+    else
+    {
+        hndCtrl = GetDlgItem(hDlg, IDC_FRA_DRAW_GM);
+        Button_SetCheck( hndCtrl, false );
+        Button_Enable( hndCtrl, false );
+        hndCtrl = GetDlgItem(hDlg, IDC_FRA_DRAW_PM);
+        Button_SetCheck( hndCtrl, false );
+        Button_Enable( hndCtrl, false );
+    }
+
     return TRUE;
 }
 
@@ -1224,17 +1322,20 @@ DWORD WINAPI ExecuteFRA(LPVOID lpdwThreadParam)
         if (dwWaitResult == WAIT_OBJECT_0)
         {
 #if defined(TEST_PLOTTING)
-            int numSteps = 5;
-            double freqsLogHz[5], phasesDeg[5], gainsDb[5];
+            int numSteps = 6;
+            double freqsLogHz[6], phasesDeg[6], gainsDb[6];
 
-            for (int i = 0; i < 5; i++)
+            StoreSettings();
+
+            for (int i = 0; i < numSteps; i++)
             {
                 freqsLogHz[i] = (double)i;
-                phasesDeg[i] = (double)-i;
-                gainsDb[i] = (double)i*2;
+                phasesDeg[i] = (double)-(i-1);
+                gainsDb[i] = (double)(i-1)*2;
             }
             try
             {
+                fraPlotter -> SetPlotSettings( pSettings->GetPlotGain(), pSettings->GetPlotPhase(), pSettings->GetPlotGainMargin(), pSettings->GetPlotPhaseMargin(), false );
                 fraPlotter -> PlotFRA( freqsLogHz, gainsDb, phasesDeg, numSteps,
                                        pSettings->GetFreqScale(), pSettings->GetGainScale(), pSettings->GetPhaseScale(),
                                        pSettings->GetFreqIntervals(), pSettings->GetGainIntervals(), pSettings->GetPhaseIntervals(),
@@ -1295,13 +1396,14 @@ DWORD WINAPI ExecuteFRA(LPVOID lpdwThreadParam)
             }
 
             int numSteps;
-            double *freqsLogHz, *phasesDeg, *gainsDb;
-
-            psFRA->GetResults( &numSteps, &freqsLogHz, &gainsDb, &phasesDeg );
+            double *freqsLogHz, *phasesDeg, *unwrappedPhasesDeg, *gainsDb, *phases;
+            psFRA->GetResults( &numSteps, &freqsLogHz, &gainsDb, &phasesDeg, &unwrappedPhasesDeg );
+            phases = pSettings->GetPlotUnwrappedPhase() ? unwrappedPhasesDeg : phasesDeg;
 
             try
             {
-                fraPlotter -> PlotFRA( freqsLogHz, gainsDb, phasesDeg, numSteps,
+                fraPlotter -> SetPlotSettings( pSettings->GetPlotGain(), pSettings->GetPlotPhase(), pSettings->GetPlotGainMargin(), pSettings->GetPlotPhaseMargin(), false );
+                fraPlotter -> PlotFRA( freqsLogHz, gainsDb, phases, numSteps,
                                        pSettings->GetFreqScale(), pSettings->GetGainScale(), pSettings->GetPhaseScale(),
                                        pSettings->GetFreqIntervals(), pSettings->GetGainIntervals(), pSettings->GetPhaseIntervals(),
                                        pSettings->GetGainMasterIntervals(), pSettings->GetPhaseMasterIntervals() );
@@ -1360,6 +1462,37 @@ DWORD WINAPI ExecuteFRA(LPVOID lpdwThreadParam)
     }
 
     return TRUE;
+}
+
+void RepaintPlot(void)
+{
+    unique_ptr<uint8_t[]> buffer;
+
+    buffer = fraPlotter->GetScreenBitmapPlot32BppBGRA();
+
+    if (DeleteObject( hPlotBM ))
+    {
+        if (NULL != (hPlotBM = CreateBitmap(pxPlotWidth, pxPlotHeight, 1, 32, buffer.get())))
+        {
+            RECT invalidRect = { pxPlotXStart, pxPlotYStart, pxPlotXStart + pxPlotWidth, pxPlotYStart + pxPlotHeight };
+            if (InvalidateRect( hMainWnd, &invalidRect, true ))
+            {
+                plotAvailable = true;
+            }
+            else
+            {
+                LogMessage( L"Error: InvalidateRect failed while painting plot. Plot image may be stale." );
+            }
+        }
+        else
+        {
+            LogMessage( L"Error: CreateBitmap failed while painting plot. Plot image may be stale." );
+        }
+    }
+    else
+    {
+        LogMessage( L"Error: DeleteObject failed while painting plot. Plot image may be stale." );
+    }
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -1586,6 +1719,21 @@ bool StoreSettings(void)
     hndCtrl = GetDlgItem( hMainWnd, IDC_FRA_STEPS_PER_DECADE );
     Edit_GetText( hndCtrl, editText, 16 );
     pSettings->SetStepsPerDecade( editText );
+
+    hndCtrl = GetDlgItem( hMainWnd, IDC_FRA_DRAW_GAIN );
+    pSettings->SetPlotGain(Button_GetCheck( hndCtrl ) == BST_CHECKED);
+
+    hndCtrl = GetDlgItem( hMainWnd, IDC_FRA_DRAW_PHASE );
+    pSettings->SetPlotPhase(Button_GetCheck( hndCtrl ) == BST_CHECKED);
+
+    hndCtrl = GetDlgItem( hMainWnd, IDC_FRA_DRAW_GM );
+    pSettings->SetPlotGainMargin(Button_GetCheck( hndCtrl ) == BST_CHECKED);
+
+    hndCtrl = GetDlgItem( hMainWnd, IDC_FRA_DRAW_PM );
+    pSettings->SetPlotPhaseMargin(Button_GetCheck( hndCtrl ) == BST_CHECKED);
+
+    hndCtrl = GetDlgItem( hMainWnd, IDC_FRA_UNWRAP_PHASE );
+    pSettings->SetPlotUnwrappedPhase(Button_GetCheck( hndCtrl ) == BST_CHECKED);
 
     return true;
 }
@@ -1926,10 +2074,11 @@ INT_PTR CALLBACK ScopeSelectHandler(HWND hDlg, UINT message, WPARAM wParam, LPAR
 void SaveRawData( wstring dataFilePath )
 {
     int numSteps;
-    double *freqsLogHz, *phasesDeg, *gainsDb;
+    double *freqsLogHz, *phasesDeg, *unwrappedPhasesDeg, *gainsDb, *phases;
+
     ofstream dataFileOutputStream;
 
-    psFRA->GetResults( &numSteps, &freqsLogHz, &gainsDb, &phasesDeg );
+    psFRA->GetResults( &numSteps, &freqsLogHz, &gainsDb, &phasesDeg, &unwrappedPhasesDeg );
 
     if (numSteps == 0)
     {
@@ -1941,11 +2090,12 @@ void SaveRawData( wstring dataFilePath )
 
         if (dataFileOutputStream)
         {
+            phases = pSettings->GetPlotUnwrappedPhase() ? unwrappedPhasesDeg : phasesDeg;
             dataFileOutputStream << "Frequency Log(Hz), Gain (dB), Phase (deg)\n";
             dataFileOutputStream.precision(numeric_limits<double>::digits10);
             for (int idx = 0; idx < numSteps; idx++)
             {
-                dataFileOutputStream << freqsLogHz[idx] << ", " << gainsDb[idx] << ", " << phasesDeg[idx] << "\n";
+                dataFileOutputStream << freqsLogHz[idx] << ", " << gainsDb[idx] << ", " << phases[idx] << "\n";
             }
 
             dataFileOutputStream.close();

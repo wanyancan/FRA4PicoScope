@@ -28,6 +28,7 @@
 #include "picoStatus.h"
 #define _USE_MATH_DEFINES
 #include <math.h>
+#include <boost/math/special_functions/round.hpp>
 #include <complex>
 #include <algorithm>
 #include <memory>
@@ -442,6 +443,9 @@ bool PicoScopeFRA::ExecuteFRA(double startFreqHz, double stopFreqHz, int stepsPe
             }
         }
 
+        // Generate any alternate forms
+        UnwrapPhases();
+
         TransferLatestResults();
 
         if (mDiagnosticsOn)
@@ -702,6 +706,8 @@ bool PicoScopeFRA::CheckSignalRanges(void)
 //    [out] freqsLogHz - array of frequency points taken, expressed in log base 10 Hz
 //    [out] gainsDb - array of gains at each frequency point of freqsLogHz, expressed in dB
 //    [out] phasesDeg - array of phase shifts at each frequency point of freqsLogHz, expressed in degrees
+//    [out] unwrappedPhasesDeg - array of unwrapped phase shifts at each frequency point of freqsLogHz, 
+//          expressed in degrees
 //
 // Notes: The memory returned in the pointers is only valid until the next FRA execution or
 //        destruction of the PicoScope FRA object.  If there is no valid data, numSteps
@@ -709,12 +715,13 @@ bool PicoScopeFRA::CheckSignalRanges(void)
 //
 ///////////////////////////////////////////////////////////////////////////////////////////////////
 
-void PicoScopeFRA::GetResults( int* numSteps, double** freqsLogHz, double** gainsDb, double** phasesDeg )
+void PicoScopeFRA::GetResults( int* numSteps, double** freqsLogHz, double** gainsDb, double** phasesDeg, double** unwrappedPhasesDeg )
 {
     *numSteps = latestCompletedNumSteps;
     *freqsLogHz = latestCompletedFreqsLogHz.data();
     *gainsDb = latestCompletedGainsDb.data();
     *phasesDeg = latestCompletedPhasesDeg.data();
+    *unwrappedPhasesDeg = latestCompletedUnwrappedPhasesDeg.data();
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -736,6 +743,7 @@ void PicoScopeFRA::TransferLatestResults(void)
     latestCompletedFreqsLogHz = freqsLogHz;
     latestCompletedGainsDb = gainsDb;
     latestCompletedPhasesDeg = phasesDeg;
+    latestCompletedUnwrappedPhasesDeg = unwrappedPhasesDeg;
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -769,6 +777,7 @@ void PicoScopeFRA::GenerateFrequencyPoints(void)
     freqsLogHz.resize(numSteps);
     gainsDb.resize(numSteps);
     phasesDeg.resize(numSteps);
+    unwrappedPhasesDeg.resize(numSteps);
 
     // Loop up to the second-to-last frequency point and
     // fill in the last one as the end frequency
@@ -1291,7 +1300,7 @@ bool PicoScopeFRA::ProcessData(void)
 // Purpose: Calculate gain and phase shift of the input and output signals.
 //
 // Parameters: [out] gain - gain of input over output
-//             [out] phase = phase shift from input to output
+//             [out] phase - phase shift from input to output
 //             [out] return - Whether the function was successful.
 //
 // Notes: 
@@ -1322,6 +1331,47 @@ bool PicoScopeFRA::CalculateGainAndPhase( double* gain, double* phase)
     *phase = tempPhase*180.0/M_PI;
 
     return true;
+}
+
+////////////////////////////////////////////////////////////////////////////////////////////////////
+//
+// Name: PicoScopeFRA::UnwrapPhases
+//
+// Purpose: Take raw phase values and remove jumps in phase.
+//
+// Parameters: [out] phasesDeg - raw phases to unwrap
+//             [out] unwrappedPhasesDeg - unwrapped phases
+//
+// Notes: Also providing implementation of remainder since it's not available in  MSVC2012 and
+//        not availble in Boost without a compiled library
+//
+///////////////////////////////////////////////////////////////////////////////////////////////////
+
+double remainder( double numer, double denom )
+{
+    double rquot = boost::math::round( numer / denom );
+    return (numer - rquot * denom);
+}
+void PicoScopeFRA::UnwrapPhases(void)
+{
+    std::vector<double>::iterator rawIt = phasesDeg.begin();
+    std::vector<double>::iterator unwrappedIt = unwrappedPhasesDeg.begin();
+
+    unwrappedPhasesDeg[0] = phasesDeg[0];
+
+    for (rawIt++, unwrappedIt++; rawIt != phasesDeg.end(); rawIt++, unwrappedIt++)
+    {
+        double oldJump = *rawIt - *std::prev(rawIt);
+        if(fabs(oldJump) > 180.0)
+        {
+            double newJump = remainder(oldJump, 360.0);
+            *unwrappedIt = *std::prev(rawIt) + newJump;
+        }
+        else
+        {
+            *unwrappedIt = *rawIt;
+        }
+    }
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////

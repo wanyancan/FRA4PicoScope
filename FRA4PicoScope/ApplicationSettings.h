@@ -214,6 +214,56 @@ class ApplicationSettings
             appSettingsDirty = true;
         }
 
+        inline bool GetPlotGain(void)
+        {
+            return AppSettingsPropTree.get<bool>( "plot.plotGain" );
+        }
+        inline void SetPlotGain( bool plotGain )
+        {
+            AppSettingsPropTree.put( "plot.plotGain", plotGain );
+            appSettingsDirty = true;
+        }
+
+        inline bool GetPlotPhase(void)
+        {
+            return AppSettingsPropTree.get<bool>( "plot.plotPhase" );
+        }
+        inline void SetPlotPhase( bool plotPhase )
+        {
+            AppSettingsPropTree.put( "plot.plotPhase", plotPhase );
+            appSettingsDirty = true;
+        }
+
+        inline bool GetPlotGainMargin(void)
+        {
+            return AppSettingsPropTree.get<bool>( "plot.plotGainMargin" );
+        }
+        inline void SetPlotGainMargin( bool plotGainMargin )
+        {
+            AppSettingsPropTree.put( "plot.plotGainMargin", plotGainMargin );
+            appSettingsDirty = true;
+        }
+
+        inline bool GetPlotPhaseMargin(void)
+        {
+            return AppSettingsPropTree.get<bool>( "plot.plotPhaseMargin" );
+        }
+        inline void SetPlotPhaseMargin( bool plotPhaseMargin )
+        {
+            AppSettingsPropTree.put( "plot.plotPhaseMargin", plotPhaseMargin );
+            appSettingsDirty = true;
+        }
+
+        inline bool GetPlotUnwrappedPhase(void)
+        {
+            return AppSettingsPropTree.get<bool>( "plot.plotUnwrappedPhase" );
+        }
+        inline void SetPlotUnwrappedPhase( bool plotUnwrappedPhase )
+        {
+            AppSettingsPropTree.put( "plot.plotUnwrappedPhase", plotUnwrappedPhase );
+            appSettingsDirty = true;
+        }
+
         inline double GetPurityLowerLimit( void )
         {
             return AppSettingsPropTree.get<double>( "expert.purityLowerLimit" );

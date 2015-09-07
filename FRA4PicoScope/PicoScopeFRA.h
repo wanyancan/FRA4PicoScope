@@ -145,7 +145,7 @@ class PicoScopeFRA
         bool SetupChannels( int inputChannel, int inputChannelCoupling, int inputChannelAttenuation, double inputDcOffset,
                             int outputChannel, int outputChannelCoupling, int outputChannelAttenuation, double outputDcOffset,
                             double signalVpp );
-        void GetResults( int* numSteps, double** freqsLogHz, double** gainsDb, double** phasesDeg );
+        void GetResults( int* numSteps, double** freqsLogHz, double** gainsDb, double** phasesDeg, double** unwrappedPhasesDeg );
 
     private:
         // Data about the scope
@@ -176,10 +176,12 @@ class PicoScopeFRA
         vector<double> freqsHz;
         vector<double> freqsLogHz;
         vector<double> phasesDeg;
+        vector<double> unwrappedPhasesDeg;
         vector<double> gainsDb;
         int latestCompletedNumSteps;
         vector<double> latestCompletedFreqsLogHz;
         vector<double> latestCompletedPhasesDeg;
+        vector<double> latestCompletedUnwrappedPhasesDeg;
         vector<double> latestCompletedGainsDb;
         double actualSampFreqHz; // Scope sampling frequency
         uint32_t numSamples;
@@ -262,6 +264,7 @@ class PicoScopeFRA
         bool CheckSignalRanges(void);
         bool CheckSignalOverflows(void);
         bool CalculateGainAndPhase( double* gain, double* phase );
+        void UnwrapPhases(void);
         void InitGoertzel( uint32_t N, double fSamp, double fDetect );
         void FeedGoertzel( int16_t* inputSamples, int16_t* outputSamples, uint32_t n );
         void GetGoertzelResults( double& inputMagnitude, double& inputPhase, double& inputAmplitude, double& inputPurity,

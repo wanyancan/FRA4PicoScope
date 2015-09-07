@@ -68,14 +68,17 @@
 #define IDC_FRA_START_FREQ              515
 #define IDC_FRA_STOP_FREQ               516
 #define IDC_FRA_STEPS_PER_DECADE        517
-#define IDC_FRA_DRAW_GM                 518
-#define IDC_FRA_DRAW_PM                 519
-#define IDC_RIGHTMOST_CTL               520
-#define IDC_STATUS_TEXT                 521
-#define	IDC_LOG                         522
-#define IDC_COPY                        523
-#define IDC_CLEAR                       524
-#define IDC_AUTOCLEAR                   525
+#define IDC_FRA_DRAW_GAIN               518
+#define IDC_FRA_DRAW_PHASE              519
+#define IDC_FRA_DRAW_GM                 520
+#define IDC_FRA_DRAW_PM                 521
+#define IDC_FRA_UNWRAP_PHASE            522
+#define IDC_RIGHTMOST_CTL               523
+#define IDC_STATUS_TEXT                 524
+#define IDC_LOG                         525
+#define IDC_COPY                        526
+#define IDC_CLEAR                       527
+#define IDC_AUTOCLEAR                   528
 
 #define IDC_SCOPE_SELECT_LIST           530
 
@@ -125,6 +128,11 @@
 #define IDC_TEXT_19                     588
 #define IDC_TEXT_20                     589
 #define IDC_TEXT_21                     590
+#define IDC_TEXT_22                     591
+#define IDC_TEXT_23                     592
+#define IDC_TEXT_24                     593
+#define IDC_TEXT_25                     594
+
 
 #define IDR_MAINFRAME                   600
 

@@ -31,7 +31,9 @@
 #include <cmath>
 #include <algorithm>
 #include <sstream>
+#include <iomanip>
 #include <boost/algorithm/string.hpp>
+#include <boost/math/special_functions/sign.hpp>
 using namespace boost;
 #include <Wincodec.h>
 
@@ -96,6 +98,8 @@ FRAPlotter::FRAPlotter( uint16_t width, uint16_t height )
     plotHeight = height;
     plotBmBuffer.resize(plotWidth*plotHeight*bytesPerPixel);
     plotDataAvailable = false;
+    mPlotGain = mPlotPhase = true;
+    mPlotGainMargin = mPlotPhaseMargin = false;
     currentFreqAxisMin = 0.0;
     currentFreqAxisMax = 0.0;
     currentGainAxisMin = 0.0;
@@ -181,6 +185,72 @@ bool FRAPlotter::Initialize(void)
 
 FRAPlotter::~FRAPlotter(void)
 {
+}
+
+////////////////////////////////////////////////////////////////////////////////////////////////////
+//
+// Name: FRAPlotter::SetPlotSettings
+//
+// Purpose: Initialize or chnage the basic pot settings (what to plot)
+//
+// Parameters: [in] plotGain - whether to plot gain
+//             [in] plotPhase - whether to plot phase
+//             [in] plotGainMargin - whether to plot phase margin
+//             [in] plotPhaseMargin - whether to plot phase margin
+//             [in] replot - whether to immediately re-draw the plot
+//
+// Notes:
+//
+///////////////////////////////////////////////////////////////////////////////////////////////////
+
+void FRAPlotter::SetPlotSettings( bool plotGain, bool plotPhase, bool plotGainMargin, bool plotPhaseMargin, bool replot )
+{
+    mPlotGain = plotGain;
+    mPlotPhase = plotPhase;
+    mPlotGainMargin = plotGainMargin;
+    mPlotPhaseMargin = plotPhaseMargin;
+
+    if (replot)
+    {
+        PlotFRA();
+    }
+}
+
+////////////////////////////////////////////////////////////////////////////////////////////////////
+//
+// Name: FRAPlotter::SetPlotData
+//
+// Purpose: Change the FRA data and re-draw plot; mainly useful for changing the phase data to
+//          raw or wrapped
+//
+// Parameters: [in] freqs - Frequencies at which the FRA was executed
+//             [in] gains - Gains from the FRA execution
+//             [in] phases - Phases from the FRA execution
+//             [in] N - Number of data points in the arrays supplied
+//
+// Notes: Can pass N = 0, which means use last data passed; Throws a runtime_error if N = 0,
+//           but no data is available.
+//        Can throw a runtime_error exception with an error message indicating the PLplot error
+//        Does not recompute axes
+//
+///////////////////////////////////////////////////////////////////////////////////////////////////
+
+void FRAPlotter::SetPlotData( double freqs[], double gains[], double phases[], int N )
+{
+    // Store the plot data
+    if (0 != N)
+    {
+        currentFreqs = vector<double>(freqs, freqs+N);
+        currentGains = vector<double>(gains, gains+N);
+        currentPhases = vector<double>(phases, phases+N);
+    }
+    else if (0 == currentFreqs.size())
+    {
+        throw runtime_error( "Plotting subsystem error: No data to plot" );
+    }
+
+    // Don't recompute axes, just replot.
+    PlotFRA();
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -353,14 +423,14 @@ void FRAPlotter::PlotFRA(double freqs[], double gains[], double phases[], int N,
                               make_tuple(get<0>(phaseAxisScale), currentPhaseAxisMin, currentPhaseAxisMax)));
 
     // Save all current settings
-    currentPlotSettings.freqAxisScale = make_tuple( get<0>(freqAxisScale), pow(10.0, currentFreqAxisMin), pow(10.0, currentFreqAxisMax) );
-    currentPlotSettings.freqAxisIntervals = freqAxisIntervals;
-    currentPlotSettings.gainAxisScale = make_tuple( get<0>(gainAxisScale), currentGainAxisMin, currentGainAxisMax );
-    currentPlotSettings.gainAxisIntervals = gainAxisIntervals;
-    currentPlotSettings.phaseAxisScale = make_tuple( get<0>(phaseAxisScale), currentPhaseAxisMin, currentPhaseAxisMax );
-    currentPlotSettings.phaseAxisIntervals = phaseAxisIntervals;
-    currentPlotSettings.gainMasterIntervals = gainMasterIntervals;
-    currentPlotSettings.phaseMasterIntervals = phaseMasterIntervals;
+    currentPlotScaleSettings.freqAxisScale = make_tuple( get<0>(freqAxisScale), pow(10.0, currentFreqAxisMin), pow(10.0, currentFreqAxisMax) );
+    currentPlotScaleSettings.freqAxisIntervals = freqAxisIntervals;
+    currentPlotScaleSettings.gainAxisScale = make_tuple( get<0>(gainAxisScale), currentGainAxisMin, currentGainAxisMax );
+    currentPlotScaleSettings.gainAxisIntervals = gainAxisIntervals;
+    currentPlotScaleSettings.phaseAxisScale = make_tuple( get<0>(phaseAxisScale), currentPhaseAxisMin, currentPhaseAxisMax );
+    currentPlotScaleSettings.phaseAxisIntervals = phaseAxisIntervals;
+    currentPlotScaleSettings.gainMasterIntervals = gainMasterIntervals;
+    currentPlotScaleSettings.phaseMasterIntervals = phaseMasterIntervals;
 
     plotDataAvailable = true;
 }
@@ -409,162 +479,328 @@ void FRAPlotter::PlotFRA(void)
     plschr( 0.0, 0.95 );  // Text size less than 1.0 because in memqt, 1.0 results in exponents touching the graph box
     plbox( currentFreqAxisOpts.c_str(), currentFreqAxisMajorTickInterval, currentFreqAxisMinorTicksPerMajorInterval, "", 0.0, 0 );
 
-    // Plot axis for gain
-    scientific = false;
-    yAxisScale = 0;
-    if (currentPhaseMasterIntervals)
+    if (mPlotGainMargin || mPlotPhaseMargin)
     {
-        PLFLT tmpPhaseAxisMajorTickInterval = 0.0;
-        PLINT tmpPhaseAxisMinorTicksPerMajorInterval = 0;
-        if (0.0 != currentPhaseAxisMajorTickInterval)
+        CalculateGainAndPhaseMargins();
+    }
+
+    if (mPlotGain)
+    {
+        // Plot axis for gain
+        scientific = false;
+        yAxisScale = 0;
+        if (currentPhaseMasterIntervals)
         {
-            tmpPhaseAxisMajorTickInterval = currentPhaseAxisMajorTickInterval;
+            PLFLT tmpPhaseAxisMajorTickInterval = 0.0;
+            PLINT tmpPhaseAxisMinorTicksPerMajorInterval = 0;
+            if (0.0 != currentPhaseAxisMajorTickInterval)
+            {
+                tmpPhaseAxisMajorTickInterval = currentPhaseAxisMajorTickInterval;
+            }
+            else
+            {
+                pldtik( currentPhaseAxisMin, currentPhaseAxisMax, &tmpPhaseAxisMajorTickInterval, &tmpPhaseAxisMinorTicksPerMajorInterval, false );
+            }
+
+            vector<PLFLT> customTicks;
+            PLFLT scaleFactor = ((currentGainAxisMax-currentGainAxisMin)/(currentPhaseAxisMax-currentPhaseAxisMin));
+            PLFLT gainMajorTickInterval = scaleFactor * tmpPhaseAxisMajorTickInterval;
+            customTicks.resize( (size_t)((currentPhaseAxisMax-currentPhaseAxisMin)/tmpPhaseAxisMajorTickInterval)+2 );
+            if (customTicks.size() != 0)
+            {
+                // Compute the top tick
+                customTicks[0] = currentGainAxisMax - fmod(currentPhaseAxisMax, tmpPhaseAxisMajorTickInterval) * scaleFactor;
+                // Compute the rest
+                for ( uint32_t i = 1; i < customTicks.size(); i++ )
+                {
+                    customTicks[i] = customTicks[i-1] - gainMajorTickInterval;
+                }
+
+                plsyax( 5, 0 );
+                plslabelfunc( LabelYAxis, &gainMajorTickInterval );
+                widestYAxisLabel = 0;
+                label_box_custom( "", 0, NULL, currentGainAxisOpts.c_str(), customTicks.size(), customTicks.data() );
+                plsyax( 5, widestYAxisLabel );
+            }
+            plbox( "", 0.0, 0, "b", 0.0, 0 );  // Need to draw the left side of the box because label_box_custom doesn't
         }
         else
         {
-            pldtik( currentPhaseAxisMin, currentPhaseAxisMax, &tmpPhaseAxisMajorTickInterval, &tmpPhaseAxisMinorTicksPerMajorInterval, false );
-        }
-
-        vector<PLFLT> customTicks;
-        PLFLT scaleFactor = ((currentGainAxisMax-currentGainAxisMin)/(currentPhaseAxisMax-currentPhaseAxisMin));
-        PLFLT gainMajorTickInterval = scaleFactor * tmpPhaseAxisMajorTickInterval;
-        customTicks.resize( (size_t)((currentPhaseAxisMax-currentPhaseAxisMin)/tmpPhaseAxisMajorTickInterval)+2 );
-        if (customTicks.size() != 0)
-        {
-            // Compute the top tick
-            customTicks[0] = currentGainAxisMax - fmod(currentPhaseAxisMax, tmpPhaseAxisMajorTickInterval) * scaleFactor;
-            // Compute the rest
-            for ( uint32_t i = 1; i < customTicks.size(); i++ )
+            PLFLT tmpGainAxisMajorTickInterval = 0.0;
+            PLINT tmpGainAxisMinorTicksPerMajorInterval = 0;
+            if (0.0 != currentGainAxisMajorTickInterval)
             {
-                customTicks[i] = customTicks[i-1] - gainMajorTickInterval;
+                tmpGainAxisMajorTickInterval = currentGainAxisMajorTickInterval;
             }
-
+            else
+            {
+                pldtik( currentGainAxisMin, currentGainAxisMax, &tmpGainAxisMajorTickInterval, &tmpGainAxisMinorTicksPerMajorInterval, false );
+            }
             plsyax( 5, 0 );
-            plslabelfunc( LabelYAxis, &gainMajorTickInterval );
-            widestYAxisLabel = 0;
-            label_box_custom( "", 0, NULL, currentGainAxisOpts.c_str(), customTicks.size(), customTicks.data() );
-            plsyax( 5, widestYAxisLabel );
+            plslabelfunc( LabelYAxis, &tmpGainAxisMajorTickInterval );
+            plbox( "", 0.0, 0, currentGainAxisOpts.c_str(), currentGainAxisMajorTickInterval, currentGainAxisMinorTicksPerMajorInterval );
         }
-        plbox( "", 0.0, 0, "b", 0.0, 0 );  // Need to draw the left side of the box because label_box_custom doesn't
+        if (scientific)
+        {
+            LabelYAxisExponent( yAxisScale, "lv" );
+        }
+
+        // Set the color of the gain data
+        plcol0( 9 );
+        pllsty(1);
+        // Plot the gain data
+        plwidth( 1.5 );
+        plline( currentFreqs.size(), currentFreqs.data(), currentGains.data() );
+        plwidth( 1.0 );
+
+        if (mPlotGainMargin)
+        {
+            for (std::vector<pair<double,double>>::iterator it = gainMargins.begin(); it != gainMargins.end(); it++)
+            {
+                //// Draw the gain margin line
+                double x[2] = {it->first, it->first};
+                double y[2] = {currentGainAxisMax, currentGainAxisMin};
+                pllsty(2); // Set line style to dashed
+                plline(2, x, y); // Draw the gain margin line
+                pllsty(1); // Set line style back to solid
+                //// Draw the gain margin intersection marker
+                y[0] = it->second;
+                plpoin(1, x, y, 23);
+                //// Draw the gain margin label
+                stringstream ss;
+                ss << std::setprecision(4) << "GM: " << pow(10.0,it->first) << ", " << it->second;
+                plsfont( PL_FCI_SANS, PL_FCI_UPRIGHT, PL_FCI_MEDIUM );
+                plschr( 0.0, 0.8 ); // Make gain margin marker text a little smaller
+                // using an x offset here instead of 'just' since 'just' is string width dependent
+                plptex( x[0]+0.03*(currentFreqAxisMax-currentFreqAxisMin), y[0], 0, 0, 0.0, ss.str().c_str() );
+            }
+        }
     }
     else
     {
-        PLFLT tmpGainAxisMajorTickInterval = 0.0;
-        PLINT tmpGainAxisMinorTicksPerMajorInterval = 0;
-        if (0.0 != currentGainAxisMajorTickInterval)
-        {
-            tmpGainAxisMajorTickInterval = currentGainAxisMajorTickInterval;
-        }
-        else
-        {
-            pldtik( currentGainAxisMin, currentGainAxisMax, &tmpGainAxisMajorTickInterval, &tmpGainAxisMinorTicksPerMajorInterval, false );
-        }
-        plsyax( 5, 0 );
-        plslabelfunc( LabelYAxis, &tmpGainAxisMajorTickInterval ); 
-        plbox( "", 0.0, 0, currentGainAxisOpts.c_str(), currentGainAxisMajorTickInterval, currentGainAxisMinorTicksPerMajorInterval );
+        // Still need to complete the viewport box
+        // Set the color of the viewport box
+        plcol0( 0 );
+        plbox( "", 0.0, 0, "b", 0.0, 0 );
     }
-    if (scientific)
-    {
-        LabelYAxisExponent( yAxisScale, "lv" );
-    }
-
-    // Set the color of the gain data
-    plcol0( 9 );
-    // Plot the gain data
-    plwidth( 1.5 );
-    plline( currentFreqs.size(), currentFreqs.data(), currentGains.data() );
-    plwidth( 1.0 );
 
     // Start Labeling
-    plschr( 0.0, 1.1 );
+    plschr( 0.0, 1.1 ); // We're done drawing the x-axis, so we can set the font size larger
+    plsfont( PL_FCI_SANS, PL_FCI_UPRIGHT, PL_FCI_MEDIUM );
 
     plcol0( 0 );
     plmtex( "b", 3.0, 0.5, 0.5, "Frequency Log(Hz)" );
     plmtex( "t", 2.0, 0.5, 0.5, "Frequency Response Bode Plot" );
     plcol0( 9 );
     
-    plgyax( &digmax, &digits );
-    plmtex( "l", 0.8*digits+2.0, 0.5, 0.5, "Gain (dB)" );
-
-    // Specify the coordinates of the viewport boundaries for phase
-    plwind( currentFreqAxisMin, currentFreqAxisMax, currentPhaseAxisMin, currentPhaseAxisMax );
-    // Set the color of the viewport box
-    plcol0( 0 );
-    
-    // Plot axis for phase
-    plschr( 0.0, 1.0 );
-    scientific = false;
-    yAxisScale = 0;
-    if (currentGainMasterIntervals)
+    if (mPlotGain)
     {
-        PLFLT tmpGainAxisMajorTickInterval = 0.0;
-        PLINT tmpGainAxisMinorTicksPerMajorInterval = 0;
-        if (0.0 != currentGainAxisMajorTickInterval)
+        plgyax( &digmax, &digits );
+        plmtex( "l", 0.8*digits+2.0, 0.5, 0.5, "Gain (dB)" );
+    }
+
+    if (mPlotPhase)
+    {
+        // Specify the coordinates of the viewport boundaries for phase
+        plwind( currentFreqAxisMin, currentFreqAxisMax, currentPhaseAxisMin, currentPhaseAxisMax );
+        // Set the color of the viewport box
+        plcol0( 0 );
+
+        // Plot axis for phase
+        plschr( 0.0, 1.0 );
+        scientific = false;
+        yAxisScale = 0;
+        if (currentGainMasterIntervals)
         {
-            tmpGainAxisMajorTickInterval = currentGainAxisMajorTickInterval;
+            PLFLT tmpGainAxisMajorTickInterval = 0.0;
+            PLINT tmpGainAxisMinorTicksPerMajorInterval = 0;
+            if (0.0 != currentGainAxisMajorTickInterval)
+            {
+                tmpGainAxisMajorTickInterval = currentGainAxisMajorTickInterval;
+            }
+            else
+            {
+                pldtik( currentGainAxisMin, currentGainAxisMax, &tmpGainAxisMajorTickInterval, &tmpGainAxisMinorTicksPerMajorInterval, false );
+            }
+            vector<PLFLT> customTicks;
+            PLFLT scaleFactor = ((currentPhaseAxisMax-currentPhaseAxisMin)/(currentGainAxisMax-currentGainAxisMin));
+            PLFLT phaseMajorTickInterval = scaleFactor * tmpGainAxisMajorTickInterval;
+            customTicks.resize( (size_t)((currentGainAxisMax-currentGainAxisMin)/tmpGainAxisMajorTickInterval)+2 );
+            if (customTicks.size() != 0)
+            {
+                // Compute the top tick
+                customTicks[0] = currentPhaseAxisMax - fmod(currentGainAxisMax, tmpGainAxisMajorTickInterval) * scaleFactor;
+                // Compute the rest
+                for ( uint32_t i = 1; i < customTicks.size(); i++ )
+                {
+                    customTicks[i] = customTicks[i-1] - phaseMajorTickInterval;
+                }
+
+                plsyax( 5, 0 );
+                plslabelfunc( LabelYAxis, &phaseMajorTickInterval );
+                widestYAxisLabel = 0;
+                label_box_custom( "", 0, NULL, currentPhaseAxisOpts.c_str(), customTicks.size(), customTicks.data() );
+                plsyax( 5, widestYAxisLabel );
+            }
+            plbox( "", 0.0, 0, "c", 0.0, 0 );  // Need to draw the right side of the box because label_box_custom doesn't
         }
         else
         {
-            pldtik( currentGainAxisMin, currentGainAxisMax, &tmpGainAxisMajorTickInterval, &tmpGainAxisMinorTicksPerMajorInterval, false );
-        }
-        vector<PLFLT> customTicks;
-        PLFLT scaleFactor = ((currentPhaseAxisMax-currentPhaseAxisMin)/(currentGainAxisMax-currentGainAxisMin));
-        PLFLT phaseMajorTickInterval = scaleFactor * tmpGainAxisMajorTickInterval;
-        customTicks.resize( (size_t)((currentGainAxisMax-currentGainAxisMin)/tmpGainAxisMajorTickInterval)+2 );
-        if (customTicks.size() != 0)
-        {
-            // Compute the top tick
-            customTicks[0] = currentPhaseAxisMax - fmod(currentGainAxisMax, tmpGainAxisMajorTickInterval) * scaleFactor;
-            // Compute the rest
-            for ( uint32_t i = 1; i < customTicks.size(); i++ )
+            PLFLT tmpPhaseAxisMajorTickInterval = 0.0;
+            PLINT tmpPhaseAxisMinorTicksPerMajorInterval = 0;
+            if (0.0 != currentPhaseAxisMajorTickInterval)
             {
-                customTicks[i] = customTicks[i-1] - phaseMajorTickInterval;
+                tmpPhaseAxisMajorTickInterval = currentPhaseAxisMajorTickInterval;
             }
-    
+            else
+            {
+                pldtik( currentPhaseAxisMin, currentPhaseAxisMax, &tmpPhaseAxisMajorTickInterval, &tmpPhaseAxisMinorTicksPerMajorInterval, false );
+            }
             plsyax( 5, 0 );
-            plslabelfunc( LabelYAxis, &phaseMajorTickInterval );
-            widestYAxisLabel = 0;
-            label_box_custom( "", 0, NULL, currentPhaseAxisOpts.c_str(), customTicks.size(), customTicks.data() );
-            plsyax( 5, widestYAxisLabel );
+            plslabelfunc( LabelYAxis, &tmpPhaseAxisMajorTickInterval );
+            plbox( "", 0.0, 0, currentPhaseAxisOpts.c_str(), currentPhaseAxisMajorTickInterval, currentPhaseAxisMinorTicksPerMajorInterval );
         }
-        plbox( "", 0.0, 0, "c", 0.0, 0 );  // Need to draw the right side of the box because label_box_custom doesn't
+        if (scientific)
+        {
+            LabelYAxisExponent( yAxisScale, "rv" );
+        }
+
+        // Set the color of the phase data
+        plcol1(0.9); // Something near red
+        pllsty(1);
+        // Plot the phase data
+        plwidth( 1.5 );
+        plline( currentFreqs.size(), currentFreqs.data(), currentPhases.data() );
+        plwidth( 1.0 );
+
+        if (mPlotPhaseMargin)
+        {
+            for (std::vector<pair<double,double>>::iterator it = phaseMargins.begin(); it != phaseMargins.end(); it++)
+            {
+                //// Draw the phase margin line
+                double x[2] = {it->first, it->first};
+                double y[2] = {currentPhaseAxisMax, currentPhaseAxisMin};
+                pllsty(2); // Set line style to dashed
+                plline(2, x, y); // Draw the phase margin line
+                pllsty(1); // Set line style back to solid
+                //// Draw the phase margin intersection marker
+                y[0] = it->second;
+                plpoin(1, x, y, 23);
+                //// Draw the phase margin label
+                stringstream ss;
+                ss << std::setprecision(4) << "PM: " << pow(10.0,it->first) << ", " << it->second;
+                plsfont( PL_FCI_SANS, PL_FCI_UPRIGHT, PL_FCI_MEDIUM );
+                plschr( 0.0, 0.8 ); // Make phase margin marker text a little smaller
+                // using an x offset here instead of 'just' since 'just' is string width dependent
+                plptex( x[0]+0.03*(currentFreqAxisMax-currentFreqAxisMin), y[0], 0, 0, 0.0, ss.str().c_str() );
+            }
+        }
+
+        // Label phase data
+        plcol1(0.9); // Something near red
+        plgyax( &digmax, &digits );
+        plschr( 0.0, 1.1 );
+        plsfont( PL_FCI_SANS, PL_FCI_UPRIGHT, PL_FCI_MEDIUM );
+        plmtex( "r", 0.8*digits+2.0, 0.5, 0.5, "Phase (degrees)" );
     }
     else
     {
-        PLFLT tmpPhaseAxisMajorTickInterval = 0.0;
-        PLINT tmpPhaseAxisMinorTicksPerMajorInterval = 0;
-        if (0.0 != currentPhaseAxisMajorTickInterval)
-        {
-            tmpPhaseAxisMajorTickInterval = currentPhaseAxisMajorTickInterval;
-        }
-        else
-        {
-            pldtik( currentPhaseAxisMin, currentPhaseAxisMax, &tmpPhaseAxisMajorTickInterval, &tmpPhaseAxisMinorTicksPerMajorInterval, false );
-        }
-        plsyax( 5, 0 );
-        plslabelfunc( LabelYAxis, &tmpPhaseAxisMajorTickInterval ); 
-        plbox( "", 0.0, 0, currentPhaseAxisOpts.c_str(), currentPhaseAxisMajorTickInterval, currentPhaseAxisMinorTicksPerMajorInterval );
+        // Still need to complete the viewport box
+        // Set the color of the viewport box
+        plcol0( 0 );
+        plbox( "", 0.0, 0, "c", 0.0, 0 );
     }
-    if (scientific)
-    {
-        LabelYAxisExponent( yAxisScale, "rv" );
-    }
-
-    // Set the color of the phase data
-    plcol1(0.9); // Something near red
-    // Plot the phase data
-    plwidth( 1.5 );
-    plline( currentFreqs.size(), currentFreqs.data(), currentPhases.data() );
-    plwidth( 1.0 );
-
-    // Label phase data
-    plcol1(0.9); // Something near red
-    plgyax( &digmax, &digits );
-    plschr( 0.0, 1.1 );
-    plmtex( "r", 0.8*digits+2.0, 0.5, 0.5, "Phase (degrees)" );
 
     // Close PLplot library
     plend();
+}
+
+////////////////////////////////////////////////////////////////////////////////////////////////////
+//
+// Name: FRAPlotter::CalculateGainAndPhaseMargins
+//
+// Purpose: Calculates Gain and Phase margins
+//
+// Parameters: Operates on the gain and phase data passed in
+//
+// Notes: Depending on how the system is being measured (e.g. whether negative feedback is implicit),
+//        the crossover point for Gain margin can be variable: 0 or 180 degrees
+//
+///////////////////////////////////////////////////////////////////////////////////////////////////
+
+void FRAPlotter::CalculateGainAndPhaseMargins( void )
+{
+    phaseMargins.clear();
+    gainMargins.clear();
+
+    // Find phase margin(s)
+    for (uint32_t i = 0; i < currentGains.size() - 1; i++)
+    {
+        // Look for 0dB crossings
+        int signFirst = boost::math::sign(currentGains[i]);
+        int signSecond = boost::math::sign(currentGains[i+1]);
+        if (signFirst == 0 || signSecond == 0)
+        {
+            if (signFirst == 0)
+            {
+                phaseMargins.push_back( pair<double,double>(currentFreqs[i], currentPhases[i]) );
+            }
+            if (signSecond == 0)
+            {
+                phaseMargins.push_back( pair<double,double>(currentFreqs[i+1], currentPhases[i+1]) );
+                i++;
+            }
+        }
+        else
+        {
+            if (signFirst != signSecond)
+            {
+                // Need to interpolate
+                double f1, f2, dx;
+                f1 = pow(10.0,currentFreqs[i]);
+                f2 = pow(10.0,currentFreqs[i+1]);
+                dx = currentGains[i] / (currentGains[i] - currentGains[i+1]);
+                double f = log10(f1 + dx * (f2-f1));
+                double p = currentPhases[i] + dx * (currentPhases[i+1] - currentPhases[i]);
+                phaseMargins.push_back( pair<double,double>(f, p) );
+            }
+        }
+    }
+
+    // Find gain margin(s)
+    for (uint32_t i = 0; i < currentPhases.size() - 1; i++)
+    {
+        // Look for 0 degree crossings
+        int signFirst = boost::math::sign(currentPhases[i]);
+        int signSecond = boost::math::sign(currentPhases[i+1]);
+        if (signFirst == 0 || signSecond == 0)
+        {
+            if (signFirst == 0)
+            {
+                gainMargins.push_back( pair<double,double>(currentFreqs[i], currentGains[i]) );
+            }
+            if (signSecond == 0)
+            {
+                gainMargins.push_back( pair<double,double>(currentFreqs[i+1], currentGains[i+1]) );
+                i++;
+            }
+        }
+        else
+        {
+            if (signFirst != signSecond)
+            {
+                // Need to interpolate
+                double f1, f2, dx;
+                f1 = pow(10.0,currentFreqs[i]);
+                f2 = pow(10.0,currentFreqs[i+1]);
+                dx = currentPhases[i] / (currentPhases[i] - currentPhases[i+1]);
+                double f = log10(f1 + dx * (f2-f1));
+                double p = currentGains[i] + dx * (currentGains[i+1] - currentGains[i]);
+                gainMargins.push_back( pair<double,double>(f, p) );
+            }
+        }
+    }
+
 }
 
 // Definition of static variables used by custom axis labeling functions
@@ -782,9 +1018,9 @@ bool FRAPlotter::Zoom(tuple<int32_t,int32_t> plotOriginPoint,
                                       make_tuple(false, currentGainAxisMin, currentGainAxisMax), 
                                       make_tuple(false, currentPhaseAxisMin, currentPhaseAxisMax)));
 
-            currentPlotSettings.freqAxisScale = make_tuple( false, pow(10.0, currentFreqAxisMin), pow(10.0, currentFreqAxisMax) );
-            currentPlotSettings.gainAxisScale = make_tuple( false, currentGainAxisMin, currentGainAxisMax );
-            currentPlotSettings.phaseAxisScale = make_tuple( false, currentPhaseAxisMin, currentPhaseAxisMax );
+            currentPlotScaleSettings.freqAxisScale = make_tuple( false, pow(10.0, currentFreqAxisMin), pow(10.0, currentFreqAxisMax) );
+            currentPlotScaleSettings.gainAxisScale = make_tuple( false, currentGainAxisMin, currentGainAxisMax );
+            currentPlotScaleSettings.phaseAxisScale = make_tuple( false, currentPhaseAxisMin, currentPhaseAxisMax );
 
             retVal = true;
         }
@@ -829,9 +1065,9 @@ bool FRAPlotter::UndoOneZoom(void)
         currentPhaseAxisMin = get<1>(get<2>(newAxes));
         currentPhaseAxisMax = get<2>(get<2>(newAxes));
 
-        currentPlotSettings.freqAxisScale = make_tuple( get<0>(get<0>(newAxes)), pow(10.0, currentFreqAxisMin), pow(10.0, currentFreqAxisMax) );
-        currentPlotSettings.gainAxisScale = make_tuple( get<0>(get<1>(newAxes)), currentGainAxisMin, currentGainAxisMax );
-        currentPlotSettings.phaseAxisScale = make_tuple( get<0>(get<2>(newAxes)), currentPhaseAxisMin, currentPhaseAxisMax );
+        currentPlotScaleSettings.freqAxisScale = make_tuple( get<0>(get<0>(newAxes)), pow(10.0, currentFreqAxisMin), pow(10.0, currentFreqAxisMax) );
+        currentPlotScaleSettings.gainAxisScale = make_tuple( get<0>(get<1>(newAxes)), currentGainAxisMin, currentGainAxisMax );
+        currentPlotScaleSettings.phaseAxisScale = make_tuple( get<0>(get<2>(newAxes)), currentPhaseAxisMin, currentPhaseAxisMax );
         
         PlotFRA();
 
@@ -882,9 +1118,9 @@ bool FRAPlotter::ZoomToOriginal(void)
         currentPhaseAxisMin = get<1>(get<2>(newAxes));
         currentPhaseAxisMax = get<2>(get<2>(newAxes));
 
-        currentPlotSettings.freqAxisScale = make_tuple( get<0>(get<0>(newAxes)), pow(10.0, currentFreqAxisMin), pow(10.0, currentFreqAxisMax) );
-        currentPlotSettings.gainAxisScale = make_tuple( get<0>(get<1>(newAxes)), currentGainAxisMin, currentGainAxisMax );
-        currentPlotSettings.phaseAxisScale = make_tuple( get<0>(get<2>(newAxes)), currentPhaseAxisMin, currentPhaseAxisMax );
+        currentPlotScaleSettings.freqAxisScale = make_tuple( get<0>(get<0>(newAxes)), pow(10.0, currentFreqAxisMin), pow(10.0, currentFreqAxisMax) );
+        currentPlotScaleSettings.gainAxisScale = make_tuple( get<0>(get<1>(newAxes)), currentGainAxisMin, currentGainAxisMax );
+        currentPlotScaleSettings.phaseAxisScale = make_tuple( get<0>(get<2>(newAxes)), currentPhaseAxisMin, currentPhaseAxisMax );
         
         PlotFRA();
 
@@ -915,7 +1151,7 @@ bool FRAPlotter::PlotDataAvailable(void)
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 //
-// Name: FRAPlotter::GetPlotSettings
+// Name: FRAPlotter::GetPlotScaleSettings
 //
 // Purpose: Gets the current plot axis scale and interval settings.
 //
@@ -925,9 +1161,9 @@ bool FRAPlotter::PlotDataAvailable(void)
 //
 ///////////////////////////////////////////////////////////////////////////////////////////////////
 
-void FRAPlotter::GetPlotSettings(PlotSettings_T& plotSettings)
+void FRAPlotter::GetPlotScaleSettings(PlotScaleSettings_T& plotScaleSettings)
 {
-    plotSettings = currentPlotSettings;
+    plotScaleSettings = currentPlotScaleSettings;;
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
