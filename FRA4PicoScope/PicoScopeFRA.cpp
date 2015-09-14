@@ -1354,22 +1354,18 @@ double remainder( double numer, double denom )
 }
 void PicoScopeFRA::UnwrapPhases(void)
 {
-    std::vector<double>::iterator rawIt = phasesDeg.begin();
+    // Copy over the raw phases
+    unwrappedPhasesDeg = phasesDeg;
+
     std::vector<double>::iterator unwrappedIt = unwrappedPhasesDeg.begin();
 
-    unwrappedPhasesDeg[0] = phasesDeg[0];
-
-    for (rawIt++, unwrappedIt++; rawIt != phasesDeg.end(); rawIt++, unwrappedIt++)
+    for (unwrappedIt++; unwrappedIt != unwrappedPhasesDeg.end(); unwrappedIt++)
     {
-        double oldJump = *rawIt - *std::prev(rawIt);
+        double oldJump = *unwrappedIt - *std::prev(unwrappedIt);
         if(fabs(oldJump) > 180.0)
         {
             double newJump = remainder(oldJump, 360.0);
-            *unwrappedIt = *std::prev(rawIt) + newJump;
-        }
-        else
-        {
-            *unwrappedIt = *rawIt;
+            *unwrappedIt = *std::prev(unwrappedIt) + newJump;
         }
     }
 }
