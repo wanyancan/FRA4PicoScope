@@ -100,7 +100,7 @@ void                CopyLog(void);
 void                ClearLog(void);
 
 DWORD WINAPI        ExecuteFRA(LPVOID lpdwThreadParam);
-void                RepaintPlot();
+void                RepaintPlot( void );
 void                InitScope( void );
 void                SelectNewScope( uint8_t index );
 bool                FraStatusCallback( FRA_STATUS_MESSAGE_T& fraStatus );
@@ -858,26 +858,7 @@ BOOL CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
                                              make_tuple(ptZoomBegin.x, ptZoomBegin.y),
                                              make_tuple(ptZoomEnd.x, ptZoomEnd.y)))
                         {
-                            // Get the new plot and paint it
-                            unique_ptr<uint8_t[]> buffer;
-
-                            try
-                            {
-                                buffer = fraPlotter->GetScreenBitmapPlot32BppBGRA();
-                            }
-                            catch (runtime_error e)
-                            {
-                                wstringstream wss;
-                                wss << e.what();
-                                LogMessage( wss.str() );
-                                return 0;
-                            }
-
-                            DeleteObject( hPlotBM );
-                            hPlotBM = CreateBitmap(pxPlotWidth, pxPlotHeight, 1, 32, buffer.get());
-
-                            RECT invalidRect = { pxPlotXStart, pxPlotYStart, pxPlotXStart + pxPlotWidth, pxPlotYStart + pxPlotHeight };
-                            InvalidateRect( hMainWnd, &invalidRect, true );
+                            RepaintPlot();
                         }
                         else
                         {
@@ -912,27 +893,7 @@ BOOL CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
                                     LogMessage( wss.str() );
                                     return 0;
                                 }
-
-                                // Get the new plot and paint it
-                                unique_ptr<uint8_t[]> buffer;
-
-                                try
-                                {
-                                    buffer = fraPlotter->GetScreenBitmapPlot32BppBGRA();
-                                }
-                                catch (runtime_error e)
-                                {
-                                    wstringstream wss;
-                                    wss << e.what();
-                                    LogMessage( wss.str() );
-                                    return 0;
-                                }
-
-                                DeleteObject( hPlotBM );
-                                hPlotBM = CreateBitmap(pxPlotWidth, pxPlotHeight, 1, 32, buffer.get());
-
-                                RECT invalidRect = { pxPlotXStart, pxPlotYStart, pxPlotXStart + pxPlotWidth, pxPlotYStart + pxPlotHeight };
-                                InvalidateRect( hMainWnd, &invalidRect, true );
+                                RepaintPlot();
                             }
                             return TRUE;
                         }
@@ -952,26 +913,7 @@ BOOL CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
                 if (plotAvailable && ptZoomBegin.x >= pxPlotXStart && ptZoomBegin.x < pxPlotXStart+pxPlotWidth && ptZoomBegin.y >= pxPlotYStart && ptZoomBegin.y < pxPlotYStart+pxPlotHeight &&
                     fraPlotter->UndoOneZoom())
                 {
-                    // Get the new plot and paint it
-                    unique_ptr<uint8_t[]> buffer;
-
-                    try
-                    {
-                        buffer = fraPlotter->GetScreenBitmapPlot32BppBGRA();
-                    }
-                    catch (runtime_error e)
-                    {
-                        wstringstream wss;
-                        wss << e.what();
-                        LogMessage( wss.str() );
-                        return 0;
-                    }
-
-                    DeleteObject( hPlotBM );
-                    hPlotBM = CreateBitmap(pxPlotWidth, pxPlotHeight, 1, 32, buffer.get());
-
-                    RECT invalidRect = { pxPlotXStart, pxPlotYStart, pxPlotXStart + pxPlotWidth, pxPlotYStart + pxPlotHeight };
-                    InvalidateRect( hMainWnd, &invalidRect, true );
+                    RepaintPlot();
                 }
             }
             return 0;
@@ -983,26 +925,7 @@ BOOL CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
                 if (plotAvailable && ptZoomBegin.x >= pxPlotXStart && ptZoomBegin.x < pxPlotXStart+pxPlotWidth && ptZoomBegin.y >= pxPlotYStart && ptZoomBegin.y < pxPlotYStart+pxPlotHeight &&
                     fraPlotter->ZoomToOriginal())
                 {
-                    // Get the new plot and paint it
-                    unique_ptr<uint8_t[]> buffer;
-
-                    try
-                    {
-                        buffer = fraPlotter->GetScreenBitmapPlot32BppBGRA();
-                    }
-                    catch (runtime_error e)
-                    {
-                        wstringstream wss;
-                        wss << e.what();
-                        LogMessage( wss.str() );
-                        return 0;
-                    }
-
-                    DeleteObject( hPlotBM );
-                    hPlotBM = CreateBitmap(pxPlotWidth, pxPlotHeight, 1, 32, buffer.get());
-
-                    RECT invalidRect = { pxPlotXStart, pxPlotYStart, pxPlotXStart + pxPlotWidth, pxPlotYStart + pxPlotHeight };
-                    InvalidateRect( hMainWnd, &invalidRect, true );
+                    RepaintPlot();
                 }
             }
             return 0;
@@ -1416,43 +1339,7 @@ DWORD WINAPI ExecuteFRA(LPVOID lpdwThreadParam)
                 continue;
             }
 #endif
-            unique_ptr<uint8_t[]> buffer;
-
-            try
-            {
-                buffer = fraPlotter->GetScreenBitmapPlot32BppBGRA();
-            }
-            catch (runtime_error e)
-            {
-                wstringstream wss;
-                wss << e.what();
-                LogMessage( wss.str() );
-                continue;
-            }
-
-            if (DeleteObject( hPlotBM ))
-            {
-                if (NULL != (hPlotBM = CreateBitmap(pxPlotWidth, pxPlotHeight, 1, 32, buffer.get())))
-                {
-                    RECT invalidRect = { pxPlotXStart, pxPlotYStart, pxPlotXStart + pxPlotWidth, pxPlotYStart + pxPlotHeight };
-                    if (InvalidateRect( hMainWnd, &invalidRect, true ))
-                    {
-                        plotAvailable = true;
-                    }
-                    else
-                    {
-                        LogMessage( L"Error: InvalidateRect failed while painting plot. Plot image may be stale." );
-                    }
-                }
-                else
-                {
-                    LogMessage( L"Error: CreateBitmap failed while painting plot. Plot image may be stale." );
-                }
-            }
-            else
-            {
-                LogMessage( L"Error: DeleteObject failed while painting plot. Plot image may be stale." );
-            }
+            RepaintPlot();
         }
         else
         {
@@ -1468,7 +1355,17 @@ void RepaintPlot(void)
 {
     unique_ptr<uint8_t[]> buffer;
 
-    buffer = fraPlotter->GetScreenBitmapPlot32BppBGRA();
+    try
+    {
+        buffer = fraPlotter->GetScreenBitmapPlot32BppBGRA();
+    }
+    catch (runtime_error e)
+    {
+        wstringstream wss;
+        wss << e.what();
+        LogMessage( wss.str() );
+        return;
+    }
 
     if (DeleteObject( hPlotBM ))
     {
