@@ -214,6 +214,16 @@ class ApplicationSettings
             appSettingsDirty = true;
         }
 
+        inline bool GetAutoAxes(void)
+        {
+            return AppSettingsPropTree.get<bool>( "plot.autoAxes" );
+        }
+        inline void SetAutoAxes( bool autoAxes )
+        {
+            AppSettingsPropTree.put( "plot.autoAxes", autoAxes );
+            appSettingsDirty = true;
+        }
+
         inline bool GetPlotGain(void)
         {
             return AppSettingsPropTree.get<bool>( "plot.plotGain" );

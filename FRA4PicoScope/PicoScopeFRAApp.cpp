@@ -100,6 +100,7 @@ void                CopyLog(void);
 void                ClearLog(void);
 
 DWORD WINAPI        ExecuteFRA(LPVOID lpdwThreadParam);
+bool                GeneratePlot(bool rescale);
 void                RepaintPlot( void );
 void                InitScope( void );
 void                SelectNewScope( uint8_t index );
@@ -680,6 +681,8 @@ BOOL CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
                 case IDC_CLEAR:
                     ClearLog();
                     return TRUE;
+                case IDC_FRA_AUTO_AXES:
+                case IDC_FRA_SAVED_AXES:
                 case IDC_FRA_DRAW_GAIN:
                 case IDC_FRA_DRAW_PHASE:
                 case IDC_FRA_DRAW_GM:
@@ -713,22 +716,7 @@ BOOL CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 
                     if (fraPlotter->PlotDataAvailable())
                     {
-                        if (wmId == IDC_FRA_UNWRAP_PHASE)
-                        {
-                            fraPlotter -> SetPlotSettings( pSettings->GetPlotGain(), pSettings->GetPlotPhase(),
-                                                           pSettings->GetPlotGainMargin(), pSettings->GetPlotPhaseMargin(), false );
-                            // Need to switch to the right phase data
-                            int numSteps;
-                            double *freqsLogHz, *phasesDeg, *unwrappedPhasesDeg, *gainsDb, *phases;
-                            psFRA->GetResults( &numSteps, &freqsLogHz, &gainsDb, &phasesDeg, &unwrappedPhasesDeg );
-                            phases = pSettings->GetPlotUnwrappedPhase() ? unwrappedPhasesDeg : phasesDeg;
-                            fraPlotter -> SetPlotData( freqsLogHz, gainsDb, phases, numSteps );
-                        }
-                        else
-                        {
-                            fraPlotter -> SetPlotSettings( pSettings->GetPlotGain(), pSettings->GetPlotPhase(),
-                                                           pSettings->GetPlotGainMargin(), pSettings->GetPlotPhaseMargin(), true );
-                        }
+                        (void)GeneratePlot(wmId == IDC_FRA_AUTO_AXES || wmId == IDC_FRA_SAVED_AXES || pSettings->GetAutoAxes());
                         RepaintPlot();
                     }
                     return TRUE;
@@ -1117,6 +1105,16 @@ BOOL LoadControlsData(HWND hDlg)
     Edit_LimitText( hndCtrl, 3 );
     Edit_SetText( hndCtrl, pSettings->GetStepsPerDecade().c_str() );
 
+    if (pSettings->GetAutoAxes())
+    {
+        hndCtrl = GetDlgItem( hDlg, IDC_FRA_AUTO_AXES );
+    }
+    else
+    {
+        hndCtrl = GetDlgItem( hDlg, IDC_FRA_SAVED_AXES );
+    }
+    Button_SetCheck( hndCtrl, true );
+
     hndCtrl = GetDlgItem( hDlg, IDC_FRA_DRAW_GAIN );
     Button_SetCheck( hndCtrl, pSettings->GetPlotGain() );
 
@@ -1318,24 +1316,8 @@ DWORD WINAPI ExecuteFRA(LPVOID lpdwThreadParam)
                 continue;
             }
 
-            int numSteps;
-            double *freqsLogHz, *phasesDeg, *unwrappedPhasesDeg, *gainsDb, *phases;
-            psFRA->GetResults( &numSteps, &freqsLogHz, &gainsDb, &phasesDeg, &unwrappedPhasesDeg );
-            phases = pSettings->GetPlotUnwrappedPhase() ? unwrappedPhasesDeg : phasesDeg;
-
-            try
+            if (!GeneratePlot(true))
             {
-                fraPlotter -> SetPlotSettings( pSettings->GetPlotGain(), pSettings->GetPlotPhase(), pSettings->GetPlotGainMargin(), pSettings->GetPlotPhaseMargin(), false );
-                fraPlotter -> PlotFRA( freqsLogHz, gainsDb, phases, numSteps,
-                                       pSettings->GetFreqScale(), pSettings->GetGainScale(), pSettings->GetPhaseScale(),
-                                       pSettings->GetFreqIntervals(), pSettings->GetGainIntervals(), pSettings->GetPhaseIntervals(),
-                                       pSettings->GetGainMasterIntervals(), pSettings->GetPhaseMasterIntervals() );
-            }
-            catch (runtime_error e)
-            {
-                wstringstream wss;
-                wss << e.what();
-                LogMessage( wss.str() );
                 continue;
             }
 #endif
@@ -1350,6 +1332,102 @@ DWORD WINAPI ExecuteFRA(LPVOID lpdwThreadParam)
 
     return TRUE;
 }
+
+////////////////////////////////////////////////////////////////////////////////////////////////////
+//
+// Name: GeneratePlot
+//
+// Purpose: Common function to generate the plot
+//
+// Parameters: rescale - whether to re-scale the plot to initial settings (auto or saved).
+//
+// Notes: Does error handling and can write to the log on error.
+//        Assumes UI settingshave been stored to aplication settings
+//
+///////////////////////////////////////////////////////////////////////////////////////////////////
+
+bool GeneratePlot(bool rescale)
+{
+    tuple<bool,double,double> freqAxisScale, gainAxisScale, phaseAxisScale;
+    tuple<double,uint8_t,bool,bool> freqAxisIntervals, gainAxisIntervals, phaseAxisIntervals;
+    bool gainMasterIntervals, phaseMasterIntervals;
+    int numSteps;
+    double *freqsLogHz, *phasesDeg, *unwrappedPhasesDeg, *gainsDb, *phases;
+
+    if (rescale)
+    {
+        if (pSettings->GetAutoAxes())
+        {
+            // Set scales and intervals for automatic axes/grid determination
+            freqAxisScale = gainAxisScale = phaseAxisScale = tuple<bool,double,double>(true, 0.0, 0.0);
+            freqAxisIntervals = gainAxisIntervals = phaseAxisIntervals = tuple<double,uint8_t,bool,bool>(0.0, 0, true, true);
+
+            // Default to gain being the master axes
+            if (pSettings->GetPlotGain())
+            {
+                gainMasterIntervals = true;
+                phaseMasterIntervals = false;
+            }
+            else
+            {
+                gainMasterIntervals = false;
+                phaseMasterIntervals = true;
+            }
+        }
+        else
+        {
+            freqAxisScale = pSettings->GetFreqScale();
+            gainAxisScale = pSettings->GetGainScale();
+            phaseAxisScale = pSettings->GetPhaseScale();
+            freqAxisIntervals = pSettings->GetFreqIntervals();
+            gainAxisIntervals = pSettings->GetGainIntervals();
+            phaseAxisIntervals = pSettings->GetPhaseIntervals();
+            gainMasterIntervals = pSettings->GetGainMasterIntervals();
+            phaseMasterIntervals = pSettings->GetPhaseMasterIntervals();
+        }
+
+        psFRA->GetResults( &numSteps, &freqsLogHz, &gainsDb, &phasesDeg, &unwrappedPhasesDeg );
+        phases = pSettings->GetPlotUnwrappedPhase() ? unwrappedPhasesDeg : phasesDeg;
+    }
+
+    try
+    {
+        if (rescale)
+        {
+            fraPlotter -> SetPlotSettings( pSettings->GetPlotGain(), pSettings->GetPlotPhase(), pSettings->GetPlotGainMargin(), pSettings->GetPlotPhaseMargin(), false );
+            fraPlotter -> PlotFRA( freqsLogHz, gainsDb, phases, numSteps,
+                                   freqAxisScale, gainAxisScale, phaseAxisScale,
+                                   freqAxisIntervals, gainAxisIntervals, phaseAxisIntervals,
+                                   gainMasterIntervals, phaseMasterIntervals );
+        }
+        else
+        {
+            fraPlotter -> SetPlotSettings( pSettings->GetPlotGain(), pSettings->GetPlotPhase(), pSettings->GetPlotGainMargin(), pSettings->GetPlotPhaseMargin(), true );
+        }
+    }
+    catch (runtime_error e)
+    {
+        wstringstream wss;
+        wss << e.what();
+        LogMessage( wss.str() );
+        return false;
+    }
+
+    return true;
+
+}
+
+////////////////////////////////////////////////////////////////////////////////////////////////////
+//
+// Name: RepaintsPlot
+//
+// Purpose: Common function to re-draw the generated plot to the application window
+//
+// Parameters: None
+//
+// Notes: Does error handling and can write to the log on error.
+//
+///////////////////////////////////////////////////////////////////////////////////////////////////
 
 void RepaintPlot(void)
 {
@@ -1616,6 +1694,9 @@ bool StoreSettings(void)
     hndCtrl = GetDlgItem( hMainWnd, IDC_FRA_STEPS_PER_DECADE );
     Edit_GetText( hndCtrl, editText, 16 );
     pSettings->SetStepsPerDecade( editText );
+
+    hndCtrl = GetDlgItem( hMainWnd, IDC_FRA_AUTO_AXES );
+    pSettings->SetAutoAxes(Button_GetCheck( hndCtrl ) == BST_CHECKED);
 
     hndCtrl = GetDlgItem( hMainWnd, IDC_FRA_DRAW_GAIN );
     pSettings->SetPlotGain(Button_GetCheck( hndCtrl ) == BST_CHECKED);

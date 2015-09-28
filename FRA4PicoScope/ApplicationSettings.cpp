@@ -174,6 +174,7 @@ bool ApplicationSettings::InitializeApplicationSettingsFile( void )
         AppSettingsPropTree.put( "plot.phaseAxis.minorGrids", false );
         AppSettingsPropTree.put( "plot.phaseAxis.masterGrids", false );
 
+        AppSettingsPropTree.put( "plot.autoAxes", true );
         AppSettingsPropTree.put( "plot.plotGain", true );
         AppSettingsPropTree.put( "plot.plotPhase", true );
         AppSettingsPropTree.put( "plot.plotGainMargin", false );
