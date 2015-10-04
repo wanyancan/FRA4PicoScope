@@ -26,5 +26,7 @@
 #pragma once
 
 #include "resource.h"
+#include "ApplicationSettings.h"
 
 extern char* appVersionString;
+extern ApplicationSettings* pSettings;

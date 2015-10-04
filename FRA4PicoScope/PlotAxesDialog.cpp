@@ -29,6 +29,7 @@
 #include <sstream>
 #include "utility.h"
 #include "PlotAxesDialog.h"
+#include "PicoScopeFraApp.h"
 #include "Resource.h"
 
 PlotScaleSettings_T* plotSettings;
@@ -168,12 +169,11 @@ bool SettingsChanged( HWND hDlg )
 //
 ///////////////////////////////////////////////////////////////////////////////////////////////////
 
-bool ValidateAndStoreSettings( HWND hDlg )
+bool ValidateAndStoreSettings( HWND hDlg, PlotScaleSettings_T& dlgPlotSettings )
 {
     bool retVal = true;
     WCHAR numberStr[32];
     HWND hndCtrl;
-    PlotScaleSettings_T dlgPlotSettings;
     wstring errorConditions[32];
     uint8_t numErrors = 0;
     bool minFreqValid = false;
@@ -348,11 +348,7 @@ bool ValidateAndStoreSettings( HWND hDlg )
         retVal = false;
     }
 
-    if (retVal)
-    {
-        *plotSettings = dlgPlotSettings;
-    }
-    else
+    if (!retVal)
     {
         uint8_t i;
         wstring errorMessage = L"The following are invalid:\n";
@@ -938,12 +934,32 @@ INT_PTR CALLBACK PlotAxesDialogHandler(HWND hDlg, UINT message, WPARAM wParam, L
                     return 0;
                     break;
                 }
+                case IDC_STORE:
+                {
+                    PlotScaleSettings_T dlgPlotSettings;
+                    if (ValidateAndStoreSettings(hDlg, dlgPlotSettings))
+                    {
+                        pSettings->SetFreqScale(dlgPlotSettings.freqAxisScale);
+                        pSettings->SetGainScale(dlgPlotSettings.gainAxisScale);
+                        pSettings->SetPhaseScale(dlgPlotSettings.phaseAxisScale);
+
+                        pSettings->SetFreqIntervals(dlgPlotSettings.freqAxisIntervals);
+                        pSettings->SetGainIntervals(dlgPlotSettings.gainAxisIntervals);
+                        pSettings->SetPhaseIntervals(dlgPlotSettings.phaseAxisIntervals);
+
+                        pSettings->SetGainMasterIntervals(dlgPlotSettings.gainMasterIntervals);
+                        pSettings->SetPhaseMasterIntervals(dlgPlotSettings.phaseMasterIntervals);
+                    }
+                    return (INT_PTR)TRUE;
+                }
                 case IDOK:
                 {
+                    PlotScaleSettings_T dlgPlotSettings;
                     if (SettingsChanged(hDlg))
                     {
-                        if (ValidateAndStoreSettings(hDlg))
+                        if (ValidateAndStoreSettings(hDlg, dlgPlotSettings))
                         {
+                            *plotSettings = dlgPlotSettings;
                             EndDialog(hDlg, IDOK);
                         }
                     }
