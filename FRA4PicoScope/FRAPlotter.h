@@ -68,7 +68,7 @@ class FRAPlotter
         ~FRAPlotter(void);
         bool Initialize(void);
         void SetPlotSettings( bool plotGain, bool plotPhase, bool plotGainMargin, bool plotPhaseMargin, bool replot );
-        void SetPlotData( double freqs[], double gains[], double phases[], int N );
+        void SetPlotData( double freqs[], double gains[], double phases[], int N, bool replot );
         void PlotFRA(double freqs[], double gains[], double phases[], int N, 
                      tuple<bool,double,double> freqAxisScale,
                      tuple<bool,double,double> gainAxisScale, 

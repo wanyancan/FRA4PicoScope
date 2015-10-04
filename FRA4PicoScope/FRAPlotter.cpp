@@ -197,7 +197,7 @@ FRAPlotter::~FRAPlotter(void)
 //             [in] plotPhase - whether to plot phase
 //             [in] plotGainMargin - whether to plot phase margin
 //             [in] plotPhaseMargin - whether to plot phase margin
-//             [in] replot - whether to immediately re-draw the plot
+//             [in] replot - whether to immediately re-draw the plot after changing the settings
 //
 // Notes:
 //
@@ -227,6 +227,7 @@ void FRAPlotter::SetPlotSettings( bool plotGain, bool plotPhase, bool plotGainMa
 //             [in] gains - Gains from the FRA execution
 //             [in] phases - Phases from the FRA execution
 //             [in] N - Number of data points in the arrays supplied
+//             [in] replot - whether to immediately re-draw the plot after setting the data
 //
 // Notes: Can pass N = 0, which means use last data passed; Throws a runtime_error if N = 0,
 //           but no data is available.
@@ -235,7 +236,7 @@ void FRAPlotter::SetPlotSettings( bool plotGain, bool plotPhase, bool plotGainMa
 //
 ///////////////////////////////////////////////////////////////////////////////////////////////////
 
-void FRAPlotter::SetPlotData( double freqs[], double gains[], double phases[], int N )
+void FRAPlotter::SetPlotData( double freqs[], double gains[], double phases[], int N, bool replot )
 {
     // Store the plot data
     if (0 != N)
@@ -250,7 +251,10 @@ void FRAPlotter::SetPlotData( double freqs[], double gains[], double phases[], i
     }
 
     // Don't recompute axes, just replot.
-    PlotFRA();
+    if (replot)
+    {
+        PlotFRA();
+    }
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////

@@ -44,6 +44,14 @@
 
 //#define TEST_PLOTTING
 
+#if defined(TEST_PLOTTING)
+const static uint32_t testPlotN = 41;
+double testPlotFreqs[];
+double testPlotGains[];
+double testPlotPhases[];
+double testPlotUnwrappedPhases[];
+#endif
+
 char* appVersionString = "0.4b";
 char* appNameString = "Frequency Response Analyzer for PicoScope";
 
@@ -68,7 +76,8 @@ ScopeSelector* pScopeSelector = NULL;
 ApplicationSettings* pSettings = NULL;
 
 // Plot variables
-bool plotAvailable = false;
+bool plotAvailable = false; // true when a plot is available on the screen
+bool initialPlot = false; // true when the plot displayed has not been manipulated by the user
 HBITMAP hPlotBM;
 HBITMAP hPlotUnavailableBM;
 HBITMAP hPlotSeparatorBM;
@@ -532,6 +541,8 @@ BOOL CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
             InitScope();
 #else
             HWND hndCtrl;
+            hndCtrl = GetDlgItem(hWnd, IDC_FRA_AUTO_AXES);
+            Button_SetCheck( hndCtrl, true );
             hndCtrl = GetDlgItem(hWnd, IDC_FRA_DRAW_GAIN);
             Button_SetCheck( hndCtrl, true );
             hndCtrl = GetDlgItem(hWnd, IDC_FRA_DRAW_PHASE);
@@ -716,7 +727,10 @@ BOOL CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 
                     if (fraPlotter->PlotDataAvailable())
                     {
-                        (void)GeneratePlot(wmId == IDC_FRA_AUTO_AXES || wmId == IDC_FRA_SAVED_AXES || pSettings->GetAutoAxes());
+                        bool rescale = wmId == IDC_FRA_AUTO_AXES ||
+                                       wmId == IDC_FRA_SAVED_AXES ||
+                                       (pSettings->GetAutoAxes() && initialPlot);
+                        (void)GeneratePlot(rescale);
                         RepaintPlot();
                     }
                     return TRUE;
@@ -847,6 +861,7 @@ BOOL CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
                                              make_tuple(ptZoomEnd.x, ptZoomEnd.y)))
                         {
                             RepaintPlot();
+                            initialPlot = false;
                         }
                         else
                         {
@@ -882,6 +897,7 @@ BOOL CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
                                     return 0;
                                 }
                                 RepaintPlot();
+                                initialPlot = false;
                             }
                             return TRUE;
                         }
@@ -1243,32 +1259,8 @@ DWORD WINAPI ExecuteFRA(LPVOID lpdwThreadParam)
         if (dwWaitResult == WAIT_OBJECT_0)
         {
 #if defined(TEST_PLOTTING)
-            int numSteps = 6;
-            double freqsLogHz[6], phasesDeg[6], gainsDb[6];
-
             StoreSettings();
-
-            for (int i = 0; i < numSteps; i++)
-            {
-                freqsLogHz[i] = (double)i;
-                phasesDeg[i] = (double)-(i-1);
-                gainsDb[i] = (double)(i-1)*2;
-            }
-            try
-            {
-                fraPlotter -> SetPlotSettings( pSettings->GetPlotGain(), pSettings->GetPlotPhase(), pSettings->GetPlotGainMargin(), pSettings->GetPlotPhaseMargin(), false );
-                fraPlotter -> PlotFRA( freqsLogHz, gainsDb, phasesDeg, numSteps,
-                                       pSettings->GetFreqScale(), pSettings->GetGainScale(), pSettings->GetPhaseScale(),
-                                       pSettings->GetFreqIntervals(), pSettings->GetGainIntervals(), pSettings->GetPhaseIntervals(),
-                                       pSettings->GetGainMasterIntervals(), pSettings->GetPhaseMasterIntervals() );
-            }
-            catch (runtime_error e)
-            {
-                wstringstream wss;
-                wss << e.what();
-                LogMessage( wss.str() );
-                continue;
-            }
+            (void)GeneratePlot(true);
 #else
             if (NULL == pScopeSelector->GetSelectedScope()) // Scope not created
             {
@@ -1322,6 +1314,7 @@ DWORD WINAPI ExecuteFRA(LPVOID lpdwThreadParam)
             }
 #endif
             RepaintPlot();
+            initialPlot = true;
         }
         else
         {
@@ -1385,10 +1378,18 @@ bool GeneratePlot(bool rescale)
             gainMasterIntervals = pSettings->GetGainMasterIntervals();
             phaseMasterIntervals = pSettings->GetPhaseMasterIntervals();
         }
-
-        psFRA->GetResults( &numSteps, &freqsLogHz, &gainsDb, &phasesDeg, &unwrappedPhasesDeg );
-        phases = pSettings->GetPlotUnwrappedPhase() ? unwrappedPhasesDeg : phasesDeg;
     }
+
+#if !defined(TEST_PLOTTING)
+    psFRA->GetResults( &numSteps, &freqsLogHz, &gainsDb, &phasesDeg, &unwrappedPhasesDeg );
+#else
+    numSteps = testPlotN;
+    freqsLogHz = testPlotFreqs;
+    gainsDb = testPlotGains;
+    phasesDeg = testPlotPhases;
+    unwrappedPhasesDeg = testPlotUnwrappedPhases;
+#endif
+    phases = pSettings->GetPlotUnwrappedPhase() ? unwrappedPhasesDeg : phasesDeg;
 
     try
     {
@@ -1402,6 +1403,7 @@ bool GeneratePlot(bool rescale)
         }
         else
         {
+            fraPlotter -> SetPlotData( freqsLogHz, gainsDb, phases, numSteps, false );
             fraPlotter -> SetPlotSettings( pSettings->GetPlotGain(), pSettings->GetPlotPhase(), pSettings->GetPlotGainMargin(), pSettings->GetPlotPhaseMargin(), true );
         }
     }
@@ -2193,3 +2195,184 @@ void DisableAllMenus( void )
     }
     DrawMenuBar( hMainWnd );
 }
+
+#if defined(TEST_PLOTTING)
+double testPlotFreqs[testPlotN] = {
+1.0,
+1.1,
+1.2,
+1.3,
+1.4,
+1.5,
+1.6,
+1.7,
+1.8,
+1.9,
+2.0,
+2.1,
+2.2,
+2.3,
+2.4,
+2.5,
+2.6,
+2.7,
+2.8,
+2.9,
+3.0,
+3.1,
+3.2,
+3.3,
+3.4,
+3.5,
+3.6,
+3.7,
+3.8,
+3.9,
+4.0,
+4.1,
+4.2,
+4.3,
+4.4,
+4.5,
+4.6,
+4.7,
+4.8,
+4.9,
+5.0};
+
+double testPlotGains[testPlotN] = 
+{
+0.0,
+0.0,
+0.0,
+0.0,
+0.0,
+0.0,
+0.0,
+0.0,
+0.0,
+0.0,
+0.0,
+0.0,
+0.0,
+0.0,
+0.0,
+0.0,
+0.0,
+0.0,
+0.0,
+0.0,
+0.0,
+-8.0,
+-16.0,
+-24.0,
+-32.0,
+-40.0,
+-48.0,
+-56.0,
+-64.0,
+-72.0,
+-80.0,
+-88.0,
+-96.0,
+-104.0,
+-112.0,
+-120.0,
+-128.0,
+-136.0,
+-144.0,
+-152.0,
+-160.0
+};
+
+double testPlotPhases[testPlotN] = 
+{
+0.0,
+0.0,
+0.0,
+0.0,
+0.0,
+0.0,
+0.0,
+0.0,
+0.0,
+0.0,
+0.0,
+-18.0,
+-36.0,
+-54.0,
+-72.0,
+-90.0,
+-108.0,
+-126.0,
+-144.0,
+-162.0,
+-180.0,
+162.0,
+144.0,
+126.0,
+108.0,
+90.0,
+72.0,
+54.0,
+36.0,
+18.0,
+0.0,
+0.0,
+0.0,
+0.0,
+0.0,
+0.0,
+0.0,
+0.0,
+0.0,
+0.0,
+0.0
+};
+
+double testPlotUnwrappedPhases[testPlotN] = 
+{
+0.0,
+0.0,
+0.0,
+0.0,
+0.0,
+0.0,
+0.0,
+0.0,
+0.0,
+0.0,
+0.0,
+-18.0,
+-36.0,
+-54.0,
+-72.0,
+-90.0,
+-108.0,
+-126.0,
+-144.0,
+-162.0,
+-180.0,
+-198.0,
+-216.0,
+-234.0,
+-252.0,
+-270.0,
+-288.0,
+-306.0,
+-324.0,
+-342.0,
+-360.0,
+-360.0,
+-360.0,
+-360.0,
+-360.0,
+-360.0,
+-360.0,
+-360.0,
+-360.0,
+-360.0,
+-360.0
+};
+
+#endif
