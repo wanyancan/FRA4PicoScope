@@ -38,6 +38,8 @@
 #include <iomanip>
 #include "plplot.h" // For creating diagnostic graphs
 
+#define WORKAROUND_PS_TIMEINDISPOSED_BUG
+
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 //
 // Name: DataReady
@@ -1202,6 +1204,10 @@ bool PicoScopeFRA::StartCapture( double measFreqHz )
     {
         return false;
     }
+
+#if defined(WORKAROUND_PS_TIMEINDISPOSED_BUG)
+    timeIndisposedMs = (int32_t)(((double)numSamples / actualSampFreqHz)*1000.0);
+#endif
 
     swprintf( fraStatusText, 128, L"Status: Capturing %d samples (%d cycles) at %.3lg Hz takes %0.1lf sec.", numSamples, numCycles, actualSampFreqHz, (double)timeIndisposedMs/1000.0 );
     UpdateStatus( fraStatusMsg, FRA_STATUS_MESSAGE, fraStatusText );
