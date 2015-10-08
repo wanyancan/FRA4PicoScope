@@ -180,6 +180,8 @@ bool ApplicationSettings::InitializeApplicationSettingsFile( void )
         AppSettingsPropTree.put( "plot.plotGainMargin", false );
         AppSettingsPropTree.put( "plot.plotPhaseMargin", false );
         AppSettingsPropTree.put( "plot.plotUnwrappedPhase", false );
+        AppSettingsPropTree.put( "plot.phaseWrappingThreshold", 180.0 );
+        AppSettingsPropTree.put( "plot.gainMarginPhaseCrossover", 0.0 );
 
         AppSettingsPropTree.put( "plot.screenColor.background.red", 0 );
         AppSettingsPropTree.put( "plot.screenColor.background.green", 0 );

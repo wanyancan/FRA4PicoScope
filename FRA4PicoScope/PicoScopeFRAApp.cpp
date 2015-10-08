@@ -537,7 +537,8 @@ BOOL CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 #if !defined(TEST_PLOTTING)
             psFRA->SetFraSettings( pSettings->GetSamplingMode(), pSettings->GetPurityLowerLimit(), pSettings->GetExtraSettlingTimeMs(),
                                    pSettings->GetAutorangeTriesPerStep(), pSettings->GetAutorangeTolerance(), pSettings->GetSmallSignalResolutionLimit(),
-                                   pSettings->GetMaxAutorangeAmplitude(), pSettings->GetMinCyclesCaptured(), pSettings->GetTimeDomainPlotsEnabled(), dataDirectoryName );
+                                   pSettings->GetMaxAutorangeAmplitude(), pSettings->GetMinCyclesCaptured(), pSettings->GetPhaseWrappingThreshold(),
+                                   pSettings->GetTimeDomainPlotsEnabled(), dataDirectoryName );
             InitScope();
 #else
             HWND hndCtrl;
@@ -1395,7 +1396,8 @@ bool GeneratePlot(bool rescale)
     {
         if (rescale)
         {
-            fraPlotter -> SetPlotSettings( pSettings->GetPlotGain(), pSettings->GetPlotPhase(), pSettings->GetPlotGainMargin(), pSettings->GetPlotPhaseMargin(), false );
+            fraPlotter -> SetPlotSettings( pSettings->GetPlotGain(), pSettings->GetPlotPhase(), pSettings->GetPlotGainMargin(), pSettings->GetPlotPhaseMargin(),
+                                           pSettings->GetGainMarginPhaseCrossover(), false );
             fraPlotter -> PlotFRA( freqsLogHz, gainsDb, phases, numSteps,
                                    freqAxisScale, gainAxisScale, phaseAxisScale,
                                    freqAxisIntervals, gainAxisIntervals, phaseAxisIntervals,
@@ -1404,7 +1406,8 @@ bool GeneratePlot(bool rescale)
         else
         {
             fraPlotter -> SetPlotData( freqsLogHz, gainsDb, phases, numSteps, false );
-            fraPlotter -> SetPlotSettings( pSettings->GetPlotGain(), pSettings->GetPlotPhase(), pSettings->GetPlotGainMargin(), pSettings->GetPlotPhaseMargin(), true );
+            fraPlotter -> SetPlotSettings( pSettings->GetPlotGain(), pSettings->GetPlotPhase(), pSettings->GetPlotGainMargin(), pSettings->GetPlotPhaseMargin(),
+                                           pSettings->GetGainMarginPhaseCrossover(), true );
         }
     }
     catch (runtime_error e)

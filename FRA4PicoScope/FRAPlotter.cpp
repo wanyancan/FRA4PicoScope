@@ -197,18 +197,21 @@ FRAPlotter::~FRAPlotter(void)
 //             [in] plotPhase - whether to plot phase
 //             [in] plotGainMargin - whether to plot phase margin
 //             [in] plotPhaseMargin - whether to plot phase margin
+//             [in] gainMarginPhaseCrossover - crossover phase value for gain margin calculations
 //             [in] replot - whether to immediately re-draw the plot after changing the settings
 //
 // Notes:
 //
 ///////////////////////////////////////////////////////////////////////////////////////////////////
 
-void FRAPlotter::SetPlotSettings( bool plotGain, bool plotPhase, bool plotGainMargin, bool plotPhaseMargin, bool replot )
+void FRAPlotter::SetPlotSettings( bool plotGain, bool plotPhase, bool plotGainMargin, bool plotPhaseMargin, 
+                                  double gainMarginPhaseCrossover, bool replot )
 {
     mPlotGain = plotGain;
     mPlotPhase = plotPhase;
     mPlotGainMargin = plotGainMargin;
     mPlotPhaseMargin = plotPhaseMargin;
+    mGainMarginPhaseCrossover = gainMarginPhaseCrossover;
 
     if (replot)
     {
@@ -775,8 +778,8 @@ void FRAPlotter::CalculateGainAndPhaseMargins( void )
     for (uint32_t i = 0; i < currentPhases.size() - 1; i++)
     {
         // Look for 0 degree crossings
-        int signFirst = boost::math::sign(currentPhases[i]);
-        int signSecond = boost::math::sign(currentPhases[i+1]);
+        int signFirst = boost::math::sign(currentPhases[i]-mGainMarginPhaseCrossover);
+        int signSecond = boost::math::sign(currentPhases[i+1]-mGainMarginPhaseCrossover);
         if (signFirst == 0 || signSecond == 0)
         {
             if (signFirst == 0)

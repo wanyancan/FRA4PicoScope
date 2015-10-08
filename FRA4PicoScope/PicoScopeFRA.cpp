@@ -183,6 +183,8 @@ void PicoScopeFRA::SetInstrument( PicoScope* _ps )
 //                                                   take action
 //             [in] maxAutorangeAmplitude - Amplitude before we switch to next higher range.
 //             [in] minCyclesCaptured - Minimum cycles captured for stmulus signal
+//             [in] phaseWrappingThreshold - phase value to use as wrapping point (in degrees)
+//                                           absolute value should be less than 360
 //             [in] diagnosticsOn - Whether to output plots of time domain data
 //             [in] baseDataPath - Path providing location to store time domain plots
 //
@@ -192,7 +194,7 @@ void PicoScopeFRA::SetInstrument( PicoScope* _ps )
 
 void PicoScopeFRA::SetFraSettings( SamplingMode_T samplingMode, double purityLowerLimit, uint16_t extraSettlingTimeMs, uint8_t autorangeTriesPerStep,
                                    double autorangeTolerance, double smallSignalResolutionTolerance, double maxAutorangeAmplitude, uint16_t minCyclesCaptured,
-                                   bool diagnosticsOn, wstring baseDataPath )
+                                   double phaseWrappingThreshold, bool diagnosticsOn, wstring baseDataPath )
 {
     mSamplingMode = samplingMode;
     mPurityLowerLimit = purityLowerLimit;
@@ -202,6 +204,7 @@ void PicoScopeFRA::SetFraSettings( SamplingMode_T samplingMode, double purityLow
     minAllowedAmplitudeRatio = smallSignalResolutionTolerance;
     maxAmplitudeRatio = maxAutorangeAmplitude;
     mMinCyclesCaptured = minCyclesCaptured;
+    mPhaseWrappingThreshold = phaseWrappingThreshold;
     mDiagnosticsOn = diagnosticsOn;
     mBaseDataPath = baseDataPath;
 }
@@ -1310,6 +1313,7 @@ bool PicoScopeFRA::ProcessData(void)
 bool PicoScopeFRA::CalculateGainAndPhase( double* gain, double* phase)
 {
     double tempPhase;
+    double crossover, crossoverUpper, crossoverLower;
 
     // Compute gain as dB
     // Compute channel range gain factor
@@ -1317,15 +1321,28 @@ bool PicoScopeFRA::CalculateGainAndPhase( double* gain, double* phase)
                                (rangeInfo[currentInputChannelRange].rangeVolts * attenInfo[mInputChannelAttenuation]);
     *gain = 20.0 * log10( channelGainFactor * currentOutputMagnitude / currentInputMagnitude );
 
-    // Compute phase in degrees, limiting to +/-180
-    tempPhase = currentOutputPhase - currentInputPhase;
-    if (tempPhase > M_PI)
+    // Compute phase in degrees, crossing over at the designated crossover
+    crossover = M_PI * (mPhaseWrappingThreshold / 180.0);
+
+    if (crossover < 0.0)
     {
-        tempPhase -= 2*M_PI;
+        crossoverLower = crossover;
+        crossoverUpper = crossoverLower + 2.0*M_PI; 
     }
-    else if (tempPhase < -M_PI)
+    else
     {
-        tempPhase += 2*M_PI;
+        crossoverUpper = crossover;
+        crossoverLower = crossoverUpper - 2.0*M_PI; 
+    }
+
+    tempPhase = currentOutputPhase - currentInputPhase;
+    if (tempPhase > crossoverUpper)
+    {
+        tempPhase -= 2.0*M_PI;
+    }
+    else if (tempPhase < crossoverLower)
+    {
+        tempPhase += 2.0*M_PI;
     }
 
     *phase = tempPhase*180.0/M_PI;

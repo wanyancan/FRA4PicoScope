@@ -98,6 +98,8 @@ class ApplicationSettings
             appSettingsDirty = true;
         }
 
+        // Plot settings
+
         inline tuple<bool, double, double> GetFreqScale(void)
         {
             auto retVal = make_tuple( AppSettingsPropTree.get<bool>( "plot.freqAxis.autoscale" ),
@@ -273,6 +275,28 @@ class ApplicationSettings
             AppSettingsPropTree.put( "plot.plotUnwrappedPhase", plotUnwrappedPhase );
             appSettingsDirty = true;
         }
+
+        inline double GetPhaseWrappingThreshold(void)
+        {
+            return AppSettingsPropTree.get<double>( "plot.phaseWrappingThreshold" );
+        }
+        inline void SetPhaseWrappingThreshold( double phaseWrappingThreshold )
+        {
+            AppSettingsPropTree.put( "plot.phaseWrappingThreshold", phaseWrappingThreshold );
+            appSettingsDirty = true;
+        }
+
+        inline double GetGainMarginPhaseCrossover(void)
+        {
+            return AppSettingsPropTree.get<double>( "plot.gainMarginPhaseCrossover" );
+        }
+        inline void SetGainMarginPhaseCrossover( double gainMarginPhaseCrossover )
+        {
+            AppSettingsPropTree.put( "plot.gainMarginPhaseCrossover", gainMarginPhaseCrossover );
+            appSettingsDirty = true;
+        }
+
+        // Expert settings
 
         inline double GetPurityLowerLimit( void )
         {

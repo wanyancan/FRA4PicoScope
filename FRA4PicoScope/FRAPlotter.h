@@ -67,7 +67,8 @@ class FRAPlotter
         FRAPlotter(uint16_t width, uint16_t height);
         ~FRAPlotter(void);
         bool Initialize(void);
-        void SetPlotSettings( bool plotGain, bool plotPhase, bool plotGainMargin, bool plotPhaseMargin, bool replot );
+        void SetPlotSettings( bool plotGain, bool plotPhase, bool plotGainMargin, bool plotPhaseMargin,
+                              double gainMarginPhaseCrossover, bool replot );
         void SetPlotData( double freqs[], double gains[], double phases[], int N, bool replot );
         void PlotFRA(double freqs[], double gains[], double phases[], int N, 
                      tuple<bool,double,double> freqAxisScale,
@@ -106,6 +107,7 @@ class FRAPlotter
 
         // Data describing the current plot
         bool mPlotGain, mPlotPhase, mPlotGainMargin, mPlotPhaseMargin;
+        double mGainMarginPhaseCrossover;
         double currentFreqAxisMin; // Log Hz
         double currentFreqAxisMax; // Log Hz
         double currentGainAxisMin;
