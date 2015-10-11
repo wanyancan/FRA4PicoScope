@@ -477,6 +477,18 @@ bool CommonMethod(SCOPE_FAMILY_LT, SetupChannel)( PS_CHANNEL channel, PS_COUPLIN
             return false;
         }
     }
+#elif defined(PS3000A)
+    if (model == PS3404A || model == PS3404B || model == PS3405A || model == PS3405B || model == PS3406A || model == PS3406B ||
+        model == PS3203D || model == PS3203DMSO || model == PS3204D || model == PS3204DMSO || model == PS3205D || model == PS3205DMSO || model == PS3206D || model == PS3206DMSO ||
+        model == PS3403D || model == PS3403DMSO || model == PS3404D || model == PS3404DMSO || model == PS3405D || model == PS3405DMSO || model == PS3406D || model == PS3406DMSO)
+    {
+        if (retVal && 0 != (status = ps3000aSetBandwidthFilter( handle, (PS3000A_CHANNEL)channel, PS3000A_BW_20MHZ )))
+        {
+            fraStatusText << L"Fatal error: Failed to setup input channel bandwidth limiter: " << status;
+            LogMessage( fraStatusText.str() );
+            return false;
+        }
+    }
 #endif
 
     return retVal;
