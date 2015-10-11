@@ -800,7 +800,8 @@ void FRAPlotter::CalculateGainAndPhaseMargins( void )
                 double f1, f2, dx;
                 f1 = pow(10.0,currentFreqs[i]);
                 f2 = pow(10.0,currentFreqs[i+1]);
-                dx = currentPhases[i] / (currentPhases[i] - currentPhases[i+1]);
+                dx = (currentPhases[i]-mGainMarginPhaseCrossover) /
+                     ((currentPhases[i]-mGainMarginPhaseCrossover) - (currentPhases[i+1]-mGainMarginPhaseCrossover));
                 double f = log10(f1 + dx * (f2-f1));
                 double p = currentGains[i] + dx * (currentGains[i+1] - currentGains[i]);
                 gainMargins.push_back( pair<double,double>(f, p) );
