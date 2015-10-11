@@ -124,6 +124,7 @@
     <ClCompile Include="ps3000Impl.cpp" />
     <ClCompile Include="ps4000Impl.cpp" />
     <ClCompile Include="ps5000aImpl.cpp" />
+    <ClCompile Include="ps6000Impl.cpp" />
     <ClCompile Include="ScopeSelector.cpp" />
     <ClCompile Include="stdafx.cpp">
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">Create</PrecompiledHeader>

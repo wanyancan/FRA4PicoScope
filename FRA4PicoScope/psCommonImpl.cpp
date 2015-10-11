@@ -51,6 +51,10 @@ using namespace boost::math;
 #define SCOPE_FAMILY_LT 5000a
 #define SCOPE_FAMILY_UT 5000A
 #define NEW_PS_DRIVER_MODEL
+#elif defined(PS6000)
+#define SCOPE_FAMILY_LT 6000
+#define SCOPE_FAMILY_UT 6000
+#define NEW_PS_DRIVER_MODEL
 #endif
 
 #if defined(NEW_PS_DRIVER_MODEL)
@@ -263,6 +267,8 @@ int16_t CommonMethod(SCOPE_FAMILY_LT,GetMaxValue)(void)
     maxValue = PS2000_MAX_VALUE;
 #elif defined(PS3000)
     maxValue = PS3000_MAX_VALUE;
+#elif defined(PS6000)
+    maxValue = PS6000_MAX_VALUE;
 #else
     (void)CommonApi(SCOPE_FAMILY_LT,MaximumValue)( handle, &maxValue );
 #endif
@@ -317,7 +323,7 @@ const RANGE_INFO_T* CommonMethod(SCOPE_FAMILY_LT,GetRangeCaps)( void )
 //        The frequency precision is normally far smaller than 1 (true for PS3000).  So, we find
 //        the two integers adjacent to the requested frequency, then find the actual frequencies to
 //        which those integers will get rounded by the API/scope.  Then we find which of those
-//        actual frequencies is closest to the requested frequency.  When the prpgram uses the
+//        actual frequencies is closest to the requested frequency.  When the program uses the
 //        returned value to setup the generator, which is a double, the value will get truncated
 //        back to an integer before passing to the API, but the API/scope will implement the
 //        actual frequency desired.
@@ -439,10 +445,16 @@ bool CommonMethod(SCOPE_FAMILY_LT,GetSerialNumber)( wstring &sn )
 //
 ///////////////////////////////////////////////////////////////////////////////////////////////////
 
-#if defined(PS2000A) || defined(PS3000A) || defined(PS5000A)
+#if defined(PS2000A) || defined(PS3000A) || defined(PS5000A) || defined(PS6000)
 #define ANALOG_OFFSET_ARG , (float)offset
 #elif defined(PS4000) || defined(PS2000) || defined(PS3000)
 #define ANALOG_OFFSET_ARG
+#endif
+
+#if defined(PS6000)
+#define BANDWIDTH_LIMITER_ARG , bwLimiter
+#else
+#define BANDWIDTH_LIMITER_ARG
 #endif
 
 bool CommonMethod(SCOPE_FAMILY_LT, SetupChannel)( PS_CHANNEL channel, PS_COUPLING coupling, PS_RANGE range, float offset )
@@ -451,9 +463,23 @@ bool CommonMethod(SCOPE_FAMILY_LT, SetupChannel)( PS_CHANNEL channel, PS_COUPLIN
     bool retVal = true;
     wstringstream fraStatusText;
 
+#if defined(PS6000)
+    PS6000_BANDWIDTH_LIMITER bwLimiter;
+    if (model == PS6402C || model == PS6402D || model == PS6403C || model == PS6403D ||
+        model == PS6402A || model == PS6402B || model == PS6403A || model == PS6403B)
+    {
+        bwLimiter = PS6000_BW_20MHZ;
+    }
+    else
+    {
+        bwLimiter = PS6000_BW_25MHZ;
+    }
+#endif
+
     if (PICO_ERROR(CommonApi(SCOPE_FAMILY_LT, SetChannel)( handle, (CommonEnum(SCOPE_FAMILY_UT,CHANNEL))channel,
                                                            TRUE, (CommonEnum(SCOPE_FAMILY_UT,COUPLING))coupling,
-                                                           (CommonEnum(SCOPE_FAMILY_UT,RANGE))range ANALOG_OFFSET_ARG)))
+                                                           (CommonEnum(SCOPE_FAMILY_UT,RANGE))range ANALOG_OFFSET_ARG
+                                                           BANDWIDTH_LIMITER_ARG )))
     {
         fraStatusText << L"Fatal error: Failed to setup input channel: " << status;
         LogMessage( fraStatusText.str() );
@@ -507,6 +533,13 @@ bool CommonMethod(SCOPE_FAMILY_LT, SetupChannel)( PS_CHANNEL channel, PS_COUPLIN
 //
 ///////////////////////////////////////////////////////////////////////////////////////////////////
 
+#undef BANDWIDTH_LIMITER_ARG
+#if defined(PS6000)
+#define BANDWIDTH_LIMITER_ARG , PS6000_BW_FULL
+#else
+#define BANDWIDTH_LIMITER_ARG
+#endif
+
 bool CommonMethod(SCOPE_FAMILY_LT, DisableChannel)( PS_CHANNEL channel )
 {
     PICO_STATUS status;
@@ -516,7 +549,8 @@ bool CommonMethod(SCOPE_FAMILY_LT, DisableChannel)( PS_CHANNEL channel )
 
     if (PICO_ERROR(CommonApi(SCOPE_FAMILY_LT, SetChannel)( handle, (CommonEnum(SCOPE_FAMILY_UT,CHANNEL))channel,
                                                            FALSE, (CommonEnum(SCOPE_FAMILY_UT,COUPLING))0,
-                                                           (CommonEnum(SCOPE_FAMILY_UT,RANGE))0 ANALOG_OFFSET_ARG)))
+                                                           (CommonEnum(SCOPE_FAMILY_UT,RANGE))0 ANALOG_OFFSET_ARG
+                                                           BANDWIDTH_LIMITER_ARG )))
     {
         fraStatusText << L"Fatal error: Failed to disable channel: " << status;
         LogMessage( fraStatusText.str() );
@@ -627,7 +661,7 @@ bool CommonMethod(SCOPE_FAMILY_LT, DisableSignalGenerator)( void )
 #define TIME_UNITS_ARG
 #define OVERSAMPLE_ARG
 #define SEGMENT_INDEX_ARG , 0
-#elif defined(PS2000A) || defined(PS3000A) || defined(PS4000)
+#elif defined(PS2000A) || defined(PS3000A) || defined(PS4000) || defined(PS6000)
 #define TIME_UNITS_ARG
 #define OVERSAMPLE_ARG 1,
 #define SEGMENT_INDEX_ARG , 0
@@ -906,6 +940,10 @@ void CommonMethod(SCOPE_FAMILY_LT, SetChannelDesignations)( PS_CHANNEL inputChan
 #define RATIO_MODE_NONE_ARG , CommonEnum(SCOPE_FAMILY_UT, RATIO_MODE_NONE)
 #define RATIO_MODE_AGGREGATE_ARG , CommonEnum(SCOPE_FAMILY_UT, RATIO_MODE_AGGREGATE)
 #define SEGMENT_ARG , 0
+#elif defined(PS6000)
+#define RATIO_MODE_NONE_ARG , CommonEnum(SCOPE_FAMILY_UT, RATIO_MODE_NONE)
+#define RATIO_MODE_AGGREGATE_ARG , CommonEnum(SCOPE_FAMILY_UT, RATIO_MODE_AGGREGATE)
+#define SEGMENT_ARG
 #elif defined(PS4000)
 #define RATIO_MODE_NONE_ARG
 #define RATIO_MODE_AGGREGATE_ARG
@@ -949,7 +987,7 @@ bool CommonMethod(SCOPE_FAMILY_LT, GetData)( uint32_t numSamples, uint32_t start
     uint32_t numSamplesInOut;
 
     if (PICO_ERROR(CommonApi(SCOPE_FAMILY_LT,SetDataBuffer)( handle, (CommonEnum(SCOPE_FAMILY_UT,CHANNEL))mInputChannel, mInputBuffer.data(),
-                                                                numSamples SEGMENT_ARG RATIO_MODE_NONE_ARG )))
+                                                             numSamples SEGMENT_ARG RATIO_MODE_NONE_ARG )))
     {
         fraStatusText << L"Fatal error: Failed to set input data capture buffer: " << status;
         LogMessage( fraStatusText.str() );

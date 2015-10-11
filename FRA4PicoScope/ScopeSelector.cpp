@@ -32,6 +32,7 @@
 #include "ps3000aImpl.h"
 #include "ps4000Impl.h"
 #include "ps5000aImpl.h"
+#include "ps6000Impl.h"
 #include <iostream>
 #include <sstream>
 
@@ -373,8 +374,7 @@ PicoScope* ScopeSelector::OpenScope( AvailableScopeDescription_T scope )
         }
         else
         {
-            //selectedScope = new ps6000Impl( handle );
-            selectedScope = NULL; // For now, until we implement PS6000
+            selectedScope = new ps6000Impl( handle );
         }
     }
     else
