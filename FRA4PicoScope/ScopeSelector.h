@@ -104,9 +104,9 @@ class ScopeSelector
         static PICO_STATUS __stdcall ps3000EnumerateUnits( int16_t *count, int8_t  *serials, int16_t *serialLth );
         static PICO_STATUS __stdcall ps5000EnumerateUnits( int16_t *count, int8_t  *serials, int16_t *serialLth );
 
-        PICO_STATUS ps2000OpenUnit( int16_t* handle, int8_t* serial );
-        PICO_STATUS ps3000OpenUnit( int16_t* handle, int8_t* serial );
-        PICO_STATUS ps5000OpenUnit( int16_t* handle, int8_t* serial );
+        PICO_STATUS PS2000OpenUnit( int16_t* handle, int8_t* serial );
+        PICO_STATUS PS3000OpenUnit( int16_t* handle, int8_t* serial );
+        PICO_STATUS PS5000OpenUnit( int16_t* handle, int8_t* serial );
 
         static unordered_map<string, int16_t> ps2000Scopes;
         static unordered_map<string, int16_t> ps3000Scopes;

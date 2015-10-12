@@ -61,7 +61,7 @@
     <Link>
       <SubSystem>Windows</SubSystem>
       <GenerateDebugInformation>true</GenerateDebugInformation>
-      <AdditionalDependencies>ps2000.lib;ps3000.lib;ps2000a.lib;ps3000a.lib;ps4000a.lib;ps4000.lib;ps5000a.lib;ps6000.lib;plplot.lib;plplotqt.lib;qsastime.lib;shlwapi.lib;windowscodecs.lib;QtCored.lib;QtGuid.lib;Ws2_32.lib;Imm32.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>ps2000.lib;ps3000.lib;ps2000a.lib;ps3000a.lib;ps4000.lib;ps4000a.lib;ps5000.lib;ps5000a.lib;ps6000.lib;plplot.lib;plplotqt.lib;qsastime.lib;shlwapi.lib;windowscodecs.lib;QtCored.lib;QtGuid.lib;Ws2_32.lib;Imm32.lib;%(AdditionalDependencies)</AdditionalDependencies>
       <AdditionalLibraryDirectories>lib\plplot_install_debug\lib;lib;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
       <IgnoreAllDefaultLibraries>
       </IgnoreAllDefaultLibraries>
@@ -88,7 +88,7 @@
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <EnableCOMDATFolding>true</EnableCOMDATFolding>
       <OptimizeReferences>true</OptimizeReferences>
-      <AdditionalDependencies>ps2000.lib;ps3000.lib;ps2000a.lib;ps3000a.lib;ps4000.lib;ps4000a.lib;ps5000a.lib;ps6000.lib;plplot.lib;plplotqt.lib;qsastime.lib;shlwapi.lib;windowscodecs.lib;QtCore.lib;QtGui.lib;Ws2_32.lib;Imm32.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>ps2000.lib;ps3000.lib;ps2000a.lib;ps3000a.lib;ps4000.lib;ps4000a.lib;ps5000.lib;ps5000a.lib;ps6000.lib;plplot.lib;plplotqt.lib;qsastime.lib;shlwapi.lib;windowscodecs.lib;QtCore.lib;QtGui.lib;Ws2_32.lib;Imm32.lib;%(AdditionalDependencies)</AdditionalDependencies>
       <AdditionalLibraryDirectories>lib\plplot_install_release\lib;lib;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
       <MinimumRequiredVersion>5.01</MinimumRequiredVersion>
     </Link>
@@ -124,6 +124,7 @@
     <ClCompile Include="ps3000Impl.cpp" />
     <ClCompile Include="ps4000Impl.cpp" />
     <ClCompile Include="ps5000aImpl.cpp" />
+    <ClCompile Include="ps5000Impl.cpp" />
     <ClCompile Include="ps6000Impl.cpp" />
     <ClCompile Include="ScopeSelector.cpp" />
     <ClCompile Include="stdafx.cpp">

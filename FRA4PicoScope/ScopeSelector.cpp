@@ -31,6 +31,7 @@
 #include "ps3000Impl.h"
 #include "ps3000aImpl.h"
 #include "ps4000Impl.h"
+#include "ps5000Impl.h"
 #include "ps5000aImpl.h"
 #include "ps6000Impl.h"
 #include <iostream>
@@ -74,6 +75,7 @@ extern "C" __declspec(dllimport) PICO_STATUS __stdcall ps5000CloseUnit(short);
 const int PS_BATCH_AND_SERIAL = 4;
 extern "C" __declspec(dllimport) short __stdcall ps2000_get_unit_info( short handle, char *string, short string_length, short line );
 extern "C" __declspec(dllimport) int16_t __stdcall ps3000_get_unit_info( int16_t handle, int8_t* string, int16_t string_length, int16_t line );
+extern "C" __declspec(dllimport) PICO_STATUS __stdcall ps5000GetUnitInfo( int16_t handle, int8_t *string, int16_t stringLength, int16_t *requiredSize, PICO_INFO info );
 
 // Put the enumeration functions in a array so they can be called from a loop
 const ScopeSelector::psEnumerateUnits ScopeSelector::EnumerationFuncs[] =
@@ -250,7 +252,7 @@ PicoScope* ScopeSelector::OpenScope( AvailableScopeDescription_T scope )
 
     if (scope.driverFamily == PS2000)
     {
-        status = ps2000OpenUnit( &handle, (int8_t*)scope.serialNumber.c_str() );
+        status = PS2000OpenUnit( &handle, (int8_t*)scope.serialNumber.c_str() );
         if (status != PICO_OK || handle <= 0)
         {
             if (handle > 0)
@@ -288,7 +290,7 @@ PicoScope* ScopeSelector::OpenScope( AvailableScopeDescription_T scope )
     }
     else if (scope.driverFamily == PS3000)
     {
-        status = ps3000OpenUnit( &handle, (int8_t*)scope.serialNumber.c_str() );
+        status = PS3000OpenUnit( &handle, (int8_t*)scope.serialNumber.c_str() );
         if (status != PICO_OK || handle <= 0)
         {
             if (handle > 0)
@@ -342,8 +344,21 @@ PicoScope* ScopeSelector::OpenScope( AvailableScopeDescription_T scope )
     }
     else if (scope.driverFamily == PS5000)
     {
-        // The scope is already open
-        selectedScope = NULL; // For now, until we implement PS5000
+        status = PS5000OpenUnit( &handle, (int8_t*)scope.serialNumber.c_str() );
+        if (status != PICO_OK || handle <= 0)
+        {
+            if (handle > 0)
+            {
+                selectedScope = new ps5000Impl( handle );
+                selectedScope->Close();
+                delete selectedScope;
+            }
+            selectedScope = NULL;
+        }
+        else
+        {
+            selectedScope = new ps5000Impl( handle );
+        }
         // Part of simulating that open scopes don't show up during enumeration
         ps5000Scopes.erase(scope.serialNumber.c_str());
     }
@@ -601,7 +616,7 @@ PICO_STATUS ScopeSelector::ps2000EnumerateUnits( int16_t *count, int8_t *serials
     return status;
 }
 
-PICO_STATUS ScopeSelector::ps2000OpenUnit( int16_t* handle, int8_t* serial )
+PICO_STATUS ScopeSelector::PS2000OpenUnit( int16_t* handle, int8_t* serial )
 {
     PICO_STATUS status;
     unordered_map<string, int16_t>::const_iterator foundScope;
@@ -702,7 +717,7 @@ PICO_STATUS ScopeSelector::ps3000EnumerateUnits( int16_t *count, int8_t *serials
     return status;
 }
 
-PICO_STATUS ScopeSelector::ps3000OpenUnit( int16_t* handle, int8_t* serial )
+PICO_STATUS ScopeSelector::PS3000OpenUnit( int16_t* handle, int8_t* serial )
 {
     PICO_STATUS status;
     unordered_map<string, int16_t>::const_iterator foundScope;
@@ -733,14 +748,103 @@ PICO_STATUS ScopeSelector::ps3000OpenUnit( int16_t* handle, int8_t* serial )
 
 PICO_STATUS ScopeSelector::ps5000EnumerateUnits( int16_t *count, int8_t *serials, int16_t *serialLth )
 {
+    PICO_STATUS status = PICO_OK;
+    int16_t handle;
+    int16_t _serialLth = 0;
+    char _serials[32];
+    int16_t totalSerialLth = 0;
+    
     *count = 0;
-    return PICO_OK;
+    serials[0] = '\0';
+
+    auto it = ps5000Scopes.begin();
+    while (it != ps5000Scopes.end())
+    {
+        // See if it's still open
+        status = ps5000GetUnitInfo( it->second, (int8_t*)_serials, sizeof(_serials), NULL, PS_BATCH_AND_SERIAL );
+        if (PICO_OK == status)
+        {
+            if ((totalSerialLth + _serialLth + 1) < (*serialLth-1)) // +1 to account for comma, -1 to account for null terminator
+            {
+                if (*count > 0)
+                {
+                    serials[totalSerialLth] = ',';
+                    totalSerialLth++;
+                }
+                strcat( (char*)&serials[totalSerialLth], _serials );
+                totalSerialLth += _serialLth;
+
+                (*count)++;
+            }
+            else // We're out of space
+            {
+                break;
+            }
+            it++;
+        }
+        else // It's no longer around, so remove it.
+        {
+            it = ps5000Scopes.erase(it);
+        }
+    }
+
+    while (PICO_OK == ps5000OpenUnit(&handle) && 0 < handle)
+    {
+        status = ps5000GetUnitInfo( handle, (int8_t*)_serials, sizeof(_serials), NULL, PS_BATCH_AND_SERIAL );
+        if (PICO_OK == status)
+        {
+            if ((totalSerialLth + _serialLth + 1) < (*serialLth-1)) // +1 to account for comma, -1 to account for null terminator
+            {
+                if (*count > 0)
+                {
+                    serials[totalSerialLth] = ',';
+                    totalSerialLth++;
+                }
+                strcat( (char*)&serials[totalSerialLth], _serials );
+                totalSerialLth += _serialLth;
+
+                ps5000Scopes[_serials] = handle;
+                (*count)++;
+            }
+            else  // We're out of space
+            {
+                break;
+            }
+        }
+    }
+
+    *serialLth = totalSerialLth;
+
+    return status;
 }
 
-PICO_STATUS ScopeSelector::ps5000OpenUnit( int16_t* handle, int8_t* serial )
+PICO_STATUS ScopeSelector::PS5000OpenUnit( int16_t* handle, int8_t* serial )
 {
-    *handle = 0;
-    return PICO_NOT_FOUND;
+    PICO_STATUS status;
+    unordered_map<string, int16_t>::const_iterator foundScope;
+
+    // Check to see if any scopes are in the enumeration cache and if not, call the simulated
+    // enueration function
+    if( ps5000Scopes.empty() )
+    {
+        int16_t count = 0;
+        char serials[1024];
+        short serialLength = 1024;
+        (void)ps5000EnumerateUnits( &count, (int8_t*)serials, &serialLength );
+    }
+
+    // Now check to see if the scope being opened is in the cache
+    if ((foundScope = ps5000Scopes.find((char*)serial)) == ps5000Scopes.end())
+    {
+        status = PICO_NOT_FOUND;
+    }
+    else
+    {
+        *handle = foundScope->second;
+         status = PICO_OK;
+    }
+
+    return status;
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////

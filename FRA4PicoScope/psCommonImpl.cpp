@@ -47,6 +47,10 @@ using namespace boost::math;
 #define SCOPE_FAMILY_LT 4000
 #define SCOPE_FAMILY_UT 4000
 #define NEW_PS_DRIVER_MODEL
+#elif defined(PS5000)
+#define SCOPE_FAMILY_LT 5000
+#define SCOPE_FAMILY_UT 5000
+#define NEW_PS_DRIVER_MODEL
 #elif defined(PS5000A)
 #define SCOPE_FAMILY_LT 5000a
 #define SCOPE_FAMILY_UT 5000A
@@ -267,6 +271,8 @@ int16_t CommonMethod(SCOPE_FAMILY_LT,GetMaxValue)(void)
     maxValue = PS2000_MAX_VALUE;
 #elif defined(PS3000)
     maxValue = PS3000_MAX_VALUE;
+#elif defined(PS5000)
+    maxValue = PS5000_MAX_VALUE;
 #elif defined(PS6000)
     maxValue = PS6000_MAX_VALUE;
 #else
@@ -447,7 +453,7 @@ bool CommonMethod(SCOPE_FAMILY_LT,GetSerialNumber)( wstring &sn )
 
 #if defined(PS2000A) || defined(PS3000A) || defined(PS5000A) || defined(PS6000)
 #define ANALOG_OFFSET_ARG , (float)offset
-#elif defined(PS4000) || defined(PS2000) || defined(PS3000)
+#elif defined(PS4000) || defined(PS2000) || defined(PS3000) || defined(PS5000)
 #define ANALOG_OFFSET_ARG
 #endif
 
@@ -661,7 +667,7 @@ bool CommonMethod(SCOPE_FAMILY_LT, DisableSignalGenerator)( void )
 #define TIME_UNITS_ARG
 #define OVERSAMPLE_ARG
 #define SEGMENT_INDEX_ARG , 0
-#elif defined(PS2000A) || defined(PS3000A) || defined(PS4000) || defined(PS6000)
+#elif defined(PS2000A) || defined(PS3000A) || defined(PS4000) || defined(PS5000) || defined(PS6000)
 #define TIME_UNITS_ARG
 #define OVERSAMPLE_ARG 1,
 #define SEGMENT_INDEX_ARG , 0
@@ -944,7 +950,7 @@ void CommonMethod(SCOPE_FAMILY_LT, SetChannelDesignations)( PS_CHANNEL inputChan
 #define RATIO_MODE_NONE_ARG , CommonEnum(SCOPE_FAMILY_UT, RATIO_MODE_NONE)
 #define RATIO_MODE_AGGREGATE_ARG , CommonEnum(SCOPE_FAMILY_UT, RATIO_MODE_AGGREGATE)
 #define SEGMENT_ARG
-#elif defined(PS4000)
+#elif defined(PS4000) || defined(PS5000)
 #define RATIO_MODE_NONE_ARG
 #define RATIO_MODE_AGGREGATE_ARG
 #define SEGMENT_ARG
