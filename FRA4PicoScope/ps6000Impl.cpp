@@ -60,7 +60,6 @@ bool ps6000Impl::GetTimebase( double desiredFrequency, double* actualFrequency, 
         if (desiredFrequency > 156250000.0)
         {
             *timebase = saturation_cast<uint32_t,double>(log(5.0e9/desiredFrequency) / M_LN2); // ps6000pg.en r9 p19; log2(n) implemented as log(n)/log(2)
-            *timebase = max( *timebase, 0 );
             *actualFrequency = 5.0e9 / (double)(1<<(*timebase));
         }
         else

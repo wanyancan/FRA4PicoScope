@@ -98,6 +98,9 @@
     <ClCompile Include="ps5000Impl.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="ps4000aImpl.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ResourceCompile Include="PicoScopeFRA.rc">

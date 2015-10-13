@@ -47,6 +47,10 @@ using namespace boost::math;
 #define SCOPE_FAMILY_LT 4000
 #define SCOPE_FAMILY_UT 4000
 #define NEW_PS_DRIVER_MODEL
+#elif defined(PS4000A)
+#define SCOPE_FAMILY_LT 4000a
+#define SCOPE_FAMILY_UT 4000A
+#define NEW_PS_DRIVER_MODEL
 #elif defined(PS5000)
 #define SCOPE_FAMILY_LT 5000
 #define SCOPE_FAMILY_UT 5000
@@ -61,6 +65,10 @@ using namespace boost::math;
 #define NEW_PS_DRIVER_MODEL
 #endif
 
+// NEW_PS_DRIVER_MODEL means that the driver API:
+// 1) Supports capture completion callbacks
+// 2) Returns status with PICO_OK indicating success
+// 3) Normally uses CamelCase identifiers
 #if defined(NEW_PS_DRIVER_MODEL)
 #define PICO_ERROR(x) PICO_OK != (status = x)
 #else
@@ -451,7 +459,7 @@ bool CommonMethod(SCOPE_FAMILY_LT,GetSerialNumber)( wstring &sn )
 //
 ///////////////////////////////////////////////////////////////////////////////////////////////////
 
-#if defined(PS2000A) || defined(PS3000A) || defined(PS5000A) || defined(PS6000)
+#if defined(PS2000A) || defined(PS3000A) || defined (PS4000A) || defined(PS5000A) || defined(PS6000)
 #define ANALOG_OFFSET_ARG , (float)offset
 #elif defined(PS4000) || defined(PS2000) || defined(PS3000) || defined(PS5000)
 #define ANALOG_OFFSET_ARG
@@ -663,7 +671,7 @@ bool CommonMethod(SCOPE_FAMILY_LT, DisableSignalGenerator)( void )
 //
 ///////////////////////////////////////////////////////////////////////////////////////////////////
 
-#if defined(PS5000A)
+#if defined (PS4000A) || defined(PS5000A)
 #define TIME_UNITS_ARG
 #define OVERSAMPLE_ARG
 #define SEGMENT_INDEX_ARG , 0
@@ -716,6 +724,12 @@ bool CommonMethod(SCOPE_FAMILY_LT, GetMaxSamples)( uint32_t* pMaxSamples )
 //
 ///////////////////////////////////////////////////////////////////////////////////////////////////
 
+#if defined(PS4000A)
+#define CONDITIONS_INFO , PS4000A_CLEAR
+#else
+#define CONDITIONS_INFO
+#endif
+
 bool CommonMethod(SCOPE_FAMILY_LT, DisableChannelTriggers)( void )
 {
     PICO_STATUS status;
@@ -725,7 +739,7 @@ bool CommonMethod(SCOPE_FAMILY_LT, DisableChannelTriggers)( void )
 #if defined(NEW_PS_DRIVER_MODEL)
     // It's possible that only one of these is necessary.  But it's probably good practice to take some action to disable
     // triggers rather than rely on a scopes default state.
-    if (PICO_ERROR(CommonApi(SCOPE_FAMILY_LT, SetTriggerChannelConditions)( handle, NULL, 0 )))
+    if (PICO_ERROR(CommonApi(SCOPE_FAMILY_LT, SetTriggerChannelConditions)( handle, NULL, 0 CONDITIONS_INFO)))
     {
         fraStatusText << L"Fatal error: Failed to setup channel trigger conditions: " << status;
         LogMessage( fraStatusText.str() );
@@ -942,7 +956,7 @@ void CommonMethod(SCOPE_FAMILY_LT, SetChannelDesignations)( PS_CHANNEL inputChan
 //
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
-#if defined(PS2000A) || defined(PS3000A) || defined(PS5000A)
+#if defined(PS2000A) || defined(PS3000A) || defined(PS4000A) || defined(PS5000A)
 #define RATIO_MODE_NONE_ARG , CommonEnum(SCOPE_FAMILY_UT, RATIO_MODE_NONE)
 #define RATIO_MODE_AGGREGATE_ARG , CommonEnum(SCOPE_FAMILY_UT, RATIO_MODE_AGGREGATE)
 #define SEGMENT_ARG , 0

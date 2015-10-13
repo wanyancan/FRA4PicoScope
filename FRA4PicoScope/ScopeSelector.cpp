@@ -31,6 +31,7 @@
 #include "ps3000Impl.h"
 #include "ps3000aImpl.h"
 #include "ps4000Impl.h"
+#include "ps4000aImpl.h"
 #include "ps5000Impl.h"
 #include "ps5000aImpl.h"
 #include "ps6000Impl.h"
@@ -64,6 +65,7 @@ extern "C" __declspec(dllimport) PICO_STATUS __stdcall ps2000aOpenUnit( short * 
 extern "C" __declspec(dllimport) int16_t __stdcall ps3000_open_unit (void);
 extern "C" __declspec(dllimport) PICO_STATUS __stdcall ps3000aOpenUnit( int16_t * handle, int8_t * serial );
 extern "C" __declspec(dllimport) PICO_STATUS __stdcall ps4000OpenUnitEx( int16_t * handle, int8_t * serial );
+extern "C" __declspec(dllimport) PICO_STATUS __stdcall ps4000aOpenUnit( int16_t * handle, int8_t * serial );
 extern "C" __declspec(dllimport) PICO_STATUS __stdcall ps5000OpenUnit( short * handle );
 extern "C" __declspec(dllimport) PICO_STATUS __stdcall ps5000aOpenUnit( int16_t *handle, int8_t *serial, PS5000A_DEVICE_RESOLUTION resolution );
 extern "C" __declspec(dllimport) PICO_STATUS __stdcall ps6000OpenUnit( short * handle, char * serial );
@@ -313,6 +315,12 @@ PicoScope* ScopeSelector::OpenScope( AvailableScopeDescription_T scope )
         status = ps3000aOpenUnit( &handle, (int8_t*)scope.serialNumber.c_str() );
         if (status != PICO_OK || handle <= 0)
         {
+            if (handle > 0)
+            {
+                selectedScope = new ps3000aImpl( handle );
+                selectedScope->Close();
+                delete selectedScope;
+            }
             selectedScope = NULL;
         }
         else
@@ -340,7 +348,21 @@ PicoScope* ScopeSelector::OpenScope( AvailableScopeDescription_T scope )
     }
     else if (scope.driverFamily == PS4000A)
     {
-        selectedScope = NULL;
+        status = ps4000aOpenUnit( &handle, (int8_t*)scope.serialNumber.c_str() );
+        if (status != PICO_OK || handle <= 0)
+        {
+            if (handle > 0)
+            {
+                selectedScope = new ps4000aImpl( handle );
+                selectedScope->Close();
+                delete selectedScope;
+            }
+            selectedScope = NULL;
+        }
+        else
+        {
+            selectedScope = new ps4000aImpl( handle );
+        }
     }
     else if (scope.driverFamily == PS5000)
     {
@@ -385,6 +407,12 @@ PicoScope* ScopeSelector::OpenScope( AvailableScopeDescription_T scope )
         status = ps6000OpenUnit( &handle, NULL );
         if (status != PICO_OK || handle <= 0)
         {
+            if (handle > 0)
+            {
+                selectedScope = new ps6000Impl( handle );
+                selectedScope->Close();
+                delete selectedScope;
+            }
             selectedScope = NULL;
         }
         else

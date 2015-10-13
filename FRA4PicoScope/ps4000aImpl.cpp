@@ -19,40 +19,23 @@
 // You should have received a copy of the GNU General Public License
 // along with Frequency Response Analyzer for PicoScope.  If not, see <http://www.gnu.org/licenses/>.
 //
-// Module: ps5000Impl.cpp
+// Module: ps4000aImpl.cpp
 //
 //////////////////////////////////////////////////////////////////////////////////////////////////
 
 #include "StdAfx.h"
-#define _USE_MATH_DEFINES
-#include <math.h>
 #include "utility.h"
-#include "ps5000Api.h"
+#include "ps4000aApi.h"
 #include "picoStatus.h"
-#include "ps5000Impl.h"
+#include "ps4000aImpl.h"
 #include "StatusLog.h"
 
-typedef enum enPS5000Coupling
-{
-    PS5000_AC,
-    PS5000_DC
-} PS5000_COUPLING;
-
-typedef SWEEP_TYPE PS5000_SWEEP_TYPE;
-typedef SIGGEN_TRIG_TYPE PS5000_SIGGEN_TRIG_TYPE;
-typedef SIGGEN_TRIG_SOURCE PS5000_SIGGEN_TRIG_SOURCE;
-
-const int PS5000_SIGGEN_NONE = SIGGEN_NONE;
-const int PS5000_ES_OFF = FALSE;
-const int PS5000_RATIO_MODE_NONE = RATIO_MODE_NONE;
-const int PS5000_RATIO_MODE_AGGREGATE = RATIO_MODE_AGGREGATE;
-
-#define PS5000
+#define PS4000A
 #include "psCommonImpl.cpp"
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 //
-// Name: ps5000Impl::GetTimebase
+// Name: ps4000aImpl::GetTimebase
 //
 // Purpose: Get a timebase from a desired frequency, rounding such that the frequency is at least
 //          as high as requested, if possible.
@@ -65,25 +48,14 @@ const int PS5000_RATIO_MODE_AGGREGATE = RATIO_MODE_AGGREGATE;
 //
 ///////////////////////////////////////////////////////////////////////////////////////////////////
 
-bool ps5000Impl::GetTimebase( double desiredFrequency, double* actualFrequency, uint32_t* timebase )
+bool ps4000aImpl::GetTimebase( double desiredFrequency, double* actualFrequency, uint32_t* timebase )
 {
     bool retVal = true;
-    double fTimebase;
 
     if (desiredFrequency != 0.0 && actualFrequency && timebase)
     {
-        if (desiredFrequency > 125.0e6)
-            {
-                *timebase = saturation_cast<uint32_t,double>(log(1.0e9/desiredFrequency) / M_LN2); // ps5000pg.en p16; log2(n) implemented as log(n)/log(2)
-                *actualFrequency = 1.0e9 / (double)(1<<(*timebase));
-            }
-            else
-            {
-                fTimebase = ((125.0e6/(desiredFrequency)) + 2.0); // ps5000pg.en p16
-                *timebase = saturation_cast<uint32_t,double>(fTimebase);
-                *timebase = max( *timebase, 3 ); // Guarding against potential of float precision issues leading to divide by 0
-                *actualFrequency = 125.0e6 / ((double)(*timebase - 2)); // ps5000pg.en p16
-            }
+        *timebase = saturation_cast<uint32_t,double>((80.0e6/desiredFrequency) - 1.0); // ps4000apg.en r1: p17
+        *actualFrequency = 80.0e6 / ((double)(*timebase + 1)); // ps4000apg.en r1: p17
     }
     else
     {
@@ -95,7 +67,7 @@ bool ps5000Impl::GetTimebase( double desiredFrequency, double* actualFrequency, 
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 //
-// Name: ps5000aImpl::InitializeScope
+// Name: ps4000aImpl::InitializeScope
 //
 // Purpose: Initialize scope/family-specific implementation details.
 //
@@ -105,15 +77,15 @@ bool ps5000Impl::GetTimebase( double desiredFrequency, double* actualFrequency, 
 //
 ///////////////////////////////////////////////////////////////////////////////////////////////////
 
-bool ps5000Impl::InitializeScope(void)
+bool ps4000aImpl::InitializeScope(void)
 {
     timebaseNoiseRejectMode = 0;
-    fSampNoiseRejectMode = 1.0e9;
+    fSampNoiseRejectMode = 80.0e6;
 
-    signalGeneratorPrecision = 125.0e6 / (double)UINT32_MAX;
+    signalGeneratorPrecision = 80.0e6 / (double)UINT32_MAX;
 
-    minRange = (PS_RANGE)PS5000_100MV;
-    maxRange = (PS_RANGE)PS5000_20V;
+    minRange = (PS_RANGE)PS4000A_10MV;
+    maxRange = (PS_RANGE)PS4000A_20V;
 
     return true;
 }
