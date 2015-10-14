@@ -222,6 +222,7 @@ class PicoScopeFRA
         // These variables are for keeping diagnostic data and sample data.
         int autorangeRetryCounter;
         int freqStepCounter;
+        int freqStepIndex;
         vector<int16_t>* pInputBuffer;
         vector<int16_t>* pOutputBuffer;
         vector<vector<double>> inAmps;

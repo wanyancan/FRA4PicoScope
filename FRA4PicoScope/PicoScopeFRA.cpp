@@ -84,7 +84,7 @@ PicoScopeFRA::PicoScopeFRA(FRA_STATUS_CALLBACK statusCB)
 
     mSamplingMode = LOW_NOISE;
 
-    numSteps = latestCompletedNumSteps = freqStepCounter = 0;
+    numSteps = latestCompletedNumSteps = freqStepCounter = freqStepIndex = 0;
 
     ovIn = ovOut = false;
     delayForAcCoupling = false;
@@ -386,12 +386,14 @@ bool PicoScopeFRA::ExecuteFRA(double startFreqHz, double stopFreqHz, int stepsPe
         // Update the status to indicate the FRA has started
         UpdateStatus( fraStatusMsg, FRA_STATUS_PROGRESS, 0, numSteps );
 
-        for (freqStepCounter = 0; freqStepCounter < numSteps; freqStepCounter++)
+        freqStepCounter = 1;
+        freqStepIndex = mSweepDescending ? numSteps-1 : 0;
+        while ((mSweepDescending && freqStepIndex >= 0) || (!mSweepDescending && freqStepIndex < numSteps))
         {
-            currentFreqHz = freqsHz[freqStepCounter];
+            currentFreqHz = freqsHz[freqStepIndex];
             for (autorangeRetryCounter = 0; autorangeRetryCounter < maxAutorangeRetries; autorangeRetryCounter++)
             {
-                wsprintf( fraStatusText, L"Status: Starting frequency step %d, range try %d", freqStepCounter+1, autorangeRetryCounter+1 );
+                wsprintf( fraStatusText, L"Status: Starting frequency step %d, range try %d", freqStepCounter, autorangeRetryCounter+1 );
                 UpdateStatus( fraStatusMsg, FRA_STATUS_MESSAGE, fraStatusText );
                 if (true != StartCapture( currentFreqHz ))
                 {
@@ -418,11 +420,11 @@ bool PicoScopeFRA::ExecuteFRA(double startFreqHz, double stopFreqHz, int stepsPe
                     else // Data is good, calculate and move on to next frequency
                     {
                         // Currently no error is possible so just cast to void
-                        (void)CalculateGainAndPhase( &gainsDb[freqStepCounter], &phasesDeg[freqStepCounter] );
+                        (void)CalculateGainAndPhase( &gainsDb[freqStepIndex], &phasesDeg[freqStepIndex] );
                         autorangeRetryCounter++; // reflect the attempt that succeeded
 
                         // Notify progress
-                        UpdateStatus( fraStatusMsg, FRA_STATUS_PROGRESS, freqStepCounter+1, numSteps );
+                        UpdateStatus( fraStatusMsg, FRA_STATUS_PROGRESS, freqStepCounter, numSteps );
                         break;
                     }
                 }
@@ -436,9 +438,9 @@ bool PicoScopeFRA::ExecuteFRA(double startFreqHz, double stopFreqHz, int stepsPe
             if (mDiagnosticsOn)
             {
                 // Make records for diagnostics
-                sampleInterval[freqStepCounter] = 1.0 / actualSampFreqHz;
-                diagNumSamples[freqStepCounter] = inputMinData[freqStepCounter][0].size();
-                autoRangeTries[freqStepCounter] = autorangeRetryCounter;
+                sampleInterval[freqStepIndex] = 1.0 / actualSampFreqHz;
+                diagNumSamples[freqStepIndex] = inputMinData[freqStepIndex][0].size();
+                autoRangeTries[freqStepIndex] = autorangeRetryCounter;
             }
 
             if (autorangeRetryCounter == maxAutorangeRetries)
@@ -447,10 +449,10 @@ bool PicoScopeFRA::ExecuteFRA(double startFreqHz, double stopFreqHz, int stepsPe
                 UpdateStatus( fraStatusMsg, FRA_STATUS_AUTORANGE_LIMIT, inputChannelAutorangeStatus, outputChannelAutorangeStatus );
                 if (true == fraStatusMsg.responseData.proceed)
                 {
-                    gainsDb[freqStepCounter] = 0.0;
-                    phasesDeg[freqStepCounter] = 0.0;
+                    gainsDb[freqStepIndex] = 0.0;
+                    phasesDeg[freqStepIndex] = 0.0;
                     // Notify progress
-                    UpdateStatus( fraStatusMsg, FRA_STATUS_PROGRESS, freqStepCounter+1, numSteps );
+                    UpdateStatus( fraStatusMsg, FRA_STATUS_PROGRESS, freqStepCounter, numSteps );
                 }
                 else
                 {
@@ -459,6 +461,16 @@ bool PicoScopeFRA::ExecuteFRA(double startFreqHz, double stopFreqHz, int stepsPe
                     throw FraFault();
                 }
             }
+
+            if (mSweepDescending)
+            {
+                freqStepIndex--;
+            }
+            else
+            {
+                freqStepIndex++;
+            }
+            freqStepCounter++;
         }
 
         // Generate any alternate forms
@@ -549,10 +561,10 @@ bool PicoScopeFRA::CheckSignalOverflows(void)
     outputChannelAutorangeStatus = OK;
 
     // Make records for diagnostics
-    inOV[freqStepCounter][autorangeRetryCounter] = ovIn;
-    outOV[freqStepCounter][autorangeRetryCounter] = ovOut;
-    inRange[freqStepCounter][autorangeRetryCounter] = currentInputChannelRange;
-    outRange[freqStepCounter][autorangeRetryCounter] = currentOutputChannelRange;
+    inOV[freqStepIndex][autorangeRetryCounter] = ovIn;
+    outOV[freqStepIndex][autorangeRetryCounter] = ovOut;
+    inRange[freqStepIndex][autorangeRetryCounter] = currentInputChannelRange;
+    outRange[freqStepIndex][autorangeRetryCounter] = currentOutputChannelRange;
 
     if (ovIn)
     {
@@ -583,8 +595,8 @@ bool PicoScopeFRA::CheckSignalOverflows(void)
     {
         retVal = false;
         // Initialize the diagnostic record since CheckSignalRanges will not run
-        inAmps[freqStepCounter][autorangeRetryCounter] = 0.0;
-        outAmps[freqStepCounter][autorangeRetryCounter] = 0.0;
+        inAmps[freqStepIndex][autorangeRetryCounter] = 0.0;
+        outAmps[freqStepIndex][autorangeRetryCounter] = 0.0;
     }
 
     // Clear overflow
@@ -617,7 +629,7 @@ bool PicoScopeFRA::CheckSignalRanges(void)
     // Check Input
     if (inputChannelAutorangeStatus == OK)
     {
-        if (((double)inputAbsMax[freqStepCounter][autorangeRetryCounter]/rangeCounts) > maxAmplitudeRatio)
+        if (((double)inputAbsMax[freqStepIndex][autorangeRetryCounter]/rangeCounts) > maxAmplitudeRatio)
         {
             if (currentInputChannelRange < maxRange)
             {
@@ -630,7 +642,7 @@ bool PicoScopeFRA::CheckSignalRanges(void)
             }
             retVal = false;
         }
-        else if (((double)inputAbsMax[freqStepCounter][autorangeRetryCounter]/rangeCounts) <
+        else if (((double)inputAbsMax[freqStepIndex][autorangeRetryCounter]/rangeCounts) <
                  (maxAmplitudeRatio/rangeInfo[currentInputChannelRange].ratioDown - minAmplitudeRatioTolerance))
         {
             if (currentInputChannelRange > minRange)
@@ -641,7 +653,7 @@ bool PicoScopeFRA::CheckSignalRanges(void)
             }
             else
             {
-                if (((double)inputAbsMax[freqStepCounter][autorangeRetryCounter]/rangeCounts) < minAllowedAmplitudeRatio)
+                if (((double)inputAbsMax[freqStepIndex][autorangeRetryCounter]/rangeCounts) < minAllowedAmplitudeRatio)
                 {
                     inputChannelAutorangeStatus = LOWEST_RANGE_LIMIT_REACHED;
                     retVal = false;
@@ -665,7 +677,7 @@ bool PicoScopeFRA::CheckSignalRanges(void)
     // Check Output
     if (outputChannelAutorangeStatus == OK)
     {
-        if (((double)outputAbsMax[freqStepCounter][autorangeRetryCounter]/rangeCounts) > maxAmplitudeRatio)
+        if (((double)outputAbsMax[freqStepIndex][autorangeRetryCounter]/rangeCounts) > maxAmplitudeRatio)
         {
             if (currentOutputChannelRange < maxRange)
             {
@@ -678,7 +690,7 @@ bool PicoScopeFRA::CheckSignalRanges(void)
             }
             retVal = false;
         }
-        else if (((double)outputAbsMax[freqStepCounter][autorangeRetryCounter]/rangeCounts) <
+        else if (((double)outputAbsMax[freqStepIndex][autorangeRetryCounter]/rangeCounts) <
                  (maxAmplitudeRatio/rangeInfo[currentOutputChannelRange].ratioDown - minAmplitudeRatioTolerance))
         {
             if (currentOutputChannelRange > minRange)
@@ -689,7 +701,7 @@ bool PicoScopeFRA::CheckSignalRanges(void)
             }
             else
             {
-                if (((double)outputAbsMax[freqStepCounter][autorangeRetryCounter]/rangeCounts) < minAllowedAmplitudeRatio)
+                if (((double)outputAbsMax[freqStepIndex][autorangeRetryCounter]/rangeCounts) < minAllowedAmplitudeRatio)
                 {
                     outputChannelAutorangeStatus = LOWEST_RANGE_LIMIT_REACHED;
                     retVal = false;
@@ -813,12 +825,6 @@ void PicoScopeFRA::GenerateFrequencyPoints(void)
     {
         freqsHz[i] = ps->GetClosestSignalGeneratorFrequency( freqsHz[i] );
         freqsLogHz[i] = log10( freqsHz[i] );
-    }
-
-    if (mSweepDescending)
-    {
-        std::reverse(freqsHz.begin(), freqsHz.end());
-        std::reverse(freqsLogHz.begin(), freqsLogHz.end());
     }
 }
 
@@ -1254,7 +1260,7 @@ bool PicoScopeFRA::ProcessData(void)
     wsprintf( fraStatusText, L"Status: Transferring and processing %d samples", numSamples );
     UpdateStatus( fraStatusMsg, FRA_STATUS_MESSAGE, fraStatusText );
 
-    if (!(ps->GetPeakValues( inputAbsMax[freqStepCounter][autorangeRetryCounter], outputAbsMax[freqStepCounter][autorangeRetryCounter], ovIn, ovOut )))
+    if (!(ps->GetPeakValues( inputAbsMax[freqStepIndex][autorangeRetryCounter], outputAbsMax[freqStepIndex][autorangeRetryCounter], ovIn, ovOut )))
     {
         throw FraFault();
     }
@@ -1302,19 +1308,19 @@ bool PicoScopeFRA::ProcessData(void)
         if (mDiagnosticsOn)
         {
             // Make records for diagnostics
-            inAmps[freqStepCounter][autorangeRetryCounter] = inputAmplitude;
-            outAmps[freqStepCounter][autorangeRetryCounter] = outputAmplitude;
-            inputPurity[freqStepCounter][autorangeRetryCounter] = currentInputPurity;
-            outputPurity[freqStepCounter][autorangeRetryCounter] = currentOutputPurity;
+            inAmps[freqStepIndex][autorangeRetryCounter] = inputAmplitude;
+            outAmps[freqStepIndex][autorangeRetryCounter] = outputAmplitude;
+            inputPurity[freqStepIndex][autorangeRetryCounter] = currentInputPurity;
+            outputPurity[freqStepIndex][autorangeRetryCounter] = currentOutputPurity;
         }
     }
     if (mDiagnosticsOn)
     {
         uint32_t compressedSize = mSamplingMode == LOW_NOISE ? 0 : 1024;
-        ps->GetCompressedData( compressedSize, inputMinData[freqStepCounter][autorangeRetryCounter],
-                                               outputMinData[freqStepCounter][autorangeRetryCounter],
-                                               inputMaxData[freqStepCounter][autorangeRetryCounter],
-                                               outputMaxData[freqStepCounter][autorangeRetryCounter] );
+        ps->GetCompressedData( compressedSize, inputMinData[freqStepIndex][autorangeRetryCounter],
+                                               outputMinData[freqStepIndex][autorangeRetryCounter],
+                                               inputMaxData[freqStepIndex][autorangeRetryCounter],
+                                               outputMaxData[freqStepIndex][autorangeRetryCounter] );
     }
 
     return retVal;
@@ -1398,12 +1404,6 @@ void PicoScopeFRA::UnwrapPhases(void)
     // Copy over the raw phases
     unwrappedPhasesDeg = phasesDeg;
 
-    // To behave consistently, we're going to unwrap in ascending frequency order
-    if (mSweepDescending)
-    {
-        std::reverse(unwrappedPhasesDeg.begin(), unwrappedPhasesDeg.end());
-    }
-
     std::vector<double>::iterator unwrappedIt = unwrappedPhasesDeg.begin();
 
     for (unwrappedIt++; unwrappedIt != unwrappedPhasesDeg.end(); unwrappedIt++)
@@ -1415,13 +1415,6 @@ void PicoScopeFRA::UnwrapPhases(void)
             *unwrappedIt = *std::prev(unwrappedIt) + newJump;
         }
     }
-
-    // Now change it back to the descending frequency order so it matches the rest of the data
-    if (mSweepDescending)
-    {
-        std::reverse(unwrappedPhasesDeg.begin(), unwrappedPhasesDeg.end());
-    }
-
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
