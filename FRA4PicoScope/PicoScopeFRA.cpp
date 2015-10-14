@@ -61,6 +61,7 @@ void __stdcall DataReady( short handle, PICO_STATUS status, void * pParameter)
 }
 
 const double PicoScopeFRA::attenInfo[] = {1.0, 10.0, 20.0, 100.0, 200.0, 1000.0};
+const double PicoScopeFRA::inputRangeInitialEstimateMargin = 0.95;
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 //
@@ -196,7 +197,7 @@ void PicoScopeFRA::SetInstrument( PicoScope* _ps )
 
 void PicoScopeFRA::SetFraSettings( SamplingMode_T samplingMode, double purityLowerLimit, uint16_t extraSettlingTimeMs, uint8_t autorangeTriesPerStep,
                                    double autorangeTolerance, double smallSignalResolutionTolerance, double maxAutorangeAmplitude, uint16_t minCyclesCaptured,
-                                   double phaseWrappingThreshold, bool diagnosticsOn, wstring baseDataPath )
+                                   bool sweepDescending, double phaseWrappingThreshold, bool diagnosticsOn, wstring baseDataPath )
 {
     mSamplingMode = samplingMode;
     mPurityLowerLimit = purityLowerLimit;
@@ -206,6 +207,7 @@ void PicoScopeFRA::SetFraSettings( SamplingMode_T samplingMode, double purityLow
     minAllowedAmplitudeRatio = smallSignalResolutionTolerance;
     maxAmplitudeRatio = maxAutorangeAmplitude;
     mMinCyclesCaptured = minCyclesCaptured;
+    mSweepDescending = sweepDescending;
     mPhaseWrappingThreshold = phaseWrappingThreshold;
     mDiagnosticsOn = diagnosticsOn;
     mBaseDataPath = baseDataPath;
@@ -264,8 +266,19 @@ bool PicoScopeFRA::SetupChannels( int inputChannel, int inputChannelCoupling, in
                                   double signalVpp )
 {
     FRA_STATUS_MESSAGE_T fraStatusMsg;
+    PS_RANGE inputRange;
 
-    currentInputChannelRange = minRange;
+    for (inputRange = maxRange; inputRange > minRange; inputRange--)
+    {
+        if (signalVpp > 2.0*rangeInfo[inputRange].rangeVolts*attenInfo[mInputChannelAttenuation]*inputRangeInitialEstimateMargin)
+        {
+            inputRange++; // We stepped one too far, so backup
+            inputRange = min(inputRange, maxRange); // Just in case, so we can't get an illegal range
+            break;
+        }
+    }
+
+    currentInputChannelRange = inputRange;
     currentOutputChannelRange = minRange;
 
     mInputChannel = (PS_CHANNEL)inputChannel;
@@ -339,7 +352,7 @@ bool PicoScopeFRA::SetupChannels( int inputChannel, int inputChannelCoupling, in
 //             [in] stepsPerDecade - Steps per decade
 //             [out] return - Whether the function was successful.
 //
-// Notes: 
+// Notes: SetupChannels must be called before this function
 //
 ///////////////////////////////////////////////////////////////////////////////////////////////////
 
@@ -802,6 +815,11 @@ void PicoScopeFRA::GenerateFrequencyPoints(void)
         freqsLogHz[i] = log10( freqsHz[i] );
     }
 
+    if (mSweepDescending)
+    {
+        std::reverse(freqsHz.begin(), freqsHz.end());
+        std::reverse(freqsLogHz.begin(), freqsLogHz.end());
+    }
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -1380,6 +1398,12 @@ void PicoScopeFRA::UnwrapPhases(void)
     // Copy over the raw phases
     unwrappedPhasesDeg = phasesDeg;
 
+    // To behave consistently, we're going to unwrap in ascending frequency order
+    if (mSweepDescending)
+    {
+        std::reverse(unwrappedPhasesDeg.begin(), unwrappedPhasesDeg.end());
+    }
+
     std::vector<double>::iterator unwrappedIt = unwrappedPhasesDeg.begin();
 
     for (unwrappedIt++; unwrappedIt != unwrappedPhasesDeg.end(); unwrappedIt++)
@@ -1391,6 +1415,13 @@ void PicoScopeFRA::UnwrapPhases(void)
             *unwrappedIt = *std::prev(unwrappedIt) + newJump;
         }
     }
+
+    // Now change it back to the descending frequency order so it matches the rest of the data
+    if (mSweepDescending)
+    {
+        std::reverse(unwrappedPhasesDeg.begin(), unwrappedPhasesDeg.end());
+    }
+
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////

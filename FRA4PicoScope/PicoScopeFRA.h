@@ -141,7 +141,7 @@ class PicoScopeFRA
         bool CancelFRA();
         void SetFraSettings( SamplingMode_T samplingMode, double purityLowerLimit, uint16_t extraSettlingTimeMs, uint8_t autorangeTriesPerStep,
                              double autorangeTolerance, double smallSignalResolutionTolerance, double maxAutorangeAmplitude, uint16_t minCyclesCaptured,
-                             double phaseWrappingThreshold, bool diagnosticsOn, wstring baseDataPath );
+                             bool sweepDescending, double phaseWrappingThreshold, bool diagnosticsOn, wstring baseDataPath );
         bool SetupChannels( int inputChannel, int inputChannelCoupling, int inputChannelAttenuation, double inputDcOffset,
                             int outputChannel, int outputChannelCoupling, int outputChannelAttenuation, double outputDcOffset,
                             double signalVpp );
@@ -206,6 +206,7 @@ class PicoScopeFRA
         int maxAutorangeRetries;            // max number of tries to auto-range before failing
         uint16_t mExtraSettlingTimeMs;      // Extra settling time between auto-range tries
         uint16_t mMinCyclesCaptured;        // Minimum whole stimulus signal cycles to capture
+        bool mSweepDescending;              // Whether to sweep frequency from high to low
         double mPhaseWrappingThreshold;     // Phase value to use as wrapping point (in degrees); absolute value should be less than 360
 
         // Some parameters for noise reject mode
@@ -252,6 +253,7 @@ class PicoScopeFRA
         PS_RANGE maxRange;
 
         static const double attenInfo[];
+        static const double inputRangeInitialEstimateMargin;
 
         HANDLE hCaptureEvent;
         bool cancel;

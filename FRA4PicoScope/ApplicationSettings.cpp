@@ -147,6 +147,7 @@ bool ApplicationSettings::InitializeApplicationSettingsFile( void )
         AppSettingsPropTree.put( "mostRecentScope.family", PS_NO_FAMILY );
 
         AppSettingsPropTree.put( "samplingMode", LOW_NOISE );
+        AppSettingsPropTree.put( "sweepDescending", false );
 
         AppSettingsPropTree.put( "plot.freqAxis.autoscale", true );
         AppSettingsPropTree.put( "plot.freqAxis.min", 0.0 );

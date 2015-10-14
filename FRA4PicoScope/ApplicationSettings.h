@@ -98,6 +98,16 @@ class ApplicationSettings
             appSettingsDirty = true;
         }
 
+        inline bool GetSweepDescending( void )
+        {
+            return AppSettingsPropTree.get<bool>( "sweepDescending" );
+        }
+        inline void SetSweepDescending( bool sweepDescending )
+        {
+            AppSettingsPropTree.put( "sweepDescending", sweepDescending );
+            appSettingsDirty = true;
+        }
+
         // Plot settings
 
         inline tuple<bool, double, double> GetFreqScale(void)

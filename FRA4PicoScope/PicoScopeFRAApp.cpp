@@ -537,8 +537,8 @@ BOOL CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 #if !defined(TEST_PLOTTING)
             psFRA->SetFraSettings( pSettings->GetSamplingMode(), pSettings->GetPurityLowerLimit(), pSettings->GetExtraSettlingTimeMs(),
                                    pSettings->GetAutorangeTriesPerStep(), pSettings->GetAutorangeTolerance(), pSettings->GetSmallSignalResolutionLimit(),
-                                   pSettings->GetMaxAutorangeAmplitude(), pSettings->GetMinCyclesCaptured(), pSettings->GetPhaseWrappingThreshold(),
-                                   pSettings->GetTimeDomainPlotsEnabled(), dataDirectoryName );
+                                   pSettings->GetMaxAutorangeAmplitude(), pSettings->GetMinCyclesCaptured(), pSettings->GetSweepDescending(),
+                                   pSettings->GetPhaseWrappingThreshold(), pSettings->GetTimeDomainPlotsEnabled(), dataDirectoryName );
             InitScope();
 #else
             HWND hndCtrl;
