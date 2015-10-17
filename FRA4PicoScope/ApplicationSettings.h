@@ -25,6 +25,10 @@
 
 #pragma once
 
+// Suppress an unnecessary C4996 warning about use of checked
+// iterators invoked from a ptree compare operation
+#define _SCL_SECURE_NO_WARNINGS
+
 #include <string>
 #include <tuple>
 
@@ -84,7 +88,6 @@ class ApplicationSettings
         {
             AppSettingsPropTree.put( "mostRecentScope.SN", sn );
             AppSettingsPropTree.put( "mostRecentScope.family", family );
-            appSettingsDirty = true;
         }
 
         // Accessors/Mutators for Application Settings
@@ -95,7 +98,6 @@ class ApplicationSettings
         inline void SetSamplingMode( SamplingMode_T mode )
         {
             AppSettingsPropTree.put( "samplingMode", mode );
-            appSettingsDirty = true;
         }
 
         inline bool GetSweepDescending( void )
@@ -105,7 +107,6 @@ class ApplicationSettings
         inline void SetSweepDescending( bool sweepDescending )
         {
             AppSettingsPropTree.put( "sweepDescending", sweepDescending );
-            appSettingsDirty = true;
         }
 
         // Plot settings
@@ -122,7 +123,6 @@ class ApplicationSettings
             AppSettingsPropTree.put( "plot.freqAxis.autoscale", get<0>(freqScale) );
             AppSettingsPropTree.put( "plot.freqAxis.min", get<1>(freqScale) );
             AppSettingsPropTree.put( "plot.freqAxis.max", get<2>(freqScale) );
-            appSettingsDirty = true;
         }
 
         inline tuple<bool, double, double> GetGainScale(void)
@@ -137,7 +137,6 @@ class ApplicationSettings
             AppSettingsPropTree.put( "plot.gainAxis.autoscale", get<0>(gainScale) );
             AppSettingsPropTree.put( "plot.gainAxis.min", get<1>(gainScale) );
             AppSettingsPropTree.put( "plot.gainAxis.max", get<2>(gainScale) );
-            appSettingsDirty = true;
         }
 
         inline tuple<bool, double, double> GetPhaseScale(void)
@@ -152,7 +151,6 @@ class ApplicationSettings
             AppSettingsPropTree.put( "plot.phaseAxis.autoscale", get<0>(phaseScale) );
             AppSettingsPropTree.put( "plot.phaseAxis.min", get<1>(phaseScale) );
             AppSettingsPropTree.put( "plot.phaseAxis.max", get<2>(phaseScale) );
-            appSettingsDirty = true;
         }
 
         inline tuple<double, uint8_t, bool, bool> GetFreqIntervals(void)
@@ -169,7 +167,6 @@ class ApplicationSettings
             AppSettingsPropTree.put( "plot.freqAxis.minorTicksPerMajorInterval", get<1>(freqIntervals) );
             AppSettingsPropTree.put( "plot.freqAxis.majorGrids", get<2>(freqIntervals) );
             AppSettingsPropTree.put( "plot.freqAxis.minorGrids", get<3>(freqIntervals) );
-            appSettingsDirty = true;
         }
 
         inline tuple<double, uint8_t, bool, bool> GetGainIntervals(void)
@@ -186,7 +183,6 @@ class ApplicationSettings
             AppSettingsPropTree.put( "plot.gainAxis.minorTicksPerMajorInterval", get<1>(gainIntervals) );
             AppSettingsPropTree.put( "plot.gainAxis.majorGrids", get<2>(gainIntervals) );
             AppSettingsPropTree.put( "plot.gainAxis.minorGrids", get<3>(gainIntervals) );
-            appSettingsDirty = true;
         }
 
         inline bool GetGainMasterIntervals(void)
@@ -196,7 +192,6 @@ class ApplicationSettings
         inline void SetGainMasterIntervals( bool masterIntervals )
         {
             AppSettingsPropTree.put( "plot.gainAxis.masterGrids", masterIntervals );
-            appSettingsDirty = true;
         }
 
         inline tuple<double, uint8_t, bool, bool> GetPhaseIntervals(void)
@@ -213,7 +208,6 @@ class ApplicationSettings
             AppSettingsPropTree.put( "plot.phaseAxis.minorTicksPerMajorInterval", get<1>(phaseIntervals) );
             AppSettingsPropTree.put( "plot.phaseAxis.majorGrids", get<2>(phaseIntervals) );
             AppSettingsPropTree.put( "plot.phaseAxis.minorGrids", get<3>(phaseIntervals) );
-            appSettingsDirty = true;
         }
 
         inline bool GetPhaseMasterIntervals(void)
@@ -223,7 +217,6 @@ class ApplicationSettings
         inline void SetPhaseMasterIntervals( bool masterIntervals )
         {
             AppSettingsPropTree.put( "plot.phaseAxis.masterGrids", masterIntervals );
-            appSettingsDirty = true;
         }
 
         inline bool GetAutoAxes(void)
@@ -233,7 +226,6 @@ class ApplicationSettings
         inline void SetAutoAxes( bool autoAxes )
         {
             AppSettingsPropTree.put( "plot.autoAxes", autoAxes );
-            appSettingsDirty = true;
         }
 
         inline bool GetPlotGain(void)
@@ -243,7 +235,6 @@ class ApplicationSettings
         inline void SetPlotGain( bool plotGain )
         {
             AppSettingsPropTree.put( "plot.plotGain", plotGain );
-            appSettingsDirty = true;
         }
 
         inline bool GetPlotPhase(void)
@@ -253,7 +244,6 @@ class ApplicationSettings
         inline void SetPlotPhase( bool plotPhase )
         {
             AppSettingsPropTree.put( "plot.plotPhase", plotPhase );
-            appSettingsDirty = true;
         }
 
         inline bool GetPlotGainMargin(void)
@@ -263,7 +253,6 @@ class ApplicationSettings
         inline void SetPlotGainMargin( bool plotGainMargin )
         {
             AppSettingsPropTree.put( "plot.plotGainMargin", plotGainMargin );
-            appSettingsDirty = true;
         }
 
         inline bool GetPlotPhaseMargin(void)
@@ -273,7 +262,6 @@ class ApplicationSettings
         inline void SetPlotPhaseMargin( bool plotPhaseMargin )
         {
             AppSettingsPropTree.put( "plot.plotPhaseMargin", plotPhaseMargin );
-            appSettingsDirty = true;
         }
 
         inline bool GetPlotUnwrappedPhase(void)
@@ -283,7 +271,6 @@ class ApplicationSettings
         inline void SetPlotUnwrappedPhase( bool plotUnwrappedPhase )
         {
             AppSettingsPropTree.put( "plot.plotUnwrappedPhase", plotUnwrappedPhase );
-            appSettingsDirty = true;
         }
 
         inline double GetPhaseWrappingThreshold(void)
@@ -293,7 +280,6 @@ class ApplicationSettings
         inline void SetPhaseWrappingThreshold( double phaseWrappingThreshold )
         {
             AppSettingsPropTree.put( "plot.phaseWrappingThreshold", phaseWrappingThreshold );
-            appSettingsDirty = true;
         }
 
         inline double GetGainMarginPhaseCrossover(void)
@@ -303,7 +289,6 @@ class ApplicationSettings
         inline void SetGainMarginPhaseCrossover( double gainMarginPhaseCrossover )
         {
             AppSettingsPropTree.put( "plot.gainMarginPhaseCrossover", gainMarginPhaseCrossover );
-            appSettingsDirty = true;
         }
 
         // Expert settings
@@ -315,7 +300,6 @@ class ApplicationSettings
         inline void SetPurityLowerLimit( double purityLowerLimit )
         {
             AppSettingsPropTree.put( "expert.purityLowerLimit", purityLowerLimit );
-            appSettingsDirty = true;
         }
 
         inline uint16_t GetExtraSettlingTimeMs( void )
@@ -325,7 +309,6 @@ class ApplicationSettings
         inline void SetExtraSettlingTimeMs( uint16_t extraSettlingTimeMs )
         {
             AppSettingsPropTree.put( "expert.extraSettlingTimeMs", extraSettlingTimeMs );
-            appSettingsDirty = true;
         }
 
         inline uint8_t GetAutorangeTriesPerStep( void )
@@ -335,7 +318,6 @@ class ApplicationSettings
         inline void SetAutorangeTriesPerStep( uint8_t autorangeTriesPerStep )
         {
             AppSettingsPropTree.put( "expert.autorangeTriesPerStep", autorangeTriesPerStep );
-            appSettingsDirty = true;
         }
 
         inline double GetAutorangeTolerance( void )
@@ -345,7 +327,6 @@ class ApplicationSettings
         inline void SetAutorangeTolerance( double autorangeTolerance )
         {
             AppSettingsPropTree.put( "expert.autorangeTolerance", autorangeTolerance );
-            appSettingsDirty = true;
         }
 
         inline double GetSmallSignalResolutionLimit( void )
@@ -355,7 +336,6 @@ class ApplicationSettings
         inline void SetSmallSignalResolutionLimit( double smallSignalResolutionLimit )
         {
             AppSettingsPropTree.put( "expert.smallSignalResolutionLimit", smallSignalResolutionLimit );
-            appSettingsDirty = true;
         }
 
         inline double GetMaxAutorangeAmplitude( void )
@@ -365,7 +345,6 @@ class ApplicationSettings
         inline void SetMaxAutorangeAmplitude( double maxAutorangeAmplitude )
         {
             AppSettingsPropTree.put( "expert.maxAutorangeAmplitude", maxAutorangeAmplitude );
-            appSettingsDirty = true;
         }
 
         inline uint16_t GetMinCyclesCaptured( void )
@@ -375,7 +354,6 @@ class ApplicationSettings
         inline void SetMinCyclesCaptured( double minCyclesCaptured )
         {
             AppSettingsPropTree.put( "expert.minCyclesCaptured", minCyclesCaptured );
-            appSettingsDirty = true;
         }
 
         inline bool GetTimeDomainPlotsEnabled( void )
@@ -385,7 +363,6 @@ class ApplicationSettings
         inline void SetTimeDomainPlotsEnabled( bool timeDomainPlotsEnabled )
         {
             AppSettingsPropTree.put( "diagnostics.timeDomainPlots", timeDomainPlotsEnabled );
-            appSettingsDirty = true;
         }
 
         // Accessors/Mutators for Scope Settings
@@ -403,7 +380,6 @@ class ApplicationSettings
             wchar_t chanLetter[2] = L"A";
             chanLetter[0] += channel;
             ScopeSettingsPropTree.put(L"picoScope.inputChannel.name", wstring(chanLetter));
-            scopeSettingsDirty = true;
         }
 
         inline int GetInputCoupling()
@@ -413,7 +389,6 @@ class ApplicationSettings
         inline void SetInputCoupling(int coupling)
         {
             ScopeSettingsPropTree.put(L"picoScope.inputChannel.coupling", coupling);
-            scopeSettingsDirty = true;
         }
 
         inline int GetInputAttenuation()
@@ -423,7 +398,6 @@ class ApplicationSettings
         inline void SetInputAttenuation(int attenuation)
         {
             ScopeSettingsPropTree.put(L"picoScope.inputChannel.attenuation", attenuation);
-            scopeSettingsDirty = true;
         }
 
         inline const wstring GetInputDcOffset()
@@ -433,7 +407,6 @@ class ApplicationSettings
         inline void SetInputDcOffset(const wchar_t* dcOffset)
         {
             ScopeSettingsPropTree.put(L"picoScope.inputChannel.dcOffset", wstring(dcOffset));
-            scopeSettingsDirty = true;
         }
 
         inline int GetOutputChannel()
@@ -445,7 +418,6 @@ class ApplicationSettings
             wchar_t chanLetter[2] = L"A";
             chanLetter[0] += channel;
             ScopeSettingsPropTree.put(L"picoScope.outputChannel.name", wstring(chanLetter));
-            scopeSettingsDirty = true;
         }
 
         inline int GetOutputCoupling()
@@ -455,7 +427,6 @@ class ApplicationSettings
         inline void SetOutputCoupling(int coupling)
         {
             ScopeSettingsPropTree.put(L"picoScope.outputChannel.coupling", coupling);
-            scopeSettingsDirty = true;
         }
 
         inline int GetOutputAttenuation()
@@ -465,7 +436,6 @@ class ApplicationSettings
         inline void SetOutputAttenuation(int attenuation)
         {
             ScopeSettingsPropTree.put(L"picoScope.outputChannel.attenuation", attenuation);
-            scopeSettingsDirty = true;
         }
 
         inline const wstring GetOutputDcOffset()
@@ -475,7 +445,6 @@ class ApplicationSettings
         inline void SetOutputDcOffset(const wchar_t* dcOffset)
         {
             ScopeSettingsPropTree.put(L"picoScope.outputChannel.dcOffset", wstring(dcOffset));
-            scopeSettingsDirty = true;
         }
 
         inline const wstring GetInputSignalVpp()
@@ -485,7 +454,6 @@ class ApplicationSettings
         inline void SetInputSignalVpp(const wchar_t* inputSignalVpp)
         {
             ScopeSettingsPropTree.put(L"picoScope.fraParam.signalVpp", wstring(inputSignalVpp));
-            scopeSettingsDirty = true;
         }
 
         inline const wstring GetStartFreq()
@@ -495,7 +463,6 @@ class ApplicationSettings
         inline void SetStartFrequency(const wchar_t* startFreq)
         {
             ScopeSettingsPropTree.put(L"picoScope.fraParam.startFrequency", wstring(startFreq));
-            scopeSettingsDirty = true;
         }
 
         inline const wstring GetStopFreq()
@@ -505,7 +472,6 @@ class ApplicationSettings
         inline void SetStopFrequency(const wchar_t* stopFreq)
         {
             ScopeSettingsPropTree.put(L"picoScope.fraParam.stopFrequency", wstring(stopFreq));
-            scopeSettingsDirty = true;
         }
 
         inline const wstring GetStepsPerDecade()
@@ -515,7 +481,6 @@ class ApplicationSettings
         inline void SetStepsPerDecade(const wchar_t* stepsPerDecade)
         {
             ScopeSettingsPropTree.put(L"picoScope.fraParam.stepsPerDecade", wstring(stepsPerDecade));
-            scopeSettingsDirty = true;
         }
 
         // Versions which convert the string to a number
@@ -550,17 +515,14 @@ class ApplicationSettings
         bool InitializeApplicationSettingsFile( void );
         void CheckSettingsVersionAndUpgrade( void );
 
-        bool appSettingsOpened;
-        bool appSettingsDirty;
-        bool scopeSettingsOpened;
-        bool scopeSettingsDirty;
-
         wstring appDataFolder;
         wstring appDataFilename;
         wstring scopeDataFilename;
 
         ptree AppSettingsPropTree;
+        ptree AppSettingsPropTreeClean;
         wptree ScopeSettingsPropTree;
+        wptree ScopeSettingsPropTreeClean;
 
         wstring scopeSN;
 

@@ -50,11 +50,6 @@
 
 ApplicationSettings::ApplicationSettings( wstring _appDataFolder ) : appDataFolder(_appDataFolder)
 {
-    appSettingsOpened = false;
-    appSettingsDirty = false;
-    scopeSettingsOpened = false;
-    scopeSettingsDirty = false;
-
     numChannels = 2;
     appDataFilename = appDataFolder + L"\\FRA4PicoScope\\Fra4PicoScopeSettings.xml";
 }
@@ -99,9 +94,8 @@ bool ApplicationSettings::ReadApplicationSettings( void )
         if (settingsFileInputStream)
         {
             read_xml(settingsFileInputStream, AppSettingsPropTree, xml_parser::trim_whitespace);
+            AppSettingsPropTreeClean = AppSettingsPropTree;
             CheckSettingsVersionAndUpgrade();
-            appSettingsOpened = true;
-            appSettingsDirty = false;
         }
         else
         {
@@ -226,8 +220,7 @@ bool ApplicationSettings::InitializeApplicationSettingsFile( void )
         {
             xml_writer_settings<std::string> settings(' ', 4);
             write_xml(settingsFileOutputStream, AppSettingsPropTree, settings);
-            appSettingsOpened = true;
-            appSettingsDirty = false;
+            AppSettingsPropTreeClean = AppSettingsPropTree;
         }
         else
         {
@@ -298,7 +291,7 @@ bool ApplicationSettings::WriteApplicationSettings( void )
     bool retVal = true;
     ofstream settingsFileOutputStream;
 
-    if (appSettingsOpened == true && appSettingsDirty == true)
+    if (AppSettingsPropTree != AppSettingsPropTreeClean)
     {
         try
         {
@@ -308,7 +301,7 @@ bool ApplicationSettings::WriteApplicationSettings( void )
             {
                 xml_writer_settings<std::string> settings(' ', 4);
                 write_xml(settingsFileOutputStream, AppSettingsPropTree, settings);
-                appSettingsDirty = false;
+                AppSettingsPropTreeClean = AppSettingsPropTree;
             }
             else
             {
@@ -394,8 +387,7 @@ bool ApplicationSettings::ReadScopeSettings( PicoScope* pScope )
         {
             ScopeSettingsPropTree.clear();
             read_xml(settingsFileInputStream, ScopeSettingsPropTree, xml_parser::trim_whitespace);
-            scopeSettingsOpened = true;
-            scopeSettingsDirty = false;
+            ScopeSettingsPropTreeClean = ScopeSettingsPropTree;
         }
         catch( const ptree_error& pte )
         {
@@ -463,8 +455,7 @@ bool ApplicationSettings::InitializeScopeSettingsFile(PicoScope* pScope)
         {
             xml_writer_settings<std::wstring> settings(wchar_t(' '), 4);
             write_xml(settingsFileOutputStream, ScopeSettingsPropTree, settings);
-            appSettingsOpened = true;
-            appSettingsDirty = false;
+            ScopeSettingsPropTreeClean = ScopeSettingsPropTree;
         }
         catch( const ptree_error& pte )
         {
@@ -528,7 +519,7 @@ bool ApplicationSettings::WriteScopeSettings(void)
     bool retVal = true;
     wofstream settingsFileOutputStream;
 
-    if (scopeSettingsOpened == true && scopeSettingsDirty == true)
+    if (ScopeSettingsPropTree != ScopeSettingsPropTreeClean)
     {
         settingsFileOutputStream.open( scopeDataFilename.c_str(), ios::out );
         if (!settingsFileOutputStream)
@@ -543,7 +534,7 @@ bool ApplicationSettings::WriteScopeSettings(void)
             {
                 xml_writer_settings<std::wstring> settings(wchar_t(' '), 4);
                 write_xml(settingsFileOutputStream, ScopeSettingsPropTree, settings);
-                scopeSettingsDirty = false;
+                ScopeSettingsPropTreeClean = ScopeSettingsPropTree;
             }
             catch( const ptree_error& pte )
             {
