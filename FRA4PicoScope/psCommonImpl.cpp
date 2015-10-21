@@ -232,6 +232,22 @@ uint8_t CommonMethod(SCOPE_FAMILY_LT,GetNumChannels)( void )
     return numChannels;
 }
 
+void CommonMethod(SCOPE_FAMILY_LT,GetAvailableCouplings)( vector<wstring>& couplingText )
+{
+#if defined (PS6000)
+    couplingText.clear();
+    couplingText.resize(3);
+    couplingText[0] = TEXT("AC");
+    couplingText[1] = TEXT("DC 1M");
+    couplingText[2] = TEXT("DC 50R");
+#else
+    couplingText.clear();
+    couplingText.resize(2);
+    couplingText[0] = TEXT("AC");
+    couplingText[1] = TEXT("DC");
+#endif
+}
+
 uint32_t CommonMethod(SCOPE_FAMILY_LT,GetNoiseRejectModeTimebase)( void )
 {
     return timebaseNoiseRejectMode;
@@ -252,14 +268,27 @@ uint32_t CommonMethod(SCOPE_FAMILY_LT,GetMaxDataRequestSize)(void)
     return maxDataRequestSize;
 }
 
-PS_RANGE CommonMethod(SCOPE_FAMILY_LT,GetMinRange)( void )
+PS_RANGE CommonMethod(SCOPE_FAMILY_LT,GetMinRange)( PS_COUPLING coupling )
 {
+    UNREFERENCED_PARAMETER(coupling);
     return minRange;
 }
 
-PS_RANGE CommonMethod(SCOPE_FAMILY_LT,GetMaxRange)( void )
+PS_RANGE CommonMethod(SCOPE_FAMILY_LT,GetMaxRange)( PS_COUPLING coupling )
 {
+#if defined (PS6000)
+    if (coupling == PS_DC_50R)
+    {
+        return (maxRange - 2);
+    }
+    else
+    {
+        return maxRange;
+    }
+#else
+    UNREFERENCED_PARAMETER(coupling);
     return maxRange;
+#endif
 }
 
 int16_t CommonMethod(SCOPE_FAMILY_LT,GetMaxValue)(void)
@@ -947,7 +976,7 @@ void CommonMethod(SCOPE_FAMILY_LT, SetChannelDesignations)( PS_CHANNEL inputChan
 //
 // Name: Methods associated with getting data
 // Notes: PS2000 and PS3000 drivers support an aggregation mode that works with "fast streaming"
-//        which may be able to mimic block mode (using auto_stop).  None the the PS3000 scopes that
+//        which may be able to mimic block mode (using auto_stop).  None of the PS3000 scopes that
 //        support fast streaming also have a signal generator, so are irrelevant.  All of the 
 //        compatible PS2000 scopes do support fast streaming.  However, given the relatively 
 //        smaller size of the buffers these scopes use, I decided to favor code simplicity over

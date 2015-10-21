@@ -164,7 +164,9 @@ typedef enum
 typedef enum
 {
     PS_AC,
-    PS_DC
+    PS_DC,
+    PS_DC_1M = PS_DC,
+    PS_DC_50R
 } PS_COUPLING;
 
 typedef void (__stdcall *psBlockReady)
@@ -197,13 +199,14 @@ class PicoScope
 
         virtual bool Initialized(void) = 0;
         virtual uint8_t GetNumChannels( void ) = 0;
+        virtual void GetAvailableCouplings( vector<wstring>& couplingText ) = 0;
         virtual uint32_t GetNoiseRejectModeTimebase( void ) = 0;
         virtual double GetNoiseRejectModeSampleRate( void ) = 0;
         virtual double GetSignalGeneratorPrecision( void ) = 0;
         virtual double GetClosestSignalGeneratorFrequency( double requestedFreq ) = 0;
         virtual uint32_t GetMaxDataRequestSize( void ) = 0;
-        virtual PS_RANGE GetMinRange( void ) = 0;
-        virtual PS_RANGE GetMaxRange( void ) = 0;
+        virtual PS_RANGE GetMinRange( PS_COUPLING coupling ) = 0;
+        virtual PS_RANGE GetMaxRange( PS_COUPLING coupling ) = 0;
         virtual int16_t GetMaxValue( void ) = 0;
         virtual double GetMinFuncGenFreq( void ) = 0;
         virtual double GetMaxFuncGenFreq( void ) = 0;

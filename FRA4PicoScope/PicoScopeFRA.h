@@ -250,8 +250,10 @@ class PicoScopeFRA
 
         // Treated as an array where indices here correspond to range enums/indices
         const RANGE_INFO_T* rangeInfo;
-        PS_RANGE minRange;
-        PS_RANGE maxRange;
+        PS_RANGE inputMinRange;
+        PS_RANGE inputMaxRange;
+        PS_RANGE outputMinRange;
+        PS_RANGE outputMaxRange;
 
         static const double attenInfo[];
         static const double inputRangeInitialEstimateMargin;

@@ -67,7 +67,6 @@ TCHAR szTitle[MAX_LOADSTRING];                  // The title bar text
 TCHAR szWindowClass[MAX_LOADSTRING];            // the main window class name
 
 const int numAttens = 6;
-const int numCouplings = 2;
 
 // Application Objects
 PicoScopeFRA* psFRA = NULL;
@@ -1029,10 +1028,9 @@ BOOL LoadControlsData(HWND hDlg)
         TEXT("1x"), TEXT("10x"), TEXT("20x"), TEXT("100x"), TEXT("200x"), TEXT("1000x")
     };
 
-    TCHAR couplingText[numCouplings][3] =
-    {
-        TEXT("AC"), TEXT("DC")
-    };
+    vector<wstring> couplingText;
+
+    pScopeSelector->GetSelectedScope()->GetAvailableCouplings(couplingText);
 
     wstring chanText;
 
@@ -1082,19 +1080,19 @@ BOOL LoadControlsData(HWND hDlg)
 
     hndCB = GetDlgItem( hDlg, IDC_INPUT_COUPLING );
     ComboBox_ResetContent( hndCB );
-    for (int k = 0; k < numCouplings; k++)
+    for (uint8_t k = 0; k < couplingText.size(); k++)
     {
         // Add string to combobox.
-        ComboBox_AddString( hndCB, couplingText[k] );
+        ComboBox_AddString( hndCB, couplingText[k].c_str() );
     }
     SendMessage(hndCB, CB_SETCURSEL, (WPARAM)(pSettings->GetInputCoupling()), (LPARAM)0);
 
     hndCB = GetDlgItem( hDlg, IDC_OUTPUT_COUPLING );
     ComboBox_ResetContent( hndCB );
-    for (int k = 0; k < numCouplings; k++)
+    for (uint8_t k = 0; k < couplingText.size(); k++)
     {
         // Add string to combobox.
-        ComboBox_AddString( hndCB, couplingText[k] );
+        ComboBox_AddString( hndCB, couplingText[k].c_str() );
     }
     SendMessage(hndCB, CB_SETCURSEL, (WPARAM)(pSettings->GetOutputCoupling()), (LPARAM)0);
 

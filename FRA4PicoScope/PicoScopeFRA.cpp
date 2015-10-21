@@ -122,8 +122,10 @@ PicoScopeFRA::PicoScopeFRA(FRA_STATUS_CALLBACK statusCB)
     autorangeRetryCounter = 0;
     mDiagnosticsOn = false;
     rangeInfo = NULL;
-    minRange = 0;
-    maxRange = 0;
+    inputMinRange = 0;
+    inputMaxRange = 0;
+    outputMinRange = 0;
+    outputMaxRange = 0;
     ps = NULL;
     numChannels = 2;
     maxScopeSamplesPerChannel = 0;
@@ -162,8 +164,6 @@ void PicoScopeFRA::SetInstrument( PicoScope* _ps )
     fSampNoiseRejectMode = ps->GetNoiseRejectModeSampleRate();
     timebaseNoiseRejectMode = ps->GetNoiseRejectModeTimebase();
     signalGeneratorPrecision = ps->GetSignalGeneratorPrecision();
-    minRange = ps->GetMinRange();
-    maxRange = ps->GetMaxRange();
     rangeCounts = ps->GetMaxValue();
 
     // Setup arbitrary initial settings to force a calculation of maxScopeSamplesPerChannel
@@ -268,24 +268,29 @@ bool PicoScopeFRA::SetupChannels( int inputChannel, int inputChannelCoupling, in
     FRA_STATUS_MESSAGE_T fraStatusMsg;
     PS_RANGE inputRange;
 
-    for (inputRange = maxRange; inputRange > minRange; inputRange--)
+    mInputChannelCoupling = (PS_COUPLING)inputChannelCoupling;
+    mOutputChannelCoupling = (PS_COUPLING)outputChannelCoupling;
+
+    inputMinRange = ps->GetMinRange(mInputChannelCoupling);
+    inputMaxRange = ps->GetMaxRange(mInputChannelCoupling);
+    outputMinRange = ps->GetMinRange(mOutputChannelCoupling);
+    outputMaxRange = ps->GetMaxRange(mOutputChannelCoupling);
+
+    for (inputRange = inputMaxRange; inputRange > inputMinRange; inputRange--)
     {
         if (signalVpp > 2.0*rangeInfo[inputRange].rangeVolts*attenInfo[mInputChannelAttenuation]*inputRangeInitialEstimateMargin)
         {
             inputRange++; // We stepped one too far, so backup
-            inputRange = min(inputRange, maxRange); // Just in case, so we can't get an illegal range
+            inputRange = min(inputRange, inputMaxRange); // Just in case, so we can't get an illegal range
             break;
         }
     }
 
     currentInputChannelRange = inputRange;
-    currentOutputChannelRange = minRange;
+    currentOutputChannelRange = outputMinRange;
 
     mInputChannel = (PS_CHANNEL)inputChannel;
     mOutputChannel = (PS_CHANNEL)outputChannel;
-
-    mInputChannelCoupling = (PS_COUPLING)inputChannelCoupling;
-    mOutputChannelCoupling = (PS_COUPLING)outputChannelCoupling;
 
     mInputChannelAttenuation = (ATTEN_T)inputChannelAttenuation;
     mOutputChannelAttenuation = (ATTEN_T)outputChannelAttenuation;
@@ -568,7 +573,7 @@ bool PicoScopeFRA::CheckSignalOverflows(void)
 
     if (ovIn)
     {
-        if (currentInputChannelRange < maxRange)
+        if (currentInputChannelRange < inputMaxRange)
         {
             inputChannelAutorangeStatus = CHANNEL_OVERFLOW;
             currentInputChannelRange = (PS_RANGE)((int)currentInputChannelRange + 1);
@@ -580,7 +585,7 @@ bool PicoScopeFRA::CheckSignalOverflows(void)
     }
     if (ovOut)
     {
-        if (currentOutputChannelRange < maxRange)
+        if (currentOutputChannelRange < outputMaxRange)
         {
             outputChannelAutorangeStatus = CHANNEL_OVERFLOW;
             currentOutputChannelRange = (PS_RANGE)((int)currentOutputChannelRange + 1);
@@ -631,7 +636,7 @@ bool PicoScopeFRA::CheckSignalRanges(void)
     {
         if (((double)inputAbsMax[freqStepIndex][autorangeRetryCounter]/rangeCounts) > maxAmplitudeRatio)
         {
-            if (currentInputChannelRange < maxRange)
+            if (currentInputChannelRange < inputMaxRange)
             {
                 currentInputChannelRange = (PS_RANGE)((int)currentInputChannelRange + 1);
                 inputChannelAutorangeStatus = AMPLITUDE_TOO_HIGH;
@@ -645,7 +650,7 @@ bool PicoScopeFRA::CheckSignalRanges(void)
         else if (((double)inputAbsMax[freqStepIndex][autorangeRetryCounter]/rangeCounts) <
                  (maxAmplitudeRatio/rangeInfo[currentInputChannelRange].ratioDown - minAmplitudeRatioTolerance))
         {
-            if (currentInputChannelRange > minRange)
+            if (currentInputChannelRange > inputMinRange)
             {
                 currentInputChannelRange = (PS_RANGE)((int)currentInputChannelRange - 1);
                 inputChannelAutorangeStatus = AMPLITUDE_TOO_LOW;
@@ -679,7 +684,7 @@ bool PicoScopeFRA::CheckSignalRanges(void)
     {
         if (((double)outputAbsMax[freqStepIndex][autorangeRetryCounter]/rangeCounts) > maxAmplitudeRatio)
         {
-            if (currentOutputChannelRange < maxRange)
+            if (currentOutputChannelRange < outputMaxRange)
             {
                 currentOutputChannelRange = (PS_RANGE)((int)currentOutputChannelRange + 1);
                 outputChannelAutorangeStatus = AMPLITUDE_TOO_HIGH;
@@ -693,7 +698,7 @@ bool PicoScopeFRA::CheckSignalRanges(void)
         else if (((double)outputAbsMax[freqStepIndex][autorangeRetryCounter]/rangeCounts) <
                  (maxAmplitudeRatio/rangeInfo[currentOutputChannelRange].ratioDown - minAmplitudeRatioTolerance))
         {
-            if (currentOutputChannelRange > minRange)
+            if (currentOutputChannelRange > outputMinRange)
             {
                 currentOutputChannelRange = (PS_RANGE)((int)currentOutputChannelRange - 1);
                 outputChannelAutorangeStatus = AMPLITUDE_TOO_LOW;

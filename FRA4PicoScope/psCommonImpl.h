@@ -26,13 +26,14 @@
 public:
 bool Initialized( void );
 uint8_t GetNumChannels( void );
+void GetAvailableCouplings( vector<wstring>& couplingText );
 uint32_t GetNoiseRejectModeTimebase( void );
 double GetNoiseRejectModeSampleRate( void );
 double GetSignalGeneratorPrecision( void );
 double GetClosestSignalGeneratorFrequency( double requestedFreq );
 uint32_t GetMaxDataRequestSize( void );
-PS_RANGE GetMinRange( void );
-PS_RANGE GetMaxRange( void );
+PS_RANGE GetMinRange( PS_COUPLING coupling );
+PS_RANGE GetMaxRange( PS_COUPLING coupling );
 int16_t GetMaxValue( void );
 double GetMinFuncGenFreq( void );
 double GetMaxFuncGenFreq( void );
