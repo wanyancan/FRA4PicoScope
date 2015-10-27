@@ -1022,6 +1022,7 @@ void Cleanup( HWND hWnd )
 
 BOOL LoadControlsData(HWND hDlg)
 {
+    PicoScope* pScope;
 
     TCHAR attenText[numAttens][6] =
     {
@@ -1030,7 +1031,16 @@ BOOL LoadControlsData(HWND hDlg)
 
     vector<wstring> couplingText;
 
-    pScopeSelector->GetSelectedScope()->GetAvailableCouplings(couplingText);
+    if (NULL != (pScope = pScopeSelector->GetSelectedScope()))
+    {
+        pScope->GetAvailableCouplings(couplingText);
+    }
+    else
+    {
+        couplingText.resize(2);
+        couplingText[0] = TEXT("AC");
+        couplingText[1] = TEXT("DC");
+    }
 
     wstring chanText;
 
