@@ -7,6 +7,6 @@
 
 #include <winsdkver.h>
 
-#define _WIN32_WINNT 0x0501 // To target Windows XP
+#define _WIN32_WINNT 0x0502 // To target Windows XP SP2
 
 #include <SDKDDKVer.h>

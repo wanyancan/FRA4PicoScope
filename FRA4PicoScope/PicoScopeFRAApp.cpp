@@ -30,6 +30,7 @@
 #include <Shlwapi.h>
 #include <CommCtrl.h>
 #include <commdlg.h>
+#include <delayimp.h>
 #include <iomanip>
 #include <fstream>
 
@@ -162,6 +163,46 @@ int APIENTRY _tWinMain(HINSTANCE hInstance,
     MSG msg;
     int status;
     HACCEL hAccelTable;
+
+    WCHAR szProgramFilesFolder[MAX_PATH];
+    HRESULT hr;
+
+    // This code is to control where the PicoScope DLLs are loaded from.  We do this so
+    // that we can reliably set a preference for the ones from the installed SDK.  To do
+    // this, the PicoScope DLLs are delay loaded so that we can add the SDK lib folder in
+    // the DLL search path before they get loaded.  According to some sources, other methods
+    // such as manifests won't work to target DLLs by specific path.
+#if defined(_M_X64)
+    hr = SHGetFolderPath(NULL, CSIDL_PROGRAM_FILES, NULL, 0, szProgramFilesFolder);
+#else
+    hr = SHGetFolderPath(NULL, CSIDL_PROGRAM_FILESX86, NULL, 0, szProgramFilesFolder);
+#endif
+    if(SUCCEEDED(hr))
+    {
+        wstring wsDllPath = szProgramFilesFolder + wstring(L"\\Pico Technology\\SDK\\lib");
+        BOOL bRes = SetDllDirectory( wsDllPath.c_str() );
+        if (!bRes)
+        {
+            MessageBox( 0, L"Could not set application DLL folder.", L"Fatal Error", MB_OK );
+            exit(-1);
+        }
+        else
+        {
+            // Load the DLLs so that we can do all error handling in one spot
+            if (FAILED(__HrLoadAllImportsForDll("ps2000.dll")) || FAILED(__HrLoadAllImportsForDll("ps2000a.dll")) || FAILED(__HrLoadAllImportsForDll("PS3000.dll")) ||
+                FAILED(__HrLoadAllImportsForDll("ps3000a.dll")) || FAILED(__HrLoadAllImportsForDll("ps4000.dll")) || FAILED(__HrLoadAllImportsForDll("ps4000a.dll")) ||
+                FAILED(__HrLoadAllImportsForDll("ps5000.dll")) || FAILED(__HrLoadAllImportsForDll("ps5000a.dll")) || FAILED(__HrLoadAllImportsForDll("ps6000.dll")) )
+            {
+                MessageBox( 0, L"Could not load application DLLs.", L"Fatal Error", MB_OK );
+                exit(-1);
+            }
+        }
+    }
+    else
+    {
+        MessageBox( 0, L"Could not set application DLL folder.", L"Fatal Error", MB_OK );
+        exit(-1);
+    }
 
     // Install signal handler for abort, terminate, and interrupt
     signal( SIGABRT, SignalHandler );
