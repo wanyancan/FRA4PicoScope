@@ -1294,9 +1294,9 @@ bool CommonMethod(SCOPE_FAMILY_LT, GetPeakValues)( uint16_t& inputPeak, uint16_t
     }
 
     // Get peak values
-    inputPeak = max( abs(*min_element(mInputBuffer.begin(), mInputBuffer.end())), abs(*max_element(mInputBuffer.begin(), mInputBuffer.end())) );
-    outputPeak = max(abs(*min_element(mOutputBuffer.begin(), mOutputBuffer.end())), abs(*max_element(mOutputBuffer.begin(), mOutputBuffer.end())) );
-    
+    inputPeak = max( abs(*min_element(&mInputBuffer[0], &mInputBuffer[mNumSamples])), abs(*max_element(&mInputBuffer[0], &mInputBuffer[mNumSamples])) );
+    outputPeak = max( abs(*min_element(&mOutputBuffer[0], &mOutputBuffer[mNumSamples])), abs(*max_element(&mOutputBuffer[0], &mOutputBuffer[mNumSamples])) );
+
 #endif
 
     // Decode overflow
