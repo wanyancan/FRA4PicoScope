@@ -979,6 +979,7 @@ void PicoScopeFRA::GenerateDiagnosticOutput(void)
         outputMaxVoltages.resize(maxSamples);
     }
 
+    // Setup and test the diag directory for use as a current directory
     diagDataPath = mBaseDataPath + L"\\diag";
     if (0 == SetCurrentDirectory( diagDataPath.c_str() ))
     {

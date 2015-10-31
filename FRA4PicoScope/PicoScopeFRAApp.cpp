@@ -167,6 +167,8 @@ int APIENTRY _tWinMain(HINSTANCE hInstance,
     WCHAR szProgramFilesFolder[MAX_PATH];
     HRESULT hr;
 
+    WCHAR szAppPath[MAX_PATH];
+
     // This code is to control where the PicoScope DLLs are loaded from.  We do this so
     // that we can reliably set a preference for the ones from the installed SDK.  To do
     // this, the PicoScope DLLs are delay loaded so that we can add the SDK lib folder in
@@ -202,6 +204,30 @@ int APIENTRY _tWinMain(HINSTANCE hInstance,
     {
         MessageBox( 0, L"Could not set application DLL folder.", L"Fatal Error", MB_OK );
         exit(-1);
+    }
+
+    // Set the PLplot library path environment variable, used to load font and color map files.
+    if (0 == GetModuleFileName( NULL, szAppPath, MAX_PATH ))
+    {
+        MessageBox( 0, L"Could not get application path.", L"Fatal Error", MB_OK );
+        exit(-1);
+    }
+    else
+    {
+        if (0 == PathRemoveFileSpec( szAppPath ))
+        {
+            MessageBox( 0, L"Could not get application path.", L"Fatal Error", MB_OK );
+            exit(-1);
+        }
+        else
+        {
+            wstring plPlotLibEnv = wstring(L"PLPLOT_LIB=") + wstring(szAppPath);
+            if (-1 == _wputenv( plPlotLibEnv.c_str() ))
+            {
+                MessageBox( 0, L"Could not set PLplot lib directory.", L"Fatal Error", MB_OK );
+                exit(-1);
+            }
+        }
     }
 
     // Install signal handler for abort, terminate, and interrupt
