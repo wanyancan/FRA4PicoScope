@@ -86,6 +86,8 @@ PicoScopeFRA::PicoScopeFRA(FRA_STATUS_CALLBACK statusCB)
 
     numSteps = latestCompletedNumSteps = freqStepCounter = freqStepIndex = 0;
 
+    pInputBuffer = pOutputBuffer = NULL;
+
     ovIn = ovOut = false;
     delayForAcCoupling = false;
     inputChannelAutorangeStatus = outputChannelAutorangeStatus = OK;
@@ -115,6 +117,8 @@ PicoScopeFRA::PicoScopeFRA(FRA_STATUS_CALLBACK statusCB)
     maxAutorangeRetries = 0;
     mExtraSettlingTimeMs = 0;
     mMinCyclesCaptured = 0;
+    mSweepDescending = false;
+    mPhaseWrappingThreshold = 180.0;
     fSampNoiseRejectMode = 0.0;
     timebaseNoiseRejectMode = 0;
     rangeCounts = 0.0;

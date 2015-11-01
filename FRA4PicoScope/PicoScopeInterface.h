@@ -194,7 +194,7 @@ class PicoScope
         friend class ScopeSelector;
 
     public:
-        PicoScope() : initialized(false), model(PS_NO_MODEL), family(PS_NO_FAMILY), numChannels(2), minFuncGenFreq(0.0), maxFuncGenFreq(0.0), minFuncGenVpp(0.0), maxFuncGenVpp(0.0), compatible(false) {};
+        PicoScope() : initialized(false), model(PS_NO_MODEL), family(PS_NO_FAMILY), numChannels(2), minFuncGenFreq(0.0), maxFuncGenFreq(0.0), minFuncGenVpp(0.0), maxFuncGenVpp(0.0), signalGeneratorPrecision(0.0), compatible(false) {};
         virtual ~PicoScope() {};
 
         virtual bool Initialized(void) = 0;

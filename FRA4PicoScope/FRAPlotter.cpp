@@ -100,6 +100,7 @@ FRAPlotter::FRAPlotter( uint16_t width, uint16_t height )
     plotDataAvailable = false;
     mPlotGain = mPlotPhase = true;
     mPlotGainMargin = mPlotPhaseMargin = false;
+    mGainMarginPhaseCrossover = 0.0;
     currentFreqAxisMin = 0.0;
     currentFreqAxisMax = 0.0;
     currentGainAxisMin = 0.0;
