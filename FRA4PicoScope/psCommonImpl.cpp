@@ -165,6 +165,7 @@ CommonCtor(SCOPE_FAMILY_LT)( int16_t _handle ) : PicoScope()
     bufferSize = min( maxDataRequestSize, bufferSize );
     mInputBuffer.resize( bufferSize );
     mOutputBuffer.resize( bufferSize );
+    mNumSamples = 0;
     buffersDirty = true;
 }
 
