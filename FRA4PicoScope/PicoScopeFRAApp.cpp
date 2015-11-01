@@ -43,8 +43,6 @@
 #include "FRAPlotter.h"
 #include "PlotAxesDialog.h"
 
-//#define TEST_PLOTTING
-
 #if defined(TEST_PLOTTING)
 const static uint32_t testPlotN = 41;
 double testPlotFreqs[];
@@ -53,7 +51,7 @@ double testPlotPhases[];
 double testPlotUnwrappedPhases[];
 #endif
 
-char* appVersionString = "0.4b";
+char* appVersionString = "0.5b";
 char* appNameString = "Frequency Response Analyzer for PicoScope";
 
 #define MAX_LOADSTRING 100
@@ -175,9 +173,15 @@ int APIENTRY _tWinMain(HINSTANCE hInstance,
     // the DLL search path before they get loaded.  According to some sources, other methods
     // such as manifests won't work to target DLLs by specific path.
 #if defined(_M_X64)
+    // For future 64 bit version of this application.
     hr = SHGetFolderPath(NULL, CSIDL_PROGRAM_FILES, NULL, 0, szProgramFilesFolder);
 #else
     hr = SHGetFolderPath(NULL, CSIDL_PROGRAM_FILESX86, NULL, 0, szProgramFilesFolder);
+    if (FAILED(hr))
+    {
+        // We may be running on 32 bit Windows which does not support CSIDL_PROGRAM_FILESX86
+        hr = SHGetFolderPath(NULL, CSIDL_PROGRAM_FILES, NULL, 0, szProgramFilesFolder);
+    }
 #endif
     if(SUCCEEDED(hr))
     {

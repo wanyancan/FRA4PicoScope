@@ -2,7 +2,7 @@
 <Wix xmlns="http://schemas.microsoft.com/wix/2006/wi">
     <Product Id="29B6E5D9-1CBE-4197-868E-136B80B0FDC1" Name="FRA for PicoScope" Language="1033" Version="1.0" Manufacturer="Aaron Hexamer" UpgradeCode="1E288F95-986A-44C9-BF01-6E6397433F8E">
         <Package Description="Simple Installer" Comments="Simple Installer" InstallerVersion="200" Compressed="yes" />
-        <Media Id="1" Cabinet="simple.cab" EmbedCab="yes" />
+        <Media Id="1" Cabinet="simple.cab" EmbedCab="yes" CompressionLevel ="high" />
         <Directory Id="TARGETDIR" Name="SourceDir">
             <Directory Id="ProgramFilesFolder" Name="PFiles">
                 <Directory Id="FRA4PicoScope" Name="FRA4PicoScope">
