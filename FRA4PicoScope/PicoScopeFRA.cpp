@@ -1498,10 +1498,10 @@ void PicoScopeFRA::UnwrapPhases(void)
 // Goertzel coefficient and state data
 // Making these non class members to help simplify alignment
 double theta;
-static __declspec(align(16)) double Kappa;
-static __declspec(align(16)) double a[2], b[2];
-static __declspec(align(16)) double totalEnergy[2];
-static __declspec(align(16)) double dcEnergy[2];
+alignas(16) static double Kappa;
+alignas(16) static double a[2], b[2];
+alignas(16) static double totalEnergy[2];
+alignas(16) static double dcEnergy[2];
 static uint32_t samplesProcessed;
 static uint32_t N;
 // Goertzel outputs

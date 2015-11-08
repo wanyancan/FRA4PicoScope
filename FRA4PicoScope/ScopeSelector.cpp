@@ -515,7 +515,6 @@ bool ScopeSelector::InitializeScopeImpl( void )
     // Get the scope model number so we can look it up in the implementation list.
     selectedScope->GetModel(modelName);
 
-    //for( idx = 0; idx < sizeof(scopeImplTable)/sizeof(ScopeImplRecord_T); idx++ ) // MSVC bug
     for( idx = 0; idx < PS_MAX_SCOPE_MODELS; idx++ )
     {
         if (modelName == scopeImplTable[idx].modelName)
@@ -524,7 +523,6 @@ bool ScopeSelector::InitializeScopeImpl( void )
         }
     }
 
-    // if (idx == sizeof(scopeImplTable)/sizeof(ScopeImplRecord_T)) // MSVC bug
     if (idx == PS_MAX_SCOPE_MODELS)
     {
         retVal = false;

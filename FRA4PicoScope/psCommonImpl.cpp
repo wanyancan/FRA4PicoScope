@@ -1295,8 +1295,10 @@ bool CommonMethod(SCOPE_FAMILY_LT, GetPeakValues)( uint16_t& inputPeak, uint16_t
     }
 
     // Get peak values
-    inputPeak = max( abs(*min_element(&mInputBuffer[0], &mInputBuffer[mNumSamples])), abs(*max_element(&mInputBuffer[0], &mInputBuffer[mNumSamples])) );
-    outputPeak = max( abs(*min_element(&mOutputBuffer[0], &mOutputBuffer[mNumSamples])), abs(*max_element(&mOutputBuffer[0], &mOutputBuffer[mNumSamples])) );
+    auto inputMinMax = std::minmax_element(&mInputBuffer[0], &mInputBuffer[mNumSamples]);
+    inputPeak = max(abs(*inputMinMax.first), abs(*inputMinMax.second));
+    auto outputMinMax = std::minmax_element(&mOutputBuffer[0], &mOutputBuffer[mNumSamples]);
+    outputPeak = max(abs(*outputMinMax.first), abs(*outputMinMax.second));
 
 #endif
 
