@@ -22,6 +22,7 @@
 
 #if !defined(AFX_RESOURCE_DLL) || defined(AFX_TARG_NEU)
 LANGUAGE LANG_NEUTRAL, SUBLANG_NEUTRAL
+#pragma code_page(1252)
 
 /////////////////////////////////////////////////////////////////////////////
 //
@@ -250,20 +251,21 @@ END
 
 #if !defined(AFX_RESOURCE_DLL) || defined(AFX_TARG_ENU)
 LANGUAGE LANG_ENGLISH, SUBLANG_ENGLISH_US
+#pragma code_page(1252)
 
 /////////////////////////////////////////////////////////////////////////////
 //
 // Dialog
 //
 
-IDD_SETTINGS DIALOGEX 0, 0, 309, 242
+IDD_SETTINGS DIALOGEX 0, 0, 309, 256
 STYLE DS_SETFONT | DS_MODALFRAME | DS_FIXEDSYS | WS_POPUP | WS_CAPTION | WS_SYSMENU
 CAPTION "Settings"
 FONT 8, "MS Shell Dlg", 400, 0, 0x1
 BEGIN
-    DEFPUSHBUTTON   "OK",IDOK,198,221,50,14
-    PUSHBUTTON      "Cancel",IDCANCEL,252,221,50,14
-    GROUPBOX        "FRA Execution Options",IDC_STATIC,10,8,137,147
+    DEFPUSHBUTTON   "OK",IDOK,198,235,50,14
+    PUSHBUTTON      "Cancel",IDCANCEL,252,235,50,14
+    GROUPBOX        "FRA Execution Options",IDC_STATIC,10,8,137,131
     CONTROL         "Low noise mode",IDC_RADIO1,"Button",BS_AUTORADIOBUTTON | WS_GROUP,18,21,67,10
     CONTROL         "Noise reject mode",IDC_RADIO2,"Button",BS_AUTORADIOBUTTON,18,33,73,10
     CONTROL         "Sweep ascending",IDC_RADIO3,"Button",BS_AUTORADIOBUTTON | WS_GROUP,18,48,71,10
@@ -275,25 +277,30 @@ BEGIN
     LTEXT           "Gain margin phase crossover",IDC_STATIC,200,42,93,8
     PUSHBUTTON      "Axis Settings",IDC_BUTTON1,158,60,54,14
     PUSHBUTTON      "Plot Colors",IDC_BUTTON2,222,60,50,14
-    GROUPBOX        "Diagnostic Settings",IDC_STATIC,152,86,149,48
+    GROUPBOX        "Diagnostic Settings",IDC_STATIC,152,86,149,53
     CONTROL         "Time domain diagnostic plots",IDC_CHECK1,"Button",BS_AUTOCHECKBOX | WS_TABSTOP,160,99,107,10
-    COMBOBOX        IDC_COMBO1,161,115,73,30,CBS_DROPDOWN | CBS_SORT | WS_VSCROLL | WS_TABSTOP
-    LTEXT           "Log verbosity",IDC_STATIC,243,116,44,8
-    GROUPBOX        "Advanced Settings",IDC_STATIC,10,156,137,73
-    EDITTEXT        IDC_EDIT3,15,76,24,14,ES_AUTOHSCROLL
-    LTEXT           "Autorange tries/step",IDC_STATIC,44,79,68,8
-    EDITTEXT        IDC_EDIT4,16,116,24,14,ES_AUTOHSCROLL
-    LTEXT           "Purity lower limit (%)",IDC_STATIC,44,118,68,8
-    EDITTEXT        IDC_EDIT5,16,136,24,14,ES_AUTOHSCROLL
-    LTEXT           "Amplitude lower limit (%)",IDC_STATIC,44,138,80,8
-    EDITTEXT        IDC_EDIT6,15,96,24,14,ES_AUTOHSCROLL
-    LTEXT           "Extra settling time/try (ms)",IDC_STATIC,44,99,87,8
-    EDITTEXT        IDC_EDIT7,16,169,24,14,ES_AUTOHSCROLL
-    LTEXT           "Autorange max amplitude (%)",IDC_STATIC,45,171,98,8
-    EDITTEXT        IDC_EDIT8,16,188,24,14,ES_AUTOHSCROLL
-    LTEXT           "Autorange tolerance (%)",IDC_STATIC,46,190,82,8
-    EDITTEXT        IDC_EDIT9,16,207,24,14,ES_AUTOHSCROLL
-    LTEXT           "Minimum cycles captured",IDC_STATIC,46,209,80,8
+    COMBOBOX        IDC_COMBO1,160,115,73,30,CBS_DROPDOWN | CBS_SORT | WS_VSCROLL | WS_TABSTOP
+    LTEXT           "Log verbosity",IDC_STATIC,242,116,44,8
+    GROUPBOX        "Advanced Settings",IDC_STATIC,10,140,137,89
+    EDITTEXT        IDC_EDIT3,16,153,24,14,ES_AUTOHSCROLL
+    LTEXT           "Autorange tries/step",IDC_STATIC,45,156,68,8
+    EDITTEXT        IDC_EDIT4,16,97,24,14,ES_AUTOHSCROLL
+    LTEXT           "Purity lower limit (%)",IDC_STATIC,44,99,68,8
+    EDITTEXT        IDC_EDIT5,16,117,24,14,ES_AUTOHSCROLL
+    LTEXT           "Amplitude lower limit (%)",IDC_STATIC,44,119,80,8
+    EDITTEXT        IDC_EDIT6,15,77,24,14,ES_AUTOHSCROLL
+    LTEXT           "Extra settling time/try (ms)",IDC_STATIC,44,80,87,8
+    EDITTEXT        IDC_EDIT7,16,172,24,14,ES_AUTOHSCROLL
+    LTEXT           "Autorange max amplitude (%)",IDC_STATIC,45,174,98,8
+    EDITTEXT        IDC_EDIT8,16,191,24,14,ES_AUTOHSCROLL
+    LTEXT           "Autorange tolerance (%)",IDC_STATIC,46,193,82,8
+    EDITTEXT        IDC_EDIT9,16,210,24,14,ES_AUTOHSCROLL
+    LTEXT           "Minimum cycles captured",IDC_STATIC,46,212,80,8
+    GROUPBOX        "Scope Specific Settings",IDC_STATIC,152,140,150,89
+    COMBOBOX        IDC_COMBO2,162,155,71,30,CBS_DROPDOWN | CBS_SORT | WS_VSCROLL | WS_TABSTOP
+    LTEXT           "Scope Selected",IDC_STATIC,242,157,50,8
+    EDITTEXT        IDC_EDIT10,162,175,24,14,ES_AUTOHSCROLL
+    LTEXT           "Noise reject timebase",IDC_STATIC,194,178,70,8
 END
 
 
@@ -310,7 +317,7 @@ BEGIN
         LEFTMARGIN, 7
         RIGHTMARGIN, 302
         TOPMARGIN, 7
-        BOTTOMMARGIN, 235
+        BOTTOMMARGIN, 249
     END
 END
 #endif    // APSTUDIO_INVOKED
