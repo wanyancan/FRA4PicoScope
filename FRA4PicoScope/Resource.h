@@ -14,7 +14,7 @@
 #define IDM_EXPORTDATA                  303
 #define IDM_EXPORTDATAAS                304
 #define IDM_CAL                         305
-#define IDM_OPTIONS                     306
+#define IDM_SETTINGS                    306
 #define IDM_ABOUT                       307
 #define IDM_CONNECT_SCOPE               308
 #define IDM_PRINTPLOT                   309
@@ -126,6 +126,8 @@
 #define IDC_EDIT9                       1017
 #define IDC_COMBO2                      1018
 #define IDC_EDIT10                      1019
+#define IDC_EDIT11                      1020
+#define IDC_COMBO3                      1021
 #define IDC_STATIC                      -1
 
 // Next default values for new objects
@@ -133,8 +135,8 @@
 #ifdef APSTUDIO_INVOKED
 #ifndef APSTUDIO_READONLY_SYMBOLS
 #define _APS_NEXT_RESOURCE_VALUE        104
-#define _APS_NEXT_COMMAND_VALUE         40001
-#define _APS_NEXT_CONTROL_VALUE         1020
+#define _APS_NEXT_COMMAND_VALUE         40002
+#define _APS_NEXT_CONTROL_VALUE         1022
 #define _APS_NEXT_SYMED_VALUE           101
 #endif
 #endif

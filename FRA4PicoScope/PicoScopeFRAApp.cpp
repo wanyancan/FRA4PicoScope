@@ -42,6 +42,9 @@
 #include "PicoScopeFraApp.h"
 #include "FRAPlotter.h"
 #include "PlotAxesDialog.h"
+#include "SettingsDialog.h"
+
+//#define TEST_PLOTTING
 
 #if defined(TEST_PLOTTING)
 const static uint32_t testPlotN = 41;
@@ -736,6 +739,16 @@ BOOL CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
                         {
                             SaveRawData(ofn.lpstrFile);
                         }
+                    }
+                    return TRUE;
+                }
+                case IDM_SETTINGS:
+                {
+                    DWORD dwDlgResp;
+                    dwDlgResp = DialogBoxParam(hInst, MAKEINTRESOURCE(IDD_SETTINGS), hWnd, SettingsDialogHandler, NULL);
+                    if (LOWORD(dwDlgResp) == IDOK)
+                    {
+                        // Propagate and save settings changes
                     }
                     return TRUE;
                 }

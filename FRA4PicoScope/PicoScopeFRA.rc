@@ -258,49 +258,54 @@ LANGUAGE LANG_ENGLISH, SUBLANG_ENGLISH_US
 // Dialog
 //
 
-IDD_SETTINGS DIALOGEX 0, 0, 309, 256
-STYLE DS_SETFONT | DS_MODALFRAME | DS_FIXEDSYS | WS_POPUP | WS_CAPTION | WS_SYSMENU
+IDD_SETTINGS DIALOGEX 0, 0, 453, 222
+STYLE DS_SETFONT | DS_MODALFRAME | DS_FIXEDSYS | DS_CENTER | WS_POPUP | WS_CAPTION | WS_SYSMENU
 CAPTION "Settings"
 FONT 8, "MS Shell Dlg", 400, 0, 0x1
 BEGIN
-    DEFPUSHBUTTON   "OK",IDOK,198,235,50,14
-    PUSHBUTTON      "Cancel",IDCANCEL,252,235,50,14
-    GROUPBOX        "FRA Execution Options",IDC_STATIC,10,8,137,131
-    CONTROL         "Low noise mode",IDC_RADIO1,"Button",BS_AUTORADIOBUTTON | WS_GROUP,18,21,67,10
-    CONTROL         "Noise reject mode",IDC_RADIO2,"Button",BS_AUTORADIOBUTTON,18,33,73,10
-    CONTROL         "Sweep ascending",IDC_RADIO3,"Button",BS_AUTORADIOBUTTON | WS_GROUP,18,48,71,10
-    CONTROL         "Sweep descending",IDC_RADIO4,"Button",BS_AUTORADIOBUTTON,18,60,75,10
-    GROUPBOX        "FRA Bode Plot Options",IDC_STATIC,152,8,149,76
-    EDITTEXT        IDC_EDIT1,158,21,37,14,ES_AUTOHSCROLL
-    LTEXT           "Phase wrapping threshold",IDC_STATIC,200,23,84,8
-    EDITTEXT        IDC_EDIT2,158,40,37,14,ES_AUTOHSCROLL
-    LTEXT           "Gain margin phase crossover",IDC_STATIC,200,42,93,8
-    PUSHBUTTON      "Axis Settings",IDC_BUTTON1,158,60,54,14
-    PUSHBUTTON      "Plot Colors",IDC_BUTTON2,222,60,50,14
-    GROUPBOX        "Diagnostic Settings",IDC_STATIC,152,86,149,53
-    CONTROL         "Time domain diagnostic plots",IDC_CHECK1,"Button",BS_AUTOCHECKBOX | WS_TABSTOP,160,99,107,10
-    COMBOBOX        IDC_COMBO1,160,115,73,30,CBS_DROPDOWN | CBS_SORT | WS_VSCROLL | WS_TABSTOP
-    LTEXT           "Log verbosity",IDC_STATIC,242,116,44,8
-    GROUPBOX        "Advanced Settings",IDC_STATIC,10,140,137,89
-    EDITTEXT        IDC_EDIT3,16,153,24,14,ES_AUTOHSCROLL
-    LTEXT           "Autorange tries/step",IDC_STATIC,45,156,68,8
-    EDITTEXT        IDC_EDIT4,16,97,24,14,ES_AUTOHSCROLL
-    LTEXT           "Purity lower limit (%)",IDC_STATIC,44,99,68,8
-    EDITTEXT        IDC_EDIT5,16,117,24,14,ES_AUTOHSCROLL
-    LTEXT           "Amplitude lower limit (%)",IDC_STATIC,44,119,80,8
-    EDITTEXT        IDC_EDIT6,15,77,24,14,ES_AUTOHSCROLL
-    LTEXT           "Extra settling time/try (ms)",IDC_STATIC,44,80,87,8
-    EDITTEXT        IDC_EDIT7,16,172,24,14,ES_AUTOHSCROLL
-    LTEXT           "Autorange max amplitude (%)",IDC_STATIC,45,174,98,8
-    EDITTEXT        IDC_EDIT8,16,191,24,14,ES_AUTOHSCROLL
-    LTEXT           "Autorange tolerance (%)",IDC_STATIC,46,193,82,8
-    EDITTEXT        IDC_EDIT9,16,210,24,14,ES_AUTOHSCROLL
-    LTEXT           "Minimum cycles captured",IDC_STATIC,46,212,80,8
-    GROUPBOX        "Scope Specific Settings",IDC_STATIC,152,140,150,89
-    COMBOBOX        IDC_COMBO2,162,155,71,30,CBS_DROPDOWN | CBS_SORT | WS_VSCROLL | WS_TABSTOP
-    LTEXT           "Scope Selected",IDC_STATIC,242,157,50,8
-    EDITTEXT        IDC_EDIT10,162,175,24,14,ES_AUTOHSCROLL
-    LTEXT           "Noise reject timebase",IDC_STATIC,194,178,70,8
+    DEFPUSHBUTTON   "OK",IDOK,337,201,50,14
+    PUSHBUTTON      "Cancel",IDCANCEL,394,201,50,14
+    GROUPBOX        "FRA Execution Options",IDC_STATIC,8,8,137,91
+    CONTROL         "Low noise mode",IDC_RADIO1,"Button",BS_AUTORADIOBUTTON | WS_GROUP,16,21,67,10
+    CONTROL         "Noise reject mode",IDC_RADIO2,"Button",BS_AUTORADIOBUTTON,16,33,73,10
+    CONTROL         "Sweep ascending",IDC_RADIO3,"Button",BS_AUTORADIOBUTTON | WS_GROUP,16,50,71,10
+    CONTROL         "Sweep descending",IDC_RADIO4,"Button",BS_AUTORADIOBUTTON,16,62,75,10
+    GROUPBOX        "FRA Bode Plot Options",IDC_STATIC,295,8,149,70
+    EDITTEXT        IDC_EDIT1,301,21,37,14,ES_AUTOHSCROLL
+    LTEXT           "Phase wrapping threshold",IDC_STATIC,343,23,84,8
+    EDITTEXT        IDC_EDIT2,301,40,37,14,ES_AUTOHSCROLL
+    LTEXT           "Gain margin phase crossover",IDC_STATIC,343,42,93,8
+    PUSHBUTTON      "Axis Settings",IDC_BUTTON1,301,58,54,14
+    PUSHBUTTON      "Plot Colors",IDC_BUTTON2,365,58,50,14
+    GROUPBOX        "Diagnostic Settings",IDC_STATIC,295,80,149,53
+    CONTROL         "Time domain diagnostic plots",IDC_CHECK1,"Button",BS_AUTOCHECKBOX | WS_TABSTOP,303,93,107,10
+    COMBOBOX        IDC_COMBO1,303,109,73,30,CBS_DROPDOWN | CBS_SORT | WS_VSCROLL | WS_TABSTOP
+    LTEXT           "Log verbosity",IDC_STATIC,383,110,44,8
+    GROUPBOX        "Advanced FRA Settings",IDC_STATIC,151,80,137,75
+    EDITTEXT        IDC_EDIT3,157,38,24,14,ES_AUTOHSCROLL
+    LTEXT           "Autorange tries/step",IDC_STATIC,186,41,68,8
+    EDITTEXT        IDC_EDIT4,14,115,24,14,ES_AUTOHSCROLL
+    LTEXT           "Purity lower limit (%)",IDC_STATIC,43,117,68,8
+    EDITTEXT        IDC_EDIT5,14,135,24,14,ES_AUTOHSCROLL
+    LTEXT           "Amplitude lower limit (%)",IDC_STATIC,43,137,80,8
+    EDITTEXT        IDC_EDIT6,14,79,24,14,ES_AUTOHSCROLL
+    LTEXT           "Extra settling time/try (ms)",IDC_STATIC,44,82,87,8
+    EDITTEXT        IDC_EDIT7,157,114,24,14,ES_AUTOHSCROLL
+    LTEXT           "Maximum cycles captured",IDC_STATIC,187,116,82,8
+    EDITTEXT        IDC_EDIT8,157,57,24,14,ES_AUTOHSCROLL
+    LTEXT           "Autorange tolerance (%)",IDC_STATIC,186,59,82,8
+    EDITTEXT        IDC_EDIT9,157,94,24,14,ES_AUTOHSCROLL
+    LTEXT           "Minimum cycles captured",IDC_STATIC,187,96,80,8
+    GROUPBOX        "Scope Specific Settings",IDC_STATIC,7,157,138,57
+    COMBOBOX        IDC_COMBO2,14,172,111,30,CBS_DROPDOWN | CBS_SORT | WS_VSCROLL | WS_TABSTOP
+    EDITTEXT        IDC_EDIT10,14,192,24,14,ES_AUTOHSCROLL
+    LTEXT           "Noise reject timebase",IDC_STATIC,46,194,70,8
+    GROUPBOX        "Autorange Settings",IDC_STATIC,151,8,138,70
+    GROUPBOX        "Quality Limits",IDC_STATIC,7,100,137,55
+    EDITTEXT        IDC_EDIT11,157,134,24,14,ES_AUTOHSCROLL
+    LTEXT           "Low noise oversampling",IDC_STATIC,187,136,81,9
+    COMBOBOX        IDC_COMBO3,157,20,51,12,CBS_DROPDOWN | CBS_SORT | WS_VSCROLL | WS_TABSTOP
+    LTEXT           "Output start range",IDC_STATIC,216,22,66,8
 END
 
 
@@ -315,9 +320,9 @@ BEGIN
     IDD_SETTINGS, DIALOG
     BEGIN
         LEFTMARGIN, 7
-        RIGHTMARGIN, 302
+        RIGHTMARGIN, 446
         TOPMARGIN, 7
-        BOTTOMMARGIN, 249
+        BOTTOMMARGIN, 215
     END
 END
 #endif    // APSTUDIO_INVOKED
@@ -372,7 +377,7 @@ BEGIN
     POPUP "&Tools"
     BEGIN
         MENUITEM "&Calibrate ...",              IDM_CAL
-        MENUITEM "&Options ...",                IDM_OPTIONS
+        MENUITEM "&Settings ...",               IDM_SETTINGS
     END
     POPUP "&Help"
     BEGIN
