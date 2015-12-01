@@ -60,6 +60,18 @@ bool ps6000Impl::GetTimebase( double desiredFrequency, double* actualFrequency, 
         if (desiredFrequency > 156250000.0)
         {
             *timebase = saturation_cast<uint32_t,double>(log(5.0e9/desiredFrequency) / M_LN2); // ps6000pg.en r9 p19; log2(n) implemented as log(n)/log(2)
+            // Now limit the sampling rate based on configuration
+            if (((mInputChannel == PS_CHANNEL_A || mInputChannel == PS_CHANNEL_B) &&
+                 (mOutputChannel == PS_CHANNEL_A || mOutputChannel == PS_CHANNEL_B)) ||
+                ((mInputChannel == PS_CHANNEL_C || mInputChannel == PS_CHANNEL_D) &&
+                 (mOutputChannel == PS_CHANNEL_C || mOutputChannel == PS_CHANNEL_D)))
+            {
+                *timebase = max(*timebase, 2); // If both channels are from same block, cannot use timebase 1 (2.5GS/s)
+            }
+            else
+            {
+                *timebase = max(*timebase, 1); // With two channels on, cannot use timebase 0 (5GS/s)
+            }
             *actualFrequency = 5.0e9 / (double)(1<<(*timebase));
         }
         else
@@ -92,13 +104,30 @@ bool ps6000Impl::GetTimebase( double desiredFrequency, double* actualFrequency, 
 
 bool ps6000Impl::InitializeScope(void)
 {
-    timebaseNoiseRejectMode = 6;
-    fSampNoiseRejectMode = 78125000.0;
+    if (model == PS6407)
+    {
+        // Encode for the best case, and we'll adjust in the GetNoiseRejectMode[SampleRate|Timebase] 
+        // functions when both channels are from same block.
+        timebaseNoiseRejectMode = 1;
+        fSampNoiseRejectMode = 2.5e9;
+    }
+    else
+    {
+        timebaseNoiseRejectMode = 6;
+        fSampNoiseRejectMode = 78125000.0;
+    }
 
     signalGeneratorPrecision = 200.0e6 / (double)UINT32_MAX;
 
-    minRange = (PS_RANGE)PS6000_50MV;
-    maxRange = (PS_RANGE)PS6000_20V;
+    if (model == PS6407)
+    {
+        minRange = maxRange = PS6000_100MV;
+    }
+    else
+    {
+        minRange = (PS_RANGE)PS6000_50MV;
+        maxRange = (PS_RANGE)PS6000_20V;
+    }
 
     return true;
 }

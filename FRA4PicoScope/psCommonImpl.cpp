@@ -236,11 +236,20 @@ uint8_t CommonMethod(SCOPE_FAMILY_LT,GetNumChannels)( void )
 void CommonMethod(SCOPE_FAMILY_LT,GetAvailableCouplings)( vector<wstring>& couplingText )
 {
 #if defined (PS6000)
-    couplingText.clear();
-    couplingText.resize(3);
-    couplingText[0] = TEXT("AC");
-    couplingText[1] = TEXT("DC 1M");
-    couplingText[2] = TEXT("DC 50R");
+    if (model == PS6407)
+    {
+        couplingText.clear();
+        couplingText.resize(1);
+        couplingText[0] = TEXT("DC 50R");
+    }
+    else
+    {
+        couplingText.clear();
+        couplingText.resize(3);
+        couplingText[0] = TEXT("AC");
+        couplingText[1] = TEXT("DC 1M");
+        couplingText[2] = TEXT("DC 50R");
+    }
 #else
     couplingText.clear();
     couplingText.resize(2);
@@ -251,11 +260,32 @@ void CommonMethod(SCOPE_FAMILY_LT,GetAvailableCouplings)( vector<wstring>& coupl
 
 uint32_t CommonMethod(SCOPE_FAMILY_LT,GetNoiseRejectModeTimebase)( void )
 {
+    if (model == PS6407)
+    {
+        if (((mInputChannel == PS_CHANNEL_A || mInputChannel == PS_CHANNEL_B) &&
+             (mOutputChannel == PS_CHANNEL_A || mOutputChannel == PS_CHANNEL_B)) ||
+            ((mInputChannel == PS_CHANNEL_C || mInputChannel == PS_CHANNEL_D) &&
+             (mOutputChannel == PS_CHANNEL_C || mOutputChannel == PS_CHANNEL_D)))
+        {
+            return 2;
+        }
+    }
+
     return timebaseNoiseRejectMode;
 }
 
 double CommonMethod(SCOPE_FAMILY_LT,GetNoiseRejectModeSampleRate)( void )
 {
+    if (model == PS6407)
+    {
+        if (((mInputChannel == PS_CHANNEL_A || mInputChannel == PS_CHANNEL_B) &&
+             (mOutputChannel == PS_CHANNEL_A || mOutputChannel == PS_CHANNEL_B)) ||
+            ((mInputChannel == PS_CHANNEL_C || mInputChannel == PS_CHANNEL_D) &&
+             (mOutputChannel == PS_CHANNEL_C || mOutputChannel == PS_CHANNEL_D)))
+        {
+            return 1.25e9;
+        }
+    }
     return fSampNoiseRejectMode;
 }
 
@@ -509,14 +539,17 @@ bool CommonMethod(SCOPE_FAMILY_LT, SetupChannel)( PS_CHANNEL channel, PS_COUPLIN
 
 #if defined(PS6000)
     PS6000_BANDWIDTH_LIMITER bwLimiter;
-    if (model == PS6402C || model == PS6402D || model == PS6403C || model == PS6403D ||
-        model == PS6402A || model == PS6402B || model == PS6403A || model == PS6403B)
+    if (model == PS6407)
     {
-        bwLimiter = PS6000_BW_20MHZ;
+        bwLimiter = PS6000_BW_FULL; // PS6407 has no bandwidth limiter
+    }
+    else if (model == PS6404 || model == PS6404A || model == PS6404B || model == PS6404C || model == PS6404D)
+    {
+        bwLimiter = PS6000_BW_25MHZ;
     }
     else
     {
-        bwLimiter = PS6000_BW_25MHZ;
+        bwLimiter = PS6000_BW_20MHZ;
     }
 #endif
 

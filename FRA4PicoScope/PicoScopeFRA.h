@@ -209,10 +209,6 @@ class PicoScopeFRA
         bool mSweepDescending;              // Whether to sweep frequency from high to low
         double mPhaseWrappingThreshold;     // Phase value to use as wrapping point (in degrees); absolute value should be less than 360
 
-        // Some parameters for noise reject mode
-        double fSampNoiseRejectMode;
-        int timebaseNoiseRejectMode;
-
         double rangeCounts; // Maximum ADC value
         double signalGeneratorPrecision;
 

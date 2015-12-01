@@ -119,8 +119,6 @@ PicoScopeFRA::PicoScopeFRA(FRA_STATUS_CALLBACK statusCB)
     mMinCyclesCaptured = 0;
     mSweepDescending = false;
     mPhaseWrappingThreshold = 180.0;
-    fSampNoiseRejectMode = 0.0;
-    timebaseNoiseRejectMode = 0;
     rangeCounts = 0.0;
     signalGeneratorPrecision = 0.0;
     autorangeRetryCounter = 0;
@@ -165,8 +163,6 @@ void PicoScopeFRA::SetInstrument( PicoScope* _ps )
     ps = _ps;
     numChannels = ps->GetNumChannels();
     rangeInfo = ps->GetRangeCaps();
-    fSampNoiseRejectMode = ps->GetNoiseRejectModeSampleRate();
-    timebaseNoiseRejectMode = ps->GetNoiseRejectModeTimebase();
     signalGeneratorPrecision = ps->GetSignalGeneratorPrecision();
     rangeCounts = ps->GetMaxValue();
 
@@ -239,7 +235,7 @@ double PicoScopeFRA::GetMinFrequency(void)
     else
     {
         // Add in half the signal generator precision because the frequency could get rounded down
-        return (((ps->GetSignalGeneratorPrecision())/2.0) + ((double)mMinCyclesCaptured * ( fSampNoiseRejectMode / (double)maxScopeSamplesPerChannel )));
+        return (((ps->GetSignalGeneratorPrecision())/2.0) + ((double)mMinCyclesCaptured * ( ps->GetNoiseRejectModeSampleRate() / (double)maxScopeSamplesPerChannel )));
     }
 
 }
@@ -1219,11 +1215,11 @@ bool PicoScopeFRA::StartCapture( double measFreqHz )
         // sampled.  So, attempt to set bin +/- 0.5% around the selection frequency => 100 periods.
         // This is easy to achieve at higher frequencies, but at lower frequencies, we may not have the
         // buffer space.
-        numCycles = min( 100, (uint32_t)((measFreqHz * (double)maxScopeSamplesPerChannel) / fSampNoiseRejectMode) );
-        numSamples = (int32_t)(((double)numCycles * fSampNoiseRejectMode) / measFreqHz) + 1;
+        numCycles = min( 100, (uint32_t)((measFreqHz * (double)maxScopeSamplesPerChannel) / ps->GetNoiseRejectModeSampleRate()) );
+        numSamples = (int32_t)(((double)numCycles * ps->GetNoiseRejectModeSampleRate()) / measFreqHz) + 1;
 
-        timebase = timebaseNoiseRejectMode;
-        actualSampFreqHz = fSampNoiseRejectMode;
+        timebase = ps->GetNoiseRejectModeTimebase();
+        actualSampFreqHz = ps->GetNoiseRejectModeSampleRate();
     }
 
     // Insert a progressive delay to settle out DC offsets caused by
