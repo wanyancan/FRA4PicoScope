@@ -54,7 +54,7 @@ double testPlotPhases[];
 double testPlotUnwrappedPhases[];
 #endif
 
-char* appVersionString = "0.5b";
+char* appVersionString = "0.5.3b";
 char* appNameString = "Frequency Response Analyzer for PicoScope";
 
 #define MAX_LOADSTRING 100
@@ -744,12 +744,14 @@ BOOL CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
                 }
                 case IDM_SETTINGS:
                 {
+#if 0 // Until it's ready
                     DWORD dwDlgResp;
                     dwDlgResp = DialogBoxParam(hInst, MAKEINTRESOURCE(IDD_SETTINGS), hWnd, SettingsDialogHandler, NULL);
                     if (LOWORD(dwDlgResp) == IDOK)
                     {
                         // Propagate and save settings changes
                     }
+#endif
                     return TRUE;
                 }
                 case IDM_EXIT:
