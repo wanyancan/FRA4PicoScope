@@ -61,7 +61,7 @@ typedef enum enPS5000ADeviceResolution
 } PS5000A_DEVICE_RESOLUTION;
 
 extern "C" __declspec(dllimport) short __stdcall ps2000_open_unit(void);
-extern "C" __declspec(dllimport) PICO_STATUS __stdcall ps2000aOpenUnit( short * handle, char * serial );
+extern "C" __declspec(dllimport) PICO_STATUS __stdcall ps2000aOpenUnit( int16_t* handle, int8_t* serial );
 extern "C" __declspec(dllimport) int16_t __stdcall ps3000_open_unit (void);
 extern "C" __declspec(dllimport) PICO_STATUS __stdcall ps3000aOpenUnit( int16_t * handle, int8_t * serial );
 extern "C" __declspec(dllimport) PICO_STATUS __stdcall ps4000OpenUnitEx( int16_t * handle, int8_t * serial );
@@ -274,7 +274,7 @@ PicoScope* ScopeSelector::OpenScope( AvailableScopeDescription_T scope )
     }
     else if (scope.driverFamily == PS2000A)
     {
-        status = ps2000aOpenUnit( &handle, (char*)scope.serialNumber.c_str() );
+        status = ps2000aOpenUnit( &handle, (int8_t*)scope.serialNumber.c_str() );
         if (status != PICO_OK || handle <= 0)
         {
             if (handle > 0)
@@ -877,7 +877,7 @@ PICO_STATUS ScopeSelector::PS5000OpenUnit( int16_t* handle, int8_t* serial )
 //
 // Name: ScopeSelector::CloseScopesFromSimulatedEnumeration
 //
-// Purpose: Close scopes that were opened during a sumulated enumeration that we no longer need
+// Purpose: Close scopes that were opened during a simulated enumeration that we no longer need
 //          to have open.
 //
 // Parameters: doNotClose - a scope that we don't want to close because it's one that we're
@@ -950,7 +950,18 @@ const ScopeImplRecord_T ScopeSelector::scopeImplTable[] =
     { L"2206A", PS2206A, PS2000A, 2, 0.0, 1000000.0, 0.0, 4.0, true},
     { L"2207A", PS2207A, PS2000A, 2, 0.0, 1000000.0, 0.0, 4.0, true},
     { L"2208A", PS2208A, PS2000A, 2, 0.0, 1000000.0, 0.0, 4.0, true},
+    { L"2206B", PS2206B, PS2000A, 2, 0.0, 1000000.0, 0.0, 4.0, true },
+    { L"2207B", PS2207B, PS2000A, 2, 0.0, 1000000.0, 0.0, 4.0, true },
+    { L"2208B", PS2208B, PS2000A, 2, 0.0, 1000000.0, 0.0, 4.0, true },
+    { L"2405A", PS2405A, PS2000A, 4, 0.0, 1000000.0, 0.0, 4.0, true },
+    { L"2406B", PS2406B, PS2000A, 4, 0.0, 1000000.0, 0.0, 4.0, true },
+    { L"2407B", PS2407B, PS2000A, 4, 0.0, 1000000.0, 0.0, 4.0, true },
+    { L"2408B", PS2408B, PS2000A, 4, 0.0, 1000000.0, 0.0, 4.0, true },
     { L"2205MSO", PS2205MSO, PS2000A, 2, 0.0, 100000.0, 0.0, 4.0, true},
+    { L"2205AMSO", PS2205AMSO, PS2000A, 2, 0.0, 1000000.0, 0.0, 4.0, true },
+    { L"2206BMSO", PS2206BMSO, PS2000A, 2, 0.0, 1000000.0, 0.0, 4.0, true },
+    { L"2207BMSO", PS2207BMSO, PS2000A, 2, 0.0, 1000000.0, 0.0, 4.0, true },
+    { L"2208BMSO", PS2208BMSO, PS2000A, 2, 0.0, 1000000.0, 0.0, 4.0, true },
     { L"3203D", PS3203D, PS3000A, 2, 0.0, 1000000.0, 0.0, 4.0, true},
     { L"3203DMSO", PS3203DMSO, PS3000A, 2, 0.0, 1000000.0, 0.0, 4.0, true},
     { L"3204A", PS3204A, PS3000A, 2, 0.0, 1000000.0, 0.0, 4.0, true},

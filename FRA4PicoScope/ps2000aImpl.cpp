@@ -57,48 +57,70 @@ bool ps2000aImpl::GetTimebase( double desiredFrequency, double* actualFrequency,
 
     if (desiredFrequency != 0.0 && actualFrequency && timebase)
     {
-        if (model == PS2206 || model == PS2206A)
+        switch (model)
         {
-            if (desiredFrequency > 62.5e6)
+            // 500 MSs models
+            case PS2206:
+            case PS2206A:
+            case PS2206B:
+            case PS2205AMSO:
+            case PS2405A:
             {
-                *timebase = saturation_cast<uint32_t,double>(log(500.0e6/desiredFrequency) / M_LN2); // ps2000apg.en r6 p16; log2(n) implemented as log(n)/log(2)
-                *timebase = max( *timebase, 1 ); // None of the 2000A scopes can use timebase 0 with two channels enabled
-                *actualFrequency = 500.0e6 / (double)(1<<(*timebase));
+                if (desiredFrequency > 62.5e6)
+                {
+                    *timebase = saturation_cast<uint32_t, double>(log(500.0e6 / desiredFrequency) / M_LN2); // ps2000apg.en r6 p16; log2(n) implemented as log(n)/log(2)
+                    *timebase = max(*timebase, 1); // None of the 2000A scopes can use timebase 0 with two channels enabled
+                    *actualFrequency = 500.0e6 / (double)(1 << (*timebase));
+                }
+                else
+                {
+                    fTimebase = ((62.5e6 / (desiredFrequency)) + 2.0); // ps2000apg.en r6 p16
+                    *timebase = saturation_cast<uint32_t, double>(fTimebase);
+                    *timebase = max(*timebase, 3); // Guarding against potential of float precision issues leading to divide by 0
+                    *actualFrequency = 62.5e6 / ((double)(*timebase - 2)); // ps2000apg.en r6 p16
+                }
+                break;
             }
-            else
+            // 1GSs models
+            case PS2207:
+            case PS2207A:
+            case PS2207B:
+            case PS2208:
+            case PS2208A:
+            case PS2208B:
+            case PS2206BMSO:
+            case PS2207BMSO:
+            case PS2208BMSO:
+            case PS2406B:
+            case PS2407B:
+            case PS2408B:
             {
-                fTimebase = ((62.5e6/(desiredFrequency)) + 2.0); // ps2000apg.en r6 p16
-                *timebase = saturation_cast<uint32_t,double>(fTimebase);
-                *timebase = max( *timebase, 3 ); // Guarding against potential of float precision issues leading to divide by 0
-                *actualFrequency = 62.5e6 / ((double)(*timebase - 2)); // ps2000apg.en r6 p16
+                if (desiredFrequency > 125.0e6)
+                {
+                    *timebase = saturation_cast<uint32_t, double>(log(1.0e9 / desiredFrequency) / M_LN2); // ps2000apg.en r6 p16; log2(n) implemented as log(n)/log(2)
+                    *timebase = max(*timebase, 1); // None of the 2000A scopes can use timebase 0 with two channels enabled
+                    *actualFrequency = 1.0e9 / (double)(1 << (*timebase));
+                }
+                else
+                {
+                    fTimebase = ((125.0e6 / (desiredFrequency)) + 2.0); // ps2000apg.en r6 p16
+                    *timebase = saturation_cast<uint32_t, double>(fTimebase);
+                    *timebase = max(*timebase, 3); // Guarding against potential of float precision issues leading to divide by 0
+                    *actualFrequency = 125.0e6 / ((double)(*timebase - 2)); // ps2000apg.en r6 p16
+                }
+                break;
             }
-        }
-        else if (model == PS2207 || model == PS2207A || model == PS2208 || model == PS2208A)
-        {
-            if (desiredFrequency > 125.0e6)
+            case PS2205MSO:
             {
-                *timebase = saturation_cast<uint32_t,double>(log(1.0e9/desiredFrequency) / M_LN2); // ps2000apg.en r6 p16; log2(n) implemented as log(n)/log(2)
-                *timebase = max( *timebase, 1 ); // None of the 2000A scopes can use timebase 0 with two channels enabled
-                *actualFrequency = 1.0e9 / (double)(1<<(*timebase));
+                fTimebase = 100.0e6 / desiredFrequency;
+                *timebase = saturation_cast<uint32_t, double>(fTimebase);
+                *timebase = max(*timebase, 1); // None of the 2000A scopes can use timebase 0 with two channels enabled; also guards against divide by 0
+                *actualFrequency = 100.0e6 / ((double)*timebase); // ps2000apg.en r6 p16
+                break;
             }
-            else
-            {
-                fTimebase = ((125.0e6/(desiredFrequency)) + 2.0); // ps2000apg.en r6 p16
-                *timebase = saturation_cast<uint32_t,double>(fTimebase);
-                *timebase = max( *timebase, 3 ); // Guarding against potential of float precision issues leading to divide by 0
-                *actualFrequency = 125.0e6 / ((double)(*timebase - 2)); // ps2000apg.en r6 p16
-            }
-        }
-        else if (model == PS2205MSO)
-        {
-            fTimebase = 100.0e6 / desiredFrequency;
-            *timebase = saturation_cast<uint32_t,double>(fTimebase);
-            *timebase = max( *timebase, 1 ); // None of the 2000A scopes can use timebase 0 with two channels enabled; also guards against divide by 0
-            *actualFrequency = 100.0e6 / ((double)*timebase); // ps2000apg.en r6 p16
-        }
-        else
-        {
-            retVal = false;
+            default:
+                retVal = false;
+                break;
         }
     }
     else
@@ -123,26 +145,72 @@ bool ps2000aImpl::GetTimebase( double desiredFrequency, double* actualFrequency,
 
 bool ps2000aImpl::InitializeScope(void)
 {
+    bool retVal = true;
     timebaseNoiseRejectMode = 1;
 
-    if (model == PS2206 || model == PS2206A)
+    switch (model)
     {
-        fSampNoiseRejectMode = 250.0e6;
-        signalGeneratorPrecision = 20.0e6 / (double)UINT32_MAX;
-    }
-    else if (model == PS2207 || model == PS2207A || model == PS2208 || model == PS2208A)
-    {
-        fSampNoiseRejectMode = 500.0e6;
-        signalGeneratorPrecision = 20.0e6 / (double)UINT32_MAX;
-    }
-    else if (model == PS2205MSO)
-    {
-        fSampNoiseRejectMode = 100.0e6;
-        signalGeneratorPrecision = 2.0e6 / (double)UINT32_MAX;
+        case PS2206:
+        case PS2206A:
+        {
+            fSampNoiseRejectMode = 250.0e6;
+            signalGeneratorPrecision = 20.0e6 / (double)UINT32_MAX;
+            break;
+        }
+        case PS2207:
+        case PS2207A:
+        case PS2208:
+        case PS2208A:
+        case PS2408B:
+        {
+            fSampNoiseRejectMode = 500.0e6;
+            signalGeneratorPrecision = 20.0e6 / (double)UINT32_MAX;
+            break;
+        }
+        case PS2205MSO:
+        {
+            fSampNoiseRejectMode = 100.0e6;
+            signalGeneratorPrecision = 48.0e6 / (double)UINT32_MAX;
+            break;
+        }
+        default:
+            retVal = false;
+            break;
     }
 
-    minRange = (PS_RANGE)PS2000A_50MV;
-    maxRange = (PS_RANGE)PS2000A_20V;
+    if (retVal)
+    {
+        maxRange = (PS_RANGE)PS2000A_20V;
+        switch (model)
+        {
+            case PS2206B:
+            case PS2207B:
+            case PS2208B:
+            case PS2205AMSO:
+            case PS2206BMSO:
+            case PS2207BMSO:
+            case PS2208BMSO:
+            case PS2405A:
+            case PS2406B:
+            case PS2407B:
+            case PS2408B:
+            {
+                minRange = (PS_RANGE)PS2000A_20MV;
+                break;
+            }
+            case PS2206A:
+            case PS2207A:
+            case PS2208A:
+            case PS2205MSO:
+            {
+                minRange = (PS_RANGE)PS2000A_50MV;
+                break;
+            }
+            default:
+                retVal = false;
+                break;
+        }
+    }
 
-    return true;
+    return retVal;
 }
