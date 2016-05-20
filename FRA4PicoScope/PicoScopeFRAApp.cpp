@@ -35,6 +35,7 @@
 #include <fstream>
 
 #include "PicoScopeFRA.h"
+#include "DependencyChecker.h"
 #include "utility.h"
 #include "StatusLog.h"
 #include "ApplicationSettings.h"
@@ -204,6 +205,13 @@ int APIENTRY _tWinMain(HINSTANCE hInstance,
             {
                 MessageBox( 0, L"Could not load application DLLs.", L"Fatal Error", MB_OK );
                 exit(-1);
+            }
+            else
+            {
+                if (!CheckDependencies())
+                {
+                    exit(0);
+                }
             }
         }
     }

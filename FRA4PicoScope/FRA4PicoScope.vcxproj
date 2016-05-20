@@ -61,7 +61,7 @@
     <Link>
       <SubSystem>Windows</SubSystem>
       <GenerateDebugInformation>true</GenerateDebugInformation>
-      <AdditionalDependencies>ps2000.lib;ps3000.lib;ps2000a.lib;ps3000a.lib;ps4000.lib;ps4000a.lib;ps5000.lib;ps5000a.lib;ps6000.lib;plplot.lib;plplotqt.lib;qsastime.lib;shlwapi.lib;windowscodecs.lib;delayimp.lib;QtCored.lib;QtGuid.lib;Ws2_32.lib;Imm32.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>ps2000.lib;ps3000.lib;ps2000a.lib;ps3000a.lib;ps4000.lib;ps4000a.lib;ps5000.lib;ps5000a.lib;ps6000.lib;plplot.lib;plplotqt.lib;qsastime.lib;shlwapi.lib;windowscodecs.lib;delayimp.lib;version.lib;QtCored.lib;QtGuid.lib;Ws2_32.lib;Imm32.lib;%(AdditionalDependencies)</AdditionalDependencies>
       <AdditionalLibraryDirectories>lib\plplot_install_debug\lib;$(ProgramFiles)\Pico Technology\SDK\lib;lib;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
       <IgnoreAllDefaultLibraries>
       </IgnoreAllDefaultLibraries>
@@ -71,6 +71,7 @@
       </HeapReserveSize>
       <MinimumRequiredVersion>5.01</MinimumRequiredVersion>
       <DelayLoadDLLs>ps2000.dll;ps2000a.dll;ps3000.dll;ps3000a.dll;ps4000.dll;ps4000a.dll;ps5000.dll;ps5000a.dll;ps6000.dll;%(DelayLoadDLLs)</DelayLoadDLLs>
+      <AdditionalManifestDependencies>"type='win32' name='Microsoft.Windows.Common-Controls' version='6.0.0.0' processorArchitecture='*' publicKeyToken='6595b64144ccf1df' language='*'"</AdditionalManifestDependencies>
     </Link>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
@@ -89,10 +90,11 @@
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <EnableCOMDATFolding>true</EnableCOMDATFolding>
       <OptimizeReferences>true</OptimizeReferences>
-      <AdditionalDependencies>ps2000.lib;ps3000.lib;ps2000a.lib;ps3000a.lib;ps4000.lib;ps4000a.lib;ps5000.lib;ps5000a.lib;ps6000.lib;plplot.lib;plplotqt.lib;qsastime.lib;shlwapi.lib;windowscodecs.lib;delayimp.lib;QtCore.lib;QtGui.lib;Ws2_32.lib;Imm32.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>ps2000.lib;ps3000.lib;ps2000a.lib;ps3000a.lib;ps4000.lib;ps4000a.lib;ps5000.lib;ps5000a.lib;ps6000.lib;plplot.lib;plplotqt.lib;qsastime.lib;shlwapi.lib;windowscodecs.lib;delayimp.lib;version.lib;QtCore.lib;QtGui.lib;Ws2_32.lib;Imm32.lib;%(AdditionalDependencies)</AdditionalDependencies>
       <AdditionalLibraryDirectories>lib\plplot_install_release\lib;$(ProgramFiles)\Pico Technology\SDK\lib;lib;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
       <MinimumRequiredVersion>5.01</MinimumRequiredVersion>
       <DelayLoadDLLs>ps2000.dll;ps2000a.dll;ps3000.dll;ps3000a.dll;ps4000.dll;ps4000a.dll;ps5000.dll;ps5000a.dll;ps6000.dll</DelayLoadDLLs>
+      <AdditionalManifestDependencies>"type='win32' name='Microsoft.Windows.Common-Controls' version='6.0.0.0' processorArchitecture='*' publicKeyToken='6595b64144ccf1df' language='*'"</AdditionalManifestDependencies>
     </Link>
     <PostBuildEvent>
       <Command>msbuild Fra4PsInstaller.wixproj</Command>
@@ -105,6 +107,7 @@
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="ApplicationSettings.h" />
+    <ClInclude Include="DependencyChecker.h" />
     <ClInclude Include="FRAPlotter.h" />
     <ClInclude Include="PicoScopeFRA.h" />
     <ClInclude Include="PicoScopeFraApp.h" />
@@ -117,6 +120,7 @@
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="ApplicationSettings.cpp" />
+    <ClCompile Include="DependencyChecker.cpp" />
     <ClCompile Include="FRAPlotter.cpp" />
     <ClCompile Include="PicoScopeFRA.cpp" />
     <ClCompile Include="PicoScopeFraApp.cpp" />
