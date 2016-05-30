@@ -178,5 +178,20 @@ bool ps3000aImpl::InitializeScope(void)
 
     maxRange = (PS_RANGE)PS3000A_20V;
 
+    // Save the value set by the scope factory (ScopeSelector)
+    numActualChannels = numAvailableChannels;
+
+    PICO_STATUS powerStatus = ps3000aCurrentPowerSource(handle);
+    if (PICO_POWER_SUPPLY_NOT_CONNECTED == powerStatus ||
+        PICO_USB3_0_DEVICE_NON_USB3_0_PORT == powerStatus)
+    {
+        ps3000aChangePowerSource(handle, PICO_POWER_SUPPLY_NOT_CONNECTED);
+        numAvailableChannels = 2;
+    }
+    else
+    {
+        numAvailableChannels = numActualChannels;
+    }
+
     return true;
 }

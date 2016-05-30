@@ -313,7 +313,8 @@ PicoScope* ScopeSelector::OpenScope( AvailableScopeDescription_T scope )
     else if (scope.driverFamily == PS3000A)
     {
         status = ps3000aOpenUnit( &handle, (int8_t*)scope.serialNumber.c_str() );
-        if (status != PICO_OK || handle <= 0)
+        if ((status != PICO_OK && status != PICO_POWER_SUPPLY_NOT_CONNECTED &&
+             status != PICO_USB3_0_DEVICE_NON_USB3_0_PORT) || handle <= 0)
         {
             if (handle > 0)
             {
@@ -387,7 +388,7 @@ PicoScope* ScopeSelector::OpenScope( AvailableScopeDescription_T scope )
     else if (scope.driverFamily == PS5000A)
     {
         status = ps5000aOpenUnit( &handle, (int8_t*)scope.serialNumber.c_str(), PS5000A_DR_15BIT );
-        if (status != PICO_OK || handle <= 0)
+        if ((status != PICO_OK && status != PICO_POWER_SUPPLY_NOT_CONNECTED) || handle <= 0)
         {
             if (handle > 0)
             {
@@ -530,7 +531,7 @@ bool ScopeSelector::InitializeScopeImpl( void )
     else
     {
         selectedScope->model = scopeImplTable[idx].model;
-        selectedScope->numChannels = scopeImplTable[idx].numChannels;
+        selectedScope->numAvailableChannels = scopeImplTable[idx].numChannels;
         selectedScope->minFuncGenFreq = scopeImplTable[idx].minFuncGenFreq;
         selectedScope->maxFuncGenFreq = scopeImplTable[idx].maxFuncGenFreq;
         selectedScope->minFuncGenVpp = scopeImplTable[idx].minFuncGenVpp;

@@ -56,6 +56,7 @@ bool GetCompressedData( uint32_t numSamples,
                         vector<int16_t>& inputCompressedMinBuffer, vector<int16_t>& outputCompressedMinBuffer,
                         vector<int16_t>& inputCompressedMaxBuffer, vector<int16_t>& outputCompressedMaxBuffer );
 bool GetPeakValues( uint16_t& inputPeak, uint16_t& outputPeak, bool& inputOv, bool& outputOv );
+bool ChangePower(PICO_STATUS powerState);
 bool Close( void );
 const RANGE_INFO_T* GetRangeCaps( void );
 private:

@@ -1403,12 +1403,12 @@ DWORD WINAPI ExecuteFRA(LPVOID lpdwThreadParam)
                                                  outputChannel, outputChannelCoupling, outputChannelAttenuation, outputDcOffset,
                                                  signalVpp ))
             {
-                continue;
+                goto CleanUpFRA;
             }
 
             if (false == psFRA -> ExecuteFRA( startFreq, stopFreq, stepsPerDecade ))
             {
-                continue;
+                goto CleanUpFRA;
             }
 
             if (!GeneratePlot(true))
@@ -1424,6 +1424,15 @@ DWORD WINAPI ExecuteFRA(LPVOID lpdwThreadParam)
             LogMessage( L"Fatal error: Invalid result from waiting on FRA execution start event" );
             return -1;
         }
+CleanUpFRA:
+        // If the power mode changed, reset the UI and instrument assigmnent to update the number of channels.
+        PicoScope* pScope = pScopeSelector->GetSelectedScope();
+        if (NULL != pScope)
+        {
+            pSettings->SetNumChannels(pScope->GetNumChannels());
+        }
+        psFRA->SetInstrument(pScope);
+        LoadControlsData(hMainWnd);
     }
 
     return TRUE;
@@ -1605,6 +1614,22 @@ bool ValidateSettings(void)
     int16_t stepsPerDecade;
     bool validStartFreq = false;
     bool validStopFreq = false;
+
+    // These need to be checked in case the user switched from 4 channels to 2 (due to Flexible Power)
+    // and the prior selection was channel C/D
+    hndCtrl = GetDlgItem(hMainWnd, IDC_INPUT_CHANNEL);
+    if ((uint8_t)ComboBox_GetCurSel(hndCtrl) >= pSettings->GetNumChannels())
+    {
+        LogMessage(L"Input channel selection is invalid.");
+        retVal = false;
+    }
+
+    hndCtrl = GetDlgItem(hMainWnd, IDC_OUTPUT_CHANNEL);
+    if ((uint8_t)ComboBox_GetCurSel(hndCtrl) >= pSettings->GetNumChannels())
+    {
+        LogMessage(L"Output channel selection is invalid.");
+        retVal = false;
+    }
 
     hndCtrl = GetDlgItem( hMainWnd, IDC_INPUT_DC_OFFS );
     Edit_GetText( hndCtrl, editText, 16 );
@@ -1905,6 +1930,35 @@ bool FraStatusCallback( FRA_STATUS_MESSAGE_T& fraStatusMsg )
         else if (IDOK == response)
         {
             fraStatusMsg.responseData.proceed = true;
+        }
+
+    }
+    else if (fraStatusMsg.status == FRA_STATUS_POWER_CHANGED)
+    {
+        if (fraStatusMsg.responseData.proceed == false)
+        {
+            (void)MessageBoxEx(hMainWnd, L"DC Power disconnected.  FRA will be stopped because channels other than A and B were selected.", L"Power Changed", MB_OK, 0);
+        }
+        else
+        {
+            int response;
+            if (fraStatusMsg.statusData.powerState)
+            {
+                response = MessageBoxEx(hMainWnd, L"DC Power connected.  Continue?", L"Power Changed", MB_OKCANCEL, 0);
+            }
+            else
+            {
+                response = MessageBoxEx(hMainWnd, L"DC Power disconnected.  Continue?", L"Power Changed", MB_OKCANCEL, 0);
+            }
+
+            if (IDCANCEL == response)
+            {
+                fraStatusMsg.responseData.proceed = false;
+            }
+            else if (IDOK == response)
+            {
+                fraStatusMsg.responseData.proceed = true;
+            }
         }
 
     }

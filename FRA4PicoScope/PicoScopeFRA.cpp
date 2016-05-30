@@ -54,14 +54,14 @@
 
 void __stdcall DataReady( short handle, PICO_STATUS status, void * pParameter)
 {
-    if (PICO_OK == status)
-    {
-        SetEvent( *(HANDLE*)pParameter );
-    }
+    PicoScopeFRA::SetCaptureStatus( status );
+    SetEvent( *(HANDLE*)pParameter );
 }
 
 const double PicoScopeFRA::attenInfo[] = {1.0, 10.0, 20.0, 100.0, 200.0, 1000.0};
 const double PicoScopeFRA::inputRangeInitialEstimateMargin = 0.95;
+
+PICO_STATUS PicoScopeFRA::captureStatus;
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 //
@@ -128,8 +128,9 @@ PicoScopeFRA::PicoScopeFRA(FRA_STATUS_CALLBACK statusCB)
     inputMaxRange = 0;
     outputMinRange = 0;
     outputMaxRange = 0;
+    captureStatus = PICO_OK;
     ps = NULL;
-    numChannels = 2;
+    numAvailableChannels = 2;
     maxScopeSamplesPerChannel = 0;
     currentFreqHz = 0.0;
     currentOutputVolts = 0.0;
@@ -161,7 +162,7 @@ PicoScopeFRA::PicoScopeFRA(FRA_STATUS_CALLBACK statusCB)
 void PicoScopeFRA::SetInstrument( PicoScope* _ps )
 {
     ps = _ps;
-    numChannels = ps->GetNumChannels();
+    numAvailableChannels = ps->GetNumChannels();
     rangeInfo = ps->GetRangeCaps();
     signalGeneratorPrecision = ps->GetSignalGeneratorPrecision();
     rangeCounts = ps->GetMaxValue();
@@ -320,9 +321,9 @@ bool PicoScopeFRA::SetupChannels( int inputChannel, int inputChannelCoupling, in
     delayForAcCoupling = (mInputChannelCoupling == PS_DC && mOutputChannelCoupling == PS_DC) ? false : true;
 
     // Explicitly turn off the other channels if they exist
-    if (numChannels > 2)
+    if (numAvailableChannels > 2)
     {
-        for (int chan = 0; chan < numChannels; chan++)
+        for (int chan = 0; chan < numAvailableChannels; chan++)
         {
             if (chan != mInputChannel && chan != mOutputChannel)
             {
@@ -398,45 +399,78 @@ bool PicoScopeFRA::ExecuteFRA(double startFreqHz, double stopFreqHz, int stepsPe
             currentFreqHz = freqsHz[freqStepIndex];
             for (autorangeRetryCounter = 0; autorangeRetryCounter < maxAutorangeRetries; autorangeRetryCounter++)
             {
-                wsprintf( fraStatusText, L"Status: Starting frequency step %d, range try %d", freqStepCounter, autorangeRetryCounter+1 );
-                UpdateStatus( fraStatusMsg, FRA_STATUS_MESSAGE, fraStatusText );
-                if (true != StartCapture( currentFreqHz ))
+                try
                 {
-                    throw FraFault();
-                }
-                // Adjust the delay time for a safety factor of 1.5x and never let it go less than 3 seconds
-                timeIndisposedMs = max( 3000, (timeIndisposedMs*3)/2);
-                dwWaitResult = WaitForSingleObject( hCaptureEvent, timeIndisposedMs );
-
-                if (cancel)
-                {
-                    // Notify of cancellation
-                    UpdateStatus( fraStatusMsg, FRA_STATUS_CANCELED, freqStepCounter, numSteps );
-                    throw FraFault();
-                }
-
-                if (dwWaitResult == WAIT_OBJECT_0)
-                {
-                    if (false == ProcessData())
+                    wsprintf(fraStatusText, L"Status: Starting frequency step %d, range try %d", freqStepCounter, autorangeRetryCounter + 1);
+                    UpdateStatus(fraStatusMsg, FRA_STATUS_MESSAGE, fraStatusText);
+                    if (true != StartCapture(currentFreqHz))
                     {
-                        // At least one of the channels needs adjustment
-                        continue; // Try again on a different range
+                        throw FraFault();
                     }
-                    else // Data is good, calculate and move on to next frequency
-                    {
-                        // Currently no error is possible so just cast to void
-                        (void)CalculateGainAndPhase( &gainsDb[freqStepIndex], &phasesDeg[freqStepIndex] );
-                        autorangeRetryCounter++; // reflect the attempt that succeeded
+                    // Adjust the delay time for a safety factor of 1.5x and never let it go less than 3 seconds
+                    timeIndisposedMs = max(3000, (timeIndisposedMs * 3) / 2);
+                    dwWaitResult = WaitForSingleObject(hCaptureEvent, timeIndisposedMs);
 
-                        // Notify progress
-                        UpdateStatus( fraStatusMsg, FRA_STATUS_PROGRESS, freqStepCounter, numSteps );
-                        break;
+                    if (cancel)
+                    {
+                        // Notify of cancellation
+                        UpdateStatus(fraStatusMsg, FRA_STATUS_CANCELED, freqStepCounter, numSteps);
+                        throw FraFault();
+                    }
+
+                    if (dwWaitResult == WAIT_OBJECT_0)
+                    {
+                        if (PICO_OK == PicoScopeFRA::captureStatus)
+                        {
+                            if (false == ProcessData())
+                            {
+                                // At least one of the channels needs adjustment
+                                continue; // Try again on a different range
+                            }
+                            else // Data is good, calculate and move on to next frequency
+                            {
+                                // Currently no error is possible so just cast to void
+                                (void)CalculateGainAndPhase(&gainsDb[freqStepIndex], &phasesDeg[freqStepIndex]);
+                                autorangeRetryCounter++; // reflect the attempt that succeeded
+
+                                // Notify progress
+                                UpdateStatus(fraStatusMsg, FRA_STATUS_PROGRESS, freqStepCounter, numSteps);
+                                break;
+                            }
+                        }
+                        else if (PICO_POWER_SUPPLY_CONNECTED == PicoScopeFRA::captureStatus ||
+                                 PICO_POWER_SUPPLY_NOT_CONNECTED == PicoScopeFRA::captureStatus)
+                        {
+                            throw PicoScope::PicoPowerChange(PicoScopeFRA::captureStatus);
+                        }
+                        else
+                        {
+                            wstringstream wssError;
+                            wssError << L"Fatal Error: Data capture error: " << PicoScopeFRA::captureStatus;
+                            UpdateStatus(fraStatusMsg, FRA_STATUS_FATAL_ERROR, wssError.str().c_str());
+                            throw FraFault();
+                        }
+                    }
+                    else
+                    {
+                        UpdateStatus(fraStatusMsg, FRA_STATUS_FATAL_ERROR, L"Fatal Error: Data capture wait timed out");
+                        throw FraFault();
                     }
                 }
-                else
+                catch (const PicoScope::PicoPowerChange& ex)
                 {
-                    UpdateStatus( fraStatusMsg, FRA_STATUS_FATAL_ERROR, L"Fatal Error: Data capture wait timed out" );
-                    throw FraFault();
+                    UpdateStatus( fraStatusMsg, FRA_STATUS_POWER_CHANGED, ex.GetState() == PICO_POWER_SUPPLY_CONNECTED );
+                    // Change the power state regardless of whether the user wants to continue FRA execution.
+                    ps->ChangePower(ex.GetState());
+                    if (true == fraStatusMsg.responseData.proceed)
+                    {
+                        autorangeRetryCounter = -1;
+                        continue;
+                    }
+                    else
+                    {
+                        throw FraFault();
+                    }
                 }
             }
 
@@ -519,7 +553,15 @@ bool PicoScopeFRA::ExecuteFRA(double startFreqHz, double stopFreqHz, int stepsPe
         retVal = false;
     }
 
-    ps->DisableSignalGenerator();
+    try
+    {
+        (void)ps->DisableSignalGenerator();
+    }
+    catch (const exception& e)
+    {
+        UNREFERENCED_PARAMETER(e);
+        retVal = false;
+    }
 
     return retVal;
 }
@@ -542,6 +584,23 @@ bool PicoScopeFRA::CancelFRA()
     SetEvent( hCaptureEvent ); // To break it out of waiting to capture data in case
     // there are several seconds of data to capture
     return true; // bool return reserved for possible future event based signalling that may fail
+}
+
+////////////////////////////////////////////////////////////////////////////////////////////////////
+//
+// Name: PicoScopeFRA::SetCaptureStatus
+//
+// Purpose: Communicate the status value from the capture callback
+//
+// Parameters: [in] status - the status value from the capture callback
+//
+// Notes:
+//
+///////////////////////////////////////////////////////////////////////////////////////////////////
+
+void PicoScopeFRA::SetCaptureStatus(PICO_STATUS status)
+{
+    PicoScopeFRA::captureStatus = status;
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////

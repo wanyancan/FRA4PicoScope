@@ -31,6 +31,8 @@ class ps3000aImpl : public PicoScope
     public:
         ps3000aImpl( int16_t _handle );
         ~ps3000aImpl();
+    private:
+        uint8_t numActualChannels;
 
 #define NEW_PS_DRIVER_MODEL
 #include "psCommonImpl.h"

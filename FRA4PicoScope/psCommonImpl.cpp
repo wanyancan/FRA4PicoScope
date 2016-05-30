@@ -70,7 +70,7 @@ using namespace boost::math;
 // 2) Returns status with PICO_OK indicating success
 // 3) Normally uses CamelCase identifiers
 #if defined(NEW_PS_DRIVER_MODEL)
-#define PICO_ERROR(x) PICO_OK != (status = x)
+#define PICO_ERROR(x) (status = x) == PICO_OK ? 0 : (PICO_POWER_SUPPLY_CONNECTED == status || PICO_POWER_SUPPLY_NOT_CONNECTED == status) ? throw PicoPowerChange(status) : 1
 #else
 #define PICO_ERROR(x) 0 == (status = x)
 #define GetUnitInfo _get_unit_info
@@ -230,7 +230,30 @@ bool CommonMethod(SCOPE_FAMILY_LT,Initialized)( void )
 
 uint8_t CommonMethod(SCOPE_FAMILY_LT,GetNumChannels)( void )
 {
-    return numChannels;
+#if defined(PS3000A) || defined(PS5000A)
+    if (numActualChannels > 2)
+    {
+        PICO_STATUS status;
+        status = CommonApi(SCOPE_FAMILY_LT, CurrentPowerSource)(handle);
+        if (PICO_POWER_SUPPLY_NOT_CONNECTED == status)
+        {
+            numAvailableChannels = 2;
+        }
+        else if (PICO_USB3_0_DEVICE_NON_USB3_0_PORT == status)
+        {
+            numAvailableChannels = 2;
+        }
+        else if (PICO_POWER_SUPPLY_CONNECTED == status)
+        {
+            numAvailableChannels = numActualChannels;
+        }
+        else // The handle is invalid, so just set a default presuming an error will get caught later.
+        {
+            numAvailableChannels = numActualChannels;
+        }
+    }
+#endif
+    return numAvailableChannels;
 }
 
 void CommonMethod(SCOPE_FAMILY_LT,GetAvailableCouplings)( vector<wstring>& couplingText )
@@ -1340,6 +1363,29 @@ bool CommonMethod(SCOPE_FAMILY_LT, GetPeakValues)( uint16_t& inputPeak, uint16_t
     outputOv = ((overflow & 1<<mOutputChannel) != 0);
 
     return retVal;
+}
+
+////////////////////////////////////////////////////////////////////////////////////////////////////
+//
+// Name: Common method ChangePower
+//
+// Purpose: Change flexible power mode for the scope
+//
+// Parameters: [out] return - whether the function succeeded
+//
+// Notes: Only relevant for scopes with flexible power implementations (PS3000A and PS5000A)
+//
+///////////////////////////////////////////////////////////////////////////////////////////////////
+
+bool CommonMethod(SCOPE_FAMILY_LT, ChangePower)( PICO_STATUS powerState )
+{
+#if defined(PS3000A) || defined(PS5000A)
+    PICO_STATUS status;
+    status = CommonApi(SCOPE_FAMILY_LT, ChangePowerSource)( handle, powerState );
+    return (status==PICO_OK);
+#else
+    return false;
+#endif
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////

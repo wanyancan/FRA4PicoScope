@@ -56,6 +56,7 @@ typedef enum
     FRA_STATUS_COMPLETE,
     FRA_STATUS_CANCELED,
     FRA_STATUS_AUTORANGE_LIMIT,
+    FRA_STATUS_POWER_CHANGED,
     FRA_STATUS_FATAL_ERROR,
     FRA_STATUS_MESSAGE
 } FRA_STATUS_T;
@@ -80,18 +81,18 @@ typedef struct
             AUTORANGE_STATUS_T inputChannelStatus;
             AUTORANGE_STATUS_T outputChannelStatus;
         } autorangeLimit;
-
+        bool powerState; // false = No Aux DC power
     } statusData;
 
     wstring statusText; // used to encode log or failure messages
 
     struct
     {
-        // Whether to proceed, or cancel the FRA execution
-        // Should only be used as a response to FRA_AUTORANGE_LIMIT
-        // so that we don't create a race condition.  Cancel from the
-        // the UI that's asynchronous (not tied to a specific FRA
-        // operation like autorange) is handled separately.
+        // Whether to proceed, or cancel the FRA execution.  Should only be
+        // used as a response to FRA_AUTORANGE_LIMIT or PICO_POWER_CHANGE so
+        // that we don't create a race condition.  Cancel from the UI that's
+        // asynchronous (not tied to a specific FRA operation like autorange)
+        // is handled separately.
         bool proceed;
 
         union
@@ -139,6 +140,7 @@ class PicoScopeFRA
         double GetMinFrequency(void);
         bool ExecuteFRA( double startFreqHz, double stopFreqHz, int stepsPerDecade );
         bool CancelFRA();
+        static void SetCaptureStatus(PICO_STATUS status);
         void SetFraSettings( SamplingMode_T samplingMode, double purityLowerLimit, uint16_t extraSettlingTimeMs, uint8_t autorangeTriesPerStep,
                              double autorangeTolerance, double smallSignalResolutionTolerance, double maxAutorangeAmplitude, uint16_t minCyclesCaptured,
                              bool sweepDescending, double phaseWrappingThreshold, bool diagnosticsOn, wstring baseDataPath );
@@ -150,7 +152,7 @@ class PicoScopeFRA
     private:
         // Data about the scope
         PicoScope* ps;
-        uint8_t numChannels;
+        uint8_t numAvailableChannels;
         uint32_t maxScopeSamplesPerChannel;
 
         FRA_STATUS_CALLBACK StatusCallback;
@@ -255,6 +257,7 @@ class PicoScopeFRA
         static const double inputRangeInitialEstimateMargin;
 
         HANDLE hCaptureEvent;
+        static PICO_STATUS captureStatus;
         bool cancel;
 
         class FraFault : public exception {};
@@ -274,6 +277,22 @@ class PicoScopeFRA
         void TransferLatestResults(void);
 
         // Utilities for sending a message via the callback
+        inline bool UpdateStatus(FRA_STATUS_MESSAGE_T &msg, FRA_STATUS_T status, bool powerState)
+        {
+            msg.status = status;
+            msg.statusData.powerState = powerState;
+            // If the user selected channels C or D and the power mode is PICO_POWER_SUPPLY_NOT_CONNECTED (a given),
+            // the FRA cannot be continued.
+            if (mInputChannel >= PS_CHANNEL_C || mOutputChannel >= PS_CHANNEL_C)
+            {
+                msg.responseData.proceed = false;
+            }
+            else
+            {
+                msg.responseData.proceed = true;
+            }
+            return StatusCallback(msg);
+        }
         inline bool UpdateStatus( FRA_STATUS_MESSAGE_T &msg, FRA_STATUS_T status, int stepsComplete, int numSteps )
         {
             msg.status = status;

@@ -88,5 +88,18 @@ bool ps5000aImpl::InitializeScope(void)
     minRange = (PS_RANGE)PS5000A_10MV;
     maxRange = (PS_RANGE)PS5000A_20V;
 
+    // Save the value set by the scope factory (ScopeSelector)
+    numActualChannels = numAvailableChannels;
+
+    if (PICO_POWER_SUPPLY_NOT_CONNECTED == ps5000aCurrentPowerSource(handle))
+    {
+        ps5000aChangePowerSource(handle, PICO_POWER_SUPPLY_NOT_CONNECTED);
+        numAvailableChannels = 2;
+    }
+    else
+    {
+        numAvailableChannels = numActualChannels;
+    }
+
     return true;
 }

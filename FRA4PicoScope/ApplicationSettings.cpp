@@ -50,7 +50,7 @@
 
 ApplicationSettings::ApplicationSettings( wstring _appDataFolder ) : appDataFolder(_appDataFolder)
 {
-    numChannels = 2;
+    numAvailableChannels = 2;
     appDataFilename = appDataFolder + L"\\FRA4PicoScope\\Fra4PicoScopeSettings.xml";
 }
 
@@ -343,7 +343,7 @@ bool ApplicationSettings::ReadScopeSettings( PicoScope* pScope )
     wstring model;
     wstring serialNumber;
 
-    numChannels = pScope->GetNumChannels();
+    numAvailableChannels = pScope->GetNumChannels();
 
     pScope->GetModel(model);
     pScope->GetSerialNumber(serialNumber);
@@ -465,7 +465,7 @@ bool ApplicationSettings::InitializeScopeSettingsFile(PicoScope* pScope)
         }
     }
 
-    numChannels = pScope->GetNumChannels();
+    numAvailableChannels = pScope->GetNumChannels();
 
     return retVal;
 }
@@ -484,7 +484,7 @@ bool ApplicationSettings::InitializeScopeSettingsFile(PicoScope* pScope)
 
 void ApplicationSettings::SetNoScopeSettings( void )
 {
-    numChannels = 4;
+    numAvailableChannels = 4;
 
     ScopeSettingsPropTree.clear();
     ScopeSettingsPropTree.put( L"picoScope.inputChannel.name", L"A" );

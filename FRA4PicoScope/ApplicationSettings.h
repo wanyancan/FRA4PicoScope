@@ -368,9 +368,12 @@ class ApplicationSettings
         // Accessors/Mutators for Scope Settings
         inline uint8_t GetNumChannels(void)
         {
-            return numChannels;
+            return numAvailableChannels;
         }
-
+        inline void SetNumChannels( uint8_t numChannels )
+        {
+            numAvailableChannels = numChannels;
+        }
         inline int GetInputChannel()
         {
             return ScopeSettingsPropTree.get<wstring>(L"picoScope.inputChannel.name").c_str()[0] - wchar_t('A');
@@ -526,7 +529,7 @@ class ApplicationSettings
 
         wstring scopeSN;
 
-        uint8_t numChannels;
+        uint8_t numAvailableChannels;
 
 };
 

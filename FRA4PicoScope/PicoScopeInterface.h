@@ -209,8 +209,17 @@ class PicoScope
         friend class ScopeSelector;
 
     public:
-        PicoScope() : initialized(false), model(PS_NO_MODEL), family(PS_NO_FAMILY), numChannels(2), minFuncGenFreq(0.0), maxFuncGenFreq(0.0), minFuncGenVpp(0.0), maxFuncGenVpp(0.0), signalGeneratorPrecision(0.0), compatible(false) {};
+        PicoScope() : initialized(false), model(PS_NO_MODEL), family(PS_NO_FAMILY), numAvailableChannels(2), minFuncGenFreq(0.0), maxFuncGenFreq(0.0), minFuncGenVpp(0.0), maxFuncGenVpp(0.0), signalGeneratorPrecision(0.0), compatible(false) {};
         virtual ~PicoScope() {};
+
+        class PicoPowerChange : public exception
+        {
+            public:
+                PicoPowerChange(PICO_STATUS _state) { state = _state; }
+                PICO_STATUS GetState(void) const { return state; }
+            private:
+                PICO_STATUS state;
+        };
 
         virtual bool Initialized(void) = 0;
         virtual uint8_t GetNumChannels( void ) = 0;
@@ -244,6 +253,7 @@ class PicoScope
                                         vector<int16_t>& inputCompressedMinBuffer, vector<int16_t>& outputCompressedMinBuffer,
                                         vector<int16_t>& inputCompressedMaxBuffer, vector<int16_t>& outputCompressedMaxBuffer ) = 0;
         virtual bool GetPeakValues( uint16_t& inputPeak, uint16_t& outputPeak, bool& inputOv, bool& outputOv ) = 0;
+        virtual bool ChangePower( PICO_STATUS powerState ) = 0;
         virtual bool Close( void ) = 0;
 
         virtual const RANGE_INFO_T* GetRangeCaps( void ) = 0;
@@ -255,7 +265,7 @@ class PicoScope
         bool initialized;
         ScopeModel_T model;
         ScopeDriverFamily_T family;
-        uint8_t numChannels;
+        uint8_t numAvailableChannels;
         double minFuncGenFreq;
         double maxFuncGenFreq;
         double minFuncGenVpp;
