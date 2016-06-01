@@ -55,7 +55,7 @@ double testPlotPhases[];
 double testPlotUnwrappedPhases[];
 #endif
 
-char* appVersionString = "0.5.3b";
+char* appVersionString = "0.5.4b";
 char* appNameString = "Frequency Response Analyzer for PicoScope";
 
 #define MAX_LOADSTRING 100
@@ -92,6 +92,8 @@ int pxPlotSeparatorXStart;
 HANDLE hExecuteFraThread;
 HANDLE hExecuteFraEvent;
 
+bool bScopePowerStateChanged = false;
+
 // Plot zoom variables
 bool detectingZoom = false;
 bool zooming = false;
@@ -111,6 +113,7 @@ void                CopyLog(void);
 void                ClearLog(void);
 
 DWORD WINAPI        ExecuteFRA(LPVOID lpdwThreadParam);
+void                AdjustChannelsToMatchPowerMode(void);
 bool                GeneratePlot(bool rescale);
 void                RepaintPlot( void );
 void                InitScope( void );
@@ -1351,6 +1354,11 @@ DWORD WINAPI ExecuteFRA(LPVOID lpdwThreadParam)
     {
         // Place these here because this is where we'll always return whether the FRA executes completely or not.
         EnableAllMenus();
+        if (bScopePowerStateChanged)
+        {
+            AdjustChannelsToMatchPowerMode();
+            bScopePowerStateChanged = false;
+        }
         if (!ResetEvent( hExecuteFraEvent ))
         {
             LogMessage( L"Fatal error: Failed to reset FRA execution start event" );
@@ -1403,12 +1411,12 @@ DWORD WINAPI ExecuteFRA(LPVOID lpdwThreadParam)
                                                  outputChannel, outputChannelCoupling, outputChannelAttenuation, outputDcOffset,
                                                  signalVpp ))
             {
-                goto CleanUpFRA;
+                continue;
             }
 
             if (false == psFRA -> ExecuteFRA( startFreq, stopFreq, stepsPerDecade ))
             {
-                goto CleanUpFRA;
+                continue;
             }
 
             if (!GeneratePlot(true))
@@ -1424,18 +1432,33 @@ DWORD WINAPI ExecuteFRA(LPVOID lpdwThreadParam)
             LogMessage( L"Fatal error: Invalid result from waiting on FRA execution start event" );
             return -1;
         }
-CleanUpFRA:
-        // If the power mode changed, reset the UI and instrument assigmnent to update the number of channels.
-        PicoScope* pScope = pScopeSelector->GetSelectedScope();
-        if (NULL != pScope)
-        {
-            pSettings->SetNumChannels(pScope->GetNumChannels());
-        }
-        psFRA->SetInstrument(pScope);
-        LoadControlsData(hMainWnd);
     }
 
     return TRUE;
+}
+
+///////////////////////////////////////////////////////////////////////////////////////////////////
+//
+// Name: AdjustChannelsToMatchPowerMode
+//
+// Purpose: A function to reset the UI and instrument assigmnent when the number of channels
+//          has changed due to a power state change.
+//
+// Parameters: None
+//
+// Notes:
+//
+///////////////////////////////////////////////////////////////////////////////////////////////////
+
+void AdjustChannelsToMatchPowerMode(void)
+{
+    PicoScope* pScope = pScopeSelector->GetSelectedScope();
+    if (NULL != pScope)
+    {
+        pSettings->SetNumChannels(pScope->GetNumChannels());
+    }
+    psFRA->SetInstrument(pScope); // Causes the FRA object to reload the number of channels
+    LoadControlsData(hMainWnd);
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -1935,6 +1958,7 @@ bool FraStatusCallback( FRA_STATUS_MESSAGE_T& fraStatusMsg )
     }
     else if (fraStatusMsg.status == FRA_STATUS_POWER_CHANGED)
     {
+        bScopePowerStateChanged = true;
         if (fraStatusMsg.responseData.proceed == false)
         {
             (void)MessageBoxEx(hMainWnd, L"DC Power disconnected.  FRA will be stopped because channels other than A and B were selected.", L"Power Changed", MB_OK, 0);
