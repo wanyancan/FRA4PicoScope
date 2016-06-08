@@ -1038,6 +1038,7 @@ void PicoScopeFRA::GenerateDiagnosticOutput(void)
     vector<double> outputMaxVoltages;
     double inputAmplitude, outputAmplitude;
     FRA_STATUS_MESSAGE_T fraStatusMsg;    
+    double maxValue;
 
     UpdateStatus( fraStatusMsg, FRA_STATUS_MESSAGE, L"Status: Generating diagnostic time domain plots." );
 
@@ -1050,6 +1051,8 @@ void PicoScopeFRA::GenerateDiagnosticOutput(void)
         inputMaxVoltages.resize(maxSamples);
         outputMaxVoltages.resize(maxSamples);
     }
+
+    maxValue = (double)(ps->GetMaxValue());
 
     // Setup and test the diag directory for use as a current directory
     diagDataPath = mBaseDataPath + L"\\diag";
@@ -1090,21 +1093,21 @@ void PicoScopeFRA::GenerateDiagnosticOutput(void)
             }
             for( int kl = 0; kl < diagNumSamplesToPlot[il]; kl++)
             {
-                inputMinVoltages[kl] = ((double)inputMinData[il][jl][kl] / 32768.0) * rangeInfo[inRange[il][jl]].rangeVolts;
+                inputMinVoltages[kl] = ((double)inputMinData[il][jl][kl] / maxValue) * rangeInfo[inRange[il][jl]].rangeVolts;
             }
             for( int kl = 0; kl < diagNumSamplesToPlot[il]; kl++)
             {
-                outputMinVoltages[kl] = ((double)outputMinData[il][jl][kl] / 32768.0) * rangeInfo[outRange[il][jl]].rangeVolts;
+                outputMinVoltages[kl] = ((double)outputMinData[il][jl][kl] / maxValue) * rangeInfo[outRange[il][jl]].rangeVolts;
             }
             if (mSamplingMode == HIGH_NOISE)
             {
                 for( int kl = 0; kl < diagNumSamplesToPlot[il]; kl++)
                 {
-                    inputMaxVoltages[kl] = ((double)inputMaxData[il][jl][kl] / 32768.0) * rangeInfo[inRange[il][jl]].rangeVolts;
+                    inputMaxVoltages[kl] = ((double)inputMaxData[il][jl][kl] / maxValue) * rangeInfo[inRange[il][jl]].rangeVolts;
                 }
                 for( int kl = 0; kl < diagNumSamplesToPlot[il]; kl++)
                 {
-                    outputMaxVoltages[kl] = ((double)outputMaxData[il][jl][kl] / 32768.0) * rangeInfo[outRange[il][jl]].rangeVolts;
+                    outputMaxVoltages[kl] = ((double)outputMaxData[il][jl][kl] / maxValue) * rangeInfo[outRange[il][jl]].rangeVolts;
                 }
             }
 
@@ -1129,7 +1132,7 @@ void PicoScopeFRA::GenerateDiagnosticOutput(void)
             plcol0(2);
             if (!inOV[il][jl])
             {
-                inputAmplitude = (inAmps[il][jl] / 32768.0) * rangeInfo[inRange[il][jl]].rangeVolts;
+                inputAmplitude = (inAmps[il][jl] / maxValue) * rangeInfo[inRange[il][jl]].rangeVolts;
                 pljoin( 0.0, inputAmplitude, diagNumSamplesToPlot[il]*sampleInterval[il], inputAmplitude);
                 pljoin( 0.0, -inputAmplitude, diagNumSamplesToPlot[il]*sampleInterval[il], -inputAmplitude);
                 inputTitle << "Input signal; Amplitude: " << setprecision(6) << inputAmplitude << " V;" << "Purity: " << setprecision(6) << inputPurity[il][jl];
@@ -1173,7 +1176,7 @@ void PicoScopeFRA::GenerateDiagnosticOutput(void)
             plcol0(2);
             if (!outOV[il][jl])
             {
-                outputAmplitude = (outAmps[il][jl] / 32768.0) * rangeInfo[outRange[il][jl]].rangeVolts;
+                outputAmplitude = (outAmps[il][jl] / maxValue) * rangeInfo[outRange[il][jl]].rangeVolts;
                 pljoin( 0.0, outputAmplitude, diagNumSamplesToPlot[il]*sampleInterval[il], outputAmplitude);
                 pljoin( 0.0, -outputAmplitude, diagNumSamplesToPlot[il]*sampleInterval[il], -outputAmplitude);
                 outputTitle << "Output signal; Amplitude: " << setprecision(6) << outputAmplitude << " V;" << "Purity: " << setprecision(6) << outputPurity[il][jl];
