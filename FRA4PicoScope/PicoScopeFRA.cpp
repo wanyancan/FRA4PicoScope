@@ -60,6 +60,7 @@ void __stdcall DataReady( short handle, PICO_STATUS status, void * pParameter)
 
 const double PicoScopeFRA::attenInfo[] = {1.0, 10.0, 20.0, 100.0, 200.0, 1000.0};
 const double PicoScopeFRA::inputRangeInitialEstimateMargin = 0.95;
+const uint32_t PicoScopeFRA::timeDomainDiagnosticDataLength = 1024;
 
 PICO_STATUS PicoScopeFRA::captureStatus;
 
@@ -477,8 +478,17 @@ bool PicoScopeFRA::ExecuteFRA(double startFreqHz, double stopFreqHz, int stepsPe
             if (mDiagnosticsOn)
             {
                 // Make records for diagnostics
-                sampleInterval[freqStepIndex] = 1.0 / actualSampFreqHz;
-                diagNumSamples[freqStepIndex] = inputMinData[freqStepIndex][0].size();
+                if (LOW_NOISE == mSamplingMode)
+                {
+                    sampleInterval[freqStepIndex] = 1.0 / actualSampFreqHz;
+                }
+                else
+                {
+                    // The data for plotting is downsampled (aggregated)
+                    sampleInterval[freqStepIndex] = ((double)numSamples / (double)timeDomainDiagnosticDataLength) / actualSampFreqHz;
+                }
+                diagNumSamplesToPlot[freqStepIndex] = inputMinData[freqStepIndex][0].size();
+                diagNumSamplesCaptured[freqStepIndex] = numSamples;
                 autoRangeTries[freqStepIndex] = autorangeRetryCounter;
             }
 
@@ -993,7 +1003,9 @@ void PicoScopeFRA::AllocateFraData(void)
         outputPurity[i].resize(maxAutorangeRetries);
     }
 
-    diagNumSamples.resize(numSteps);
+    diagNumSamplesToPlot.resize(numSteps);
+    diagNumStimulusCyclesCaptured.resize(numSteps);
+    diagNumSamplesCaptured.resize(numSteps);
     autoRangeTries.resize(numSteps);
     sampleInterval.resize(numSteps);
 }
@@ -1014,6 +1026,7 @@ void PicoScopeFRA::AllocateFraData(void)
 void PicoScopeFRA::GenerateDiagnosticOutput(void)
 {
     stringstream fileName;
+    stringstream overallTitle;
     stringstream inputTitle;
     stringstream outputTitle;
     wstring diagDataPath;
@@ -1028,7 +1041,7 @@ void PicoScopeFRA::GenerateDiagnosticOutput(void)
 
     UpdateStatus( fraStatusMsg, FRA_STATUS_MESSAGE, L"Status: Generating diagnostic time domain plots." );
 
-    maxSamples = *max_element(begin(diagNumSamples),end(diagNumSamples));
+    maxSamples = *max_element(begin(diagNumSamplesToPlot),end(diagNumSamplesToPlot));
     times.resize(maxSamples);
     inputMinVoltages.resize(maxSamples);
     outputMinVoltages.resize(maxSamples);
@@ -1056,6 +1069,8 @@ void PicoScopeFRA::GenerateDiagnosticOutput(void)
         {
             fileName.clear();
             fileName.str("");
+            overallTitle.clear();
+            overallTitle.str("");
             inputTitle.clear();
             inputTitle.str("");
             outputTitle.clear();
@@ -1063,48 +1078,48 @@ void PicoScopeFRA::GenerateDiagnosticOutput(void)
 
             plsdev( "svg" );
             plsexit(HandlePLplotError);
-            fileName << "step" << il << "try" << jl << ".svg";
+            fileName << "step" << (il+1) << "try" << (jl+1) << ".svg";
             plsfnam( fileName.str().c_str() );
 
             plstar( 1, 2 ); // Setup to stack the input and output plots
 
             // Plot the data.
-            for( int kl = 0; kl < diagNumSamples[il]; kl++)
+            for( int kl = 0; kl < diagNumSamplesToPlot[il]; kl++)
             {
                 times[kl] = ((double)kl)*sampleInterval[il];
             }
-            for( int kl = 0; kl < diagNumSamples[il]; kl++)
+            for( int kl = 0; kl < diagNumSamplesToPlot[il]; kl++)
             {
                 inputMinVoltages[kl] = ((double)inputMinData[il][jl][kl] / 32768.0) * rangeInfo[inRange[il][jl]].rangeVolts;
             }
-            for( int kl = 0; kl < diagNumSamples[il]; kl++)
+            for( int kl = 0; kl < diagNumSamplesToPlot[il]; kl++)
             {
                 outputMinVoltages[kl] = ((double)outputMinData[il][jl][kl] / 32768.0) * rangeInfo[outRange[il][jl]].rangeVolts;
             }
             if (mSamplingMode == HIGH_NOISE)
             {
-                for( int kl = 0; kl < diagNumSamples[il]; kl++)
+                for( int kl = 0; kl < diagNumSamplesToPlot[il]; kl++)
                 {
                     inputMaxVoltages[kl] = ((double)inputMaxData[il][jl][kl] / 32768.0) * rangeInfo[inRange[il][jl]].rangeVolts;
                 }
-                for( int kl = 0; kl < diagNumSamples[il]; kl++)
+                for( int kl = 0; kl < diagNumSamplesToPlot[il]; kl++)
                 {
                     outputMaxVoltages[kl] = ((double)outputMaxData[il][jl][kl] / 32768.0) * rangeInfo[outRange[il][jl]].rangeVolts;
                 }
             }
 
             // Plot input
-            plenv( 0.0, diagNumSamples[il]*sampleInterval[il],
+            plenv( 0.0, diagNumSamplesToPlot[il]*sampleInterval[il],
                    -rangeInfo[inRange[il][jl]].rangeVolts, rangeInfo[inRange[il][jl]].rangeVolts,
                    0, 0 );
             plcol0(1);
             if (mSamplingMode == LOW_NOISE)
             {
-                plline( diagNumSamples[il], times.data(), inputMinVoltages.data() );
+                plline( diagNumSamplesToPlot[il], times.data(), inputMinVoltages.data() );
             }
             else
             {
-                for (int kl = 0; kl < diagNumSamples[il]; kl++)
+                for (int kl = 0; kl < diagNumSamplesToPlot[il]; kl++)
                 {
                     pljoin( times[kl], inputMinVoltages[kl], times[kl], inputMaxVoltages[kl] );
                 }
@@ -1115,8 +1130,8 @@ void PicoScopeFRA::GenerateDiagnosticOutput(void)
             if (!inOV[il][jl])
             {
                 inputAmplitude = (inAmps[il][jl] / 32768.0) * rangeInfo[inRange[il][jl]].rangeVolts;
-                pljoin( 0.0, inputAmplitude, diagNumSamples[il]*sampleInterval[il], inputAmplitude);
-                pljoin( 0.0, -inputAmplitude, diagNumSamples[il]*sampleInterval[il], -inputAmplitude);
+                pljoin( 0.0, inputAmplitude, diagNumSamplesToPlot[il]*sampleInterval[il], inputAmplitude);
+                pljoin( 0.0, -inputAmplitude, diagNumSamplesToPlot[il]*sampleInterval[il], -inputAmplitude);
                 inputTitle << "Input signal; Amplitude: " << setprecision(6) << inputAmplitude << " V;" << "Purity: " << setprecision(6) << inputPurity[il][jl];
             }
             else
@@ -1127,19 +1142,28 @@ void PicoScopeFRA::GenerateDiagnosticOutput(void)
             plcol0(1);
             pllab( "Time (s)", "Volts", inputTitle.str().c_str() );
 
+            // Add an overall title, making its position relative to the top plot
+            overallTitle.precision(3); // To record frequency the same as the status logs
+            overallTitle << fixed;
+            overallTitle << "Step " << (il+1) << ", Try " << (jl+1) << "; Frequency: " << freqsHz[il]
+                         << ", Stimulus Cycles: " << diagNumStimulusCyclesCaptured[il]
+                         << ", Samples Captured: " << diagNumSamplesCaptured[il];
+
+            plmtex("t", 4.0, 0.5, 0.5, overallTitle.str().c_str());
+
             // Plot output
-            plenv( 0.0, diagNumSamples[il]*sampleInterval[il],
+            plenv( 0.0, diagNumSamplesToPlot[il]*sampleInterval[il],
                    -rangeInfo[outRange[il][jl]].rangeVolts, rangeInfo[outRange[il][jl]].rangeVolts,
                    0, 0 );
             plcol0(1);
 
             if (mSamplingMode == LOW_NOISE)
             {
-                plline( diagNumSamples[il], times.data(), outputMinVoltages.data() );
+                plline( diagNumSamplesToPlot[il], times.data(), outputMinVoltages.data() );
             }
             else
             {
-                for (int kl = 0; kl < diagNumSamples[il]; kl++)
+                for (int kl = 0; kl < diagNumSamplesToPlot[il]; kl++)
                 {
                     pljoin( times[kl], outputMinVoltages[kl], times[kl], outputMaxVoltages[kl] );
                 }
@@ -1150,8 +1174,8 @@ void PicoScopeFRA::GenerateDiagnosticOutput(void)
             if (!outOV[il][jl])
             {
                 outputAmplitude = (outAmps[il][jl] / 32768.0) * rangeInfo[outRange[il][jl]].rangeVolts;
-                pljoin( 0.0, outputAmplitude, diagNumSamples[il]*sampleInterval[il], outputAmplitude);
-                pljoin( 0.0, -outputAmplitude, diagNumSamples[il]*sampleInterval[il], -outputAmplitude);
+                pljoin( 0.0, outputAmplitude, diagNumSamplesToPlot[il]*sampleInterval[il], outputAmplitude);
+                pljoin( 0.0, -outputAmplitude, diagNumSamplesToPlot[il]*sampleInterval[il], -outputAmplitude);
                 outputTitle << "Output signal; Amplitude: " << setprecision(6) << outputAmplitude << " V;" << "Purity: " << setprecision(6) << outputPurity[il][jl];
             }
             else
@@ -1281,6 +1305,11 @@ bool PicoScopeFRA::StartCapture( double measFreqHz )
         actualSampFreqHz = ps->GetNoiseRejectModeSampleRate();
     }
 
+    if (mDiagnosticsOn)
+    {
+        diagNumStimulusCyclesCaptured[freqStepIndex] = numCycles;
+    }
+
     // Insert a progressive delay to settle out DC offsets caused by
     // discontinuities from switching the signal generator.
     if (delayForAcCoupling)
@@ -1381,7 +1410,7 @@ bool PicoScopeFRA::ProcessData(void)
     }
     if (mDiagnosticsOn)
     {
-        uint32_t compressedSize = mSamplingMode == LOW_NOISE ? 0 : 1024;
+        uint32_t compressedSize = mSamplingMode == LOW_NOISE ? 0 : timeDomainDiagnosticDataLength;
         ps->GetCompressedData( compressedSize, inputMinData[freqStepIndex][autorangeRetryCounter],
                                                outputMinData[freqStepIndex][autorangeRetryCounter],
                                                inputMaxData[freqStepIndex][autorangeRetryCounter],

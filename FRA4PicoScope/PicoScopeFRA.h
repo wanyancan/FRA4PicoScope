@@ -235,7 +235,9 @@ class PicoScopeFRA
         vector<vector<vector<int16_t>>> outputMaxData;
         vector<vector<uint16_t>> inputAbsMax;
         vector<vector<uint16_t>> outputAbsMax;
-        vector<int> diagNumSamples;
+        vector<int> diagNumSamplesToPlot;
+        vector<uint32_t> diagNumStimulusCyclesCaptured;
+        vector<uint32_t> diagNumSamplesCaptured;
         vector<int> autoRangeTries;
         vector<double> sampleInterval;
         vector<vector<double>> inputPurity;
@@ -255,6 +257,7 @@ class PicoScopeFRA
 
         static const double attenInfo[];
         static const double inputRangeInitialEstimateMargin;
+        static const uint32_t timeDomainDiagnosticDataLength;
 
         HANDLE hCaptureEvent;
         static PICO_STATUS captureStatus;
