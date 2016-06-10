@@ -712,7 +712,7 @@ bool PicoScopeFRA::CheckSignalRanges(void)
             }
             else
             {
-                inputChannelAutorangeStatus = HIGHEST_RANGE_LIMIT_REACHED;
+                inputChannelAutorangeStatus = OK; // Can't go any higher, but OK to stay here
             }
             retVal = false;
         }
@@ -760,7 +760,7 @@ bool PicoScopeFRA::CheckSignalRanges(void)
             }
             else
             {
-                outputChannelAutorangeStatus = HIGHEST_RANGE_LIMIT_REACHED;
+                outputChannelAutorangeStatus = OK; // Can't go any higher, but OK to stay here
             }
             retVal = false;
         }
@@ -1376,7 +1376,8 @@ bool PicoScopeFRA::ProcessData(void)
     // 1) If both signal's ranges are acceptable
     //    OR
     // 2) If diagnostics are on and at least one of the signal's range is acceptable
-    if (retVal == true || (mDiagnosticsOn && (OK == inputChannelAutorangeStatus || OK == outputChannelAutorangeStatus)))
+    if (retVal == true || (mDiagnosticsOn && (CHANNEL_OVERFLOW != inputChannelAutorangeStatus ||
+                                              CHANNEL_OVERFLOW != outputChannelAutorangeStatus)))
     {
         uint32_t currentSampleIndex = 0;
         uint32_t maxDataRequestSize = ps->GetMaxDataRequestSize();
