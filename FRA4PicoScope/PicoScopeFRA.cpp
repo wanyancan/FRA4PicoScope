@@ -60,7 +60,7 @@ void __stdcall DataReady( short handle, PICO_STATUS status, void * pParameter)
 
 const double PicoScopeFRA::attenInfo[] = {1.0, 10.0, 20.0, 100.0, 200.0, 1000.0};
 const double PicoScopeFRA::inputRangeInitialEstimateMargin = 0.95;
-const uint32_t PicoScopeFRA::timeDomainDiagnosticDataLength = 1024;
+const uint32_t PicoScopeFRA::timeDomainDiagnosticDataLengthLimit = 1024;
 
 PICO_STATUS PicoScopeFRA::captureStatus;
 
@@ -485,7 +485,7 @@ bool PicoScopeFRA::ExecuteFRA(double startFreqHz, double stopFreqHz, int stepsPe
                 else
                 {
                     // The data for plotting is downsampled (aggregated)
-                    sampleInterval[freqStepIndex] = ((double)numSamples / (double)timeDomainDiagnosticDataLength) / actualSampFreqHz;
+                    sampleInterval[freqStepIndex] = ((double)numSamples / (double)timeDomainDiagnosticDataLengthLimit) / actualSampFreqHz;
                 }
                 diagNumSamplesToPlot[freqStepIndex] = inputMinData[freqStepIndex][0].size();
                 diagNumSamplesCaptured[freqStepIndex] = numSamples;
@@ -1116,7 +1116,10 @@ void PicoScopeFRA::GenerateDiagnosticOutput(void)
                    -rangeInfo[inRange[il][jl]].rangeVolts, rangeInfo[inRange[il][jl]].rangeVolts,
                    0, 0 );
             plcol0(1);
-            if (mSamplingMode == LOW_NOISE)
+            // Need second condition because pljoin won't place a point when the two points to join are the same.
+            // The two points will be the same when in high noise mode and the number of samples are less than
+            // the time domain diagnostic data limit (i.e. no aggregation was necessary).
+            if (mSamplingMode == LOW_NOISE || diagNumSamplesToPlot[il] <= timeDomainDiagnosticDataLengthLimit)
             {
                 plline( diagNumSamplesToPlot[il], times.data(), inputMinVoltages.data() );
             }
@@ -1160,7 +1163,10 @@ void PicoScopeFRA::GenerateDiagnosticOutput(void)
                    0, 0 );
             plcol0(1);
 
-            if (mSamplingMode == LOW_NOISE)
+            // Need second condition because pljoin won't place a point when the two points to join are the same.
+            // The two points will be the same when in high noise mode and the number of samples are less than
+            // the time domain diagnostic data limit (i.e. no aggregation was necessary).
+            if (mSamplingMode == LOW_NOISE || diagNumSamplesToPlot[il] <= timeDomainDiagnosticDataLengthLimit)
             {
                 plline( diagNumSamplesToPlot[il], times.data(), outputMinVoltages.data() );
             }
@@ -1414,7 +1420,7 @@ bool PicoScopeFRA::ProcessData(void)
     }
     if (mDiagnosticsOn)
     {
-        uint32_t compressedSize = mSamplingMode == LOW_NOISE ? 0 : timeDomainDiagnosticDataLength;
+        uint32_t compressedSize = mSamplingMode == LOW_NOISE ? 0 : timeDomainDiagnosticDataLengthLimit;
         ps->GetCompressedData( compressedSize, inputMinData[freqStepIndex][autorangeRetryCounter],
                                                outputMinData[freqStepIndex][autorangeRetryCounter],
                                                inputMaxData[freqStepIndex][autorangeRetryCounter],

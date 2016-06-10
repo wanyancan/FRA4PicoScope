@@ -257,7 +257,7 @@ class PicoScopeFRA
 
         static const double attenInfo[];
         static const double inputRangeInitialEstimateMargin;
-        static const uint32_t timeDomainDiagnosticDataLength;
+        static const uint32_t timeDomainDiagnosticDataLengthLimit;
 
         HANDLE hCaptureEvent;
         static PICO_STATUS captureStatus;
