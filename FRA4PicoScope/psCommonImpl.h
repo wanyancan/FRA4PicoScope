@@ -83,3 +83,4 @@ int32_t currentTimeIndisposedMs;
 void* cbParam;
 #endif
 bool InitializeScope( void );
+bool IsUSB3_0Connection();

@@ -318,7 +318,7 @@ PicoScope* ScopeSelector::OpenScope( AvailableScopeDescription_T scope )
         {
             if (handle > 0)
             {
-                selectedScope = new ps3000aImpl( handle );
+                selectedScope = new ps3000aImpl( handle, status );
                 selectedScope->Close();
                 delete selectedScope;
             }
@@ -326,7 +326,7 @@ PicoScope* ScopeSelector::OpenScope( AvailableScopeDescription_T scope )
         }
         else
         {
-            selectedScope = new ps3000aImpl( handle );
+            selectedScope = new ps3000aImpl( handle, status );
         }
     }
     else if (scope.driverFamily == PS4000)
@@ -350,11 +350,11 @@ PicoScope* ScopeSelector::OpenScope( AvailableScopeDescription_T scope )
     else if (scope.driverFamily == PS4000A)
     {
         status = ps4000aOpenUnit( &handle, (int8_t*)scope.serialNumber.c_str() );
-        if (status != PICO_OK || handle <= 0)
+        if ((status != PICO_OK && status != PICO_USB3_0_DEVICE_NON_USB3_0_PORT) || handle <= 0)
         {
             if (handle > 0)
             {
-                selectedScope = new ps4000aImpl( handle );
+                selectedScope = new ps4000aImpl( handle, status );
                 selectedScope->Close();
                 delete selectedScope;
             }
@@ -362,7 +362,7 @@ PicoScope* ScopeSelector::OpenScope( AvailableScopeDescription_T scope )
         }
         else
         {
-            selectedScope = new ps4000aImpl( handle );
+            selectedScope = new ps4000aImpl( handle, status );
         }
     }
     else if (scope.driverFamily == PS5000)
@@ -392,7 +392,7 @@ PicoScope* ScopeSelector::OpenScope( AvailableScopeDescription_T scope )
         {
             if (handle > 0)
             {
-                selectedScope = new ps5000aImpl( handle );
+                selectedScope = new ps5000aImpl( handle, status );
                 selectedScope->Close();
                 delete selectedScope;
             }
@@ -400,7 +400,7 @@ PicoScope* ScopeSelector::OpenScope( AvailableScopeDescription_T scope )
         }
         else
         {
-            selectedScope = new ps5000aImpl( handle );
+            selectedScope = new ps5000aImpl( handle, status );
         }
     }
     else if (scope.driverFamily == PS6000)

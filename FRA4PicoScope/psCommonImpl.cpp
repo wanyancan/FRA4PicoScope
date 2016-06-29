@@ -136,12 +136,16 @@ const uint32_t CommonClass(SCOPE_FAMILY_LT)::maxDataRequestSize = 16 * 1024 * 10
 // Purpose: Handles some of the object initialization
 //
 // Parameters: [in] _handle - Handle to the scope as defined by the PicoScope driver
+//             [in] _initialPowerState - the power state returned by open function
 //
 // Notes: 
 //
 ///////////////////////////////////////////////////////////////////////////////////////////////////
-
+#if defined(PS3000A) || defined(PS4000A) || defined(PS5000A)
+CommonCtor(SCOPE_FAMILY_LT)( int16_t _handle, PICO_STATUS _initialPowerState ) : PicoScope()
+#else
 CommonCtor(SCOPE_FAMILY_LT)( int16_t _handle ) : PicoScope()
+#endif
 {
     handle = _handle;
     initialized = false;
@@ -167,6 +171,9 @@ CommonCtor(SCOPE_FAMILY_LT)( int16_t _handle ) : PicoScope()
     mOutputBuffer.resize( bufferSize );
     mNumSamples = 0;
     buffersDirty = true;
+#if defined(PS3000A) || defined(PS4000A) || defined(PS5000A)
+    initialPowerState = _initialPowerState;
+#endif;
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -230,22 +237,19 @@ bool CommonMethod(SCOPE_FAMILY_LT,Initialized)( void )
 
 uint8_t CommonMethod(SCOPE_FAMILY_LT,GetNumChannels)( void )
 {
-#if defined(PS3000A) || defined(PS5000A)
+#if defined(PS3000A) || defined(PS4000A) || defined(PS5000A)
     if (numActualChannels > 2)
     {
-        PICO_STATUS status;
-        status = CommonApi(SCOPE_FAMILY_LT, CurrentPowerSource)(handle);
-        if (PICO_POWER_SUPPLY_NOT_CONNECTED == status)
-        {
-            numAvailableChannels = 2;
-        }
-        else if (PICO_USB3_0_DEVICE_NON_USB3_0_PORT == status)
-        {
-            numAvailableChannels = 2;
-        }
-        else if (PICO_POWER_SUPPLY_CONNECTED == status)
+        PICO_STATUS currentPowerState;
+        currentPowerState = CommonApi(SCOPE_FAMILY_LT, CurrentPowerSource)(handle);
+
+        if (IsUSB3_0Connection() || PICO_POWER_SUPPLY_CONNECTED == currentPowerState )
         {
             numAvailableChannels = numActualChannels;
+        }
+        else if (PICO_POWER_SUPPLY_NOT_CONNECTED == currentPowerState)
+        {
+            numAvailableChannels = 2;
         }
         else // The handle is invalid, so just set a default presuming an error will get caught later.
         {
@@ -1406,6 +1410,44 @@ bool CommonMethod(SCOPE_FAMILY_LT, Close)(void)
     status = CommonApi(SCOPE_FAMILY_LT, CloseUnit)( handle );
     handle = -1;
     return (PICO_OK == status);
+}
+
+////////////////////////////////////////////////////////////////////////////////////////////////////
+//
+// Name: Common method IsUSB3_0Connection
+//
+// Purpose: Determine if a USB 3.0 scope is on a USB 3.0 port
+//
+// Parameters: [out] return - true if the connection is USB 3.0
+//
+// Notes: 
+//
+///////////////////////////////////////////////////////////////////////////////////////////////////
+
+bool CommonMethod(SCOPE_FAMILY_LT, IsUSB3_0Connection)(void)
+{
+    bool retVal;
+    PICO_STATUS status;
+#if defined(NEW_PS_DRIVER_MODEL)
+    int16_t infoStringLength;
+#endif
+    int8_t usbVersion[16];
+    if (PICO_ERROR(CommonApi(SCOPE_FAMILY_LT, GetUnitInfo)(handle, usbVersion, sizeof(usbVersion) INFO_STRING_LENGTH_ARG, PICO_USB_VERSION)))
+    {
+        retVal = false;
+    }
+    else
+    {
+        if (!strcmp((char*)usbVersion, "3.0"))
+        {
+            retVal = true;
+        }
+        else
+        {
+            retVal = false;
+        }
+    }
+    return retVal;
 }
 
 #undef GetUnitInfo

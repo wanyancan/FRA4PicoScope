@@ -91,7 +91,7 @@ bool ps5000aImpl::InitializeScope(void)
     // Save the value set by the scope factory (ScopeSelector)
     numActualChannels = numAvailableChannels;
 
-    if (PICO_POWER_SUPPLY_NOT_CONNECTED == ps5000aCurrentPowerSource(handle))
+    if (PICO_POWER_SUPPLY_NOT_CONNECTED == initialPowerState)
     {
         ps5000aChangePowerSource(handle, PICO_POWER_SUPPLY_NOT_CONNECTED);
         numAvailableChannels = 2;

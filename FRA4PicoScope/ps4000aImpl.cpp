@@ -87,5 +87,18 @@ bool ps4000aImpl::InitializeScope(void)
     minRange = (PS_RANGE)PS4000A_10MV;
     maxRange = (PS_RANGE)PS4000A_20V;
 
+    // Save the value set by the scope factory (ScopeSelector)
+    numActualChannels = numAvailableChannels;
+
+    if (PICO_USB3_0_DEVICE_NON_USB3_0_PORT == initialPowerState)
+    {
+        ps4000aChangePowerSource(handle, PICO_USB3_0_DEVICE_NON_USB3_0_PORT);
+        numAvailableChannels = 2;
+    }
+    else
+    {
+        numAvailableChannels = numActualChannels;
+    }
+
     return true;
 }

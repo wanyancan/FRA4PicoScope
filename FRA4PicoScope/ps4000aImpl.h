@@ -29,8 +29,11 @@
 class ps4000aImpl : public PicoScope
 {
     public:
-        ps4000aImpl( int16_t _handle );
+        ps4000aImpl( int16_t _handle, PICO_STATUS _initialPowerState );
         ~ps4000aImpl();
+    private:
+        uint8_t numActualChannels;
+        PICO_STATUS initialPowerState;
 
 #define NEW_PS_DRIVER_MODEL
 #include "psCommonImpl.h"

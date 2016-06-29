@@ -260,6 +260,7 @@ class PicoScope
 
     private:
         virtual bool InitializeScope( void ) = 0;
+        virtual bool IsUSB3_0Connection(void) = 0;
 
     protected:
         bool initialized;

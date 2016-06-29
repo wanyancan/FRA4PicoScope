@@ -29,10 +29,11 @@
 class ps5000aImpl : public PicoScope
 {
     public:
-        ps5000aImpl( int16_t _handle );
+        ps5000aImpl( int16_t _handle, PICO_STATUS _initialPowerState );
         ~ps5000aImpl();
     private:
         uint8_t numActualChannels;
+        PICO_STATUS initialPowerState;
 
 #define NEW_PS_DRIVER_MODEL
 #include "psCommonImpl.h"
