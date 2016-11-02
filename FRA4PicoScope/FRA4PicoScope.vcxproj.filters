@@ -15,7 +15,6 @@
     </Filter>
   </ItemGroup>
   <ItemGroup>
-    <None Include="ReadMe.txt" />
     <None Include="small.ico">
       <Filter>Resource Files</Filter>
     </None>
@@ -55,6 +54,9 @@
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="DependencyChecker.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="FRA4PicoScopeInterfaceTypes.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>

@@ -41,7 +41,7 @@
   <PropertyGroup Label="UserMacros" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
     <LinkIncremental>true</LinkIncremental>
-    <IncludePath>lib\plplot_install_debug\include\plplot;$(ProgramFiles)\Pico Technology\SDK\inc;$(IncludePath)</IncludePath>
+    <IncludePath>..\lib\plplot_install_debug\include\plplot;$(ProgramFiles)\Pico Technology\SDK\inc;$(IncludePath)</IncludePath>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
     <LinkIncremental>false</LinkIncremental>
@@ -62,7 +62,7 @@
       <SubSystem>Windows</SubSystem>
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <AdditionalDependencies>ps2000.lib;ps3000.lib;ps2000a.lib;ps3000a.lib;ps4000.lib;ps4000a.lib;ps5000.lib;ps5000a.lib;ps6000.lib;plplot.lib;plplotqt.lib;qsastime.lib;shlwapi.lib;windowscodecs.lib;delayimp.lib;version.lib;QtCored.lib;QtGuid.lib;Ws2_32.lib;Imm32.lib;%(AdditionalDependencies)</AdditionalDependencies>
-      <AdditionalLibraryDirectories>lib\plplot_install_debug\lib;$(ProgramFiles)\Pico Technology\SDK\lib;lib;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
+      <AdditionalLibraryDirectories>..\lib\plplot_install_debug\lib;$(ProgramFiles)\Pico Technology\SDK\lib;..\lib;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
       <IgnoreAllDefaultLibraries>
       </IgnoreAllDefaultLibraries>
       <IgnoreSpecificDefaultLibraries>
@@ -102,12 +102,12 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <None Include="PicoScopeFRA.ico" />
-    <None Include="ReadMe.txt" />
     <None Include="small.ico" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="ApplicationSettings.h" />
     <ClInclude Include="DependencyChecker.h" />
+    <ClInclude Include="FRA4PicoScopeInterfaceTypes.h" />
     <ClInclude Include="FRAPlotter.h" />
     <ClInclude Include="PicoScopeFRA.h" />
     <ClInclude Include="PicoScopeFraApp.h" />
