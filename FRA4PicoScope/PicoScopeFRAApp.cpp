@@ -174,6 +174,15 @@ int APIENTRY _tWinMain(HINSTANCE hInstance,
 
     WCHAR szAppPath[MAX_PATH];
 
+    // Temporary workaround for issue 78; Can be removed if the Qt issue is fixed or Qt removed
+    typedef BOOL (WINAPI *PtrSetProcessDPIAware)(VOID);
+    static PtrSetProcessDPIAware ptrSetProcessDPIAware = NULL;
+    ptrSetProcessDPIAware = GetProcAddress( GetModuleHandle( TEXT("user32.dll") ), "SetProcessDPIAware" );
+    if (ptrSetProcessDPIAware)
+    {
+        ptrSetProcessDPIAware();
+    }
+
     // This code is to control where the PicoScope DLLs are loaded from.  We do this so
     // that we can reliably set a preference for the ones from the installed SDK.  To do
     // this, the PicoScope DLLs are delay loaded so that we can add the SDK lib folder in
