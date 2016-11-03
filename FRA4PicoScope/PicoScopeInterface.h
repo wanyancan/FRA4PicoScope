@@ -26,6 +26,7 @@
 #pragma once
 #include "StdAfx.h"
 #include "picoStatus.h"
+#include "FRA4PicoScopeInterfaceTypes.h"
 #include <string>
 #include <vector>
 
@@ -162,27 +163,6 @@ typedef struct
     double ratioDown; // multiplier for how the signal will scale when decreasing the size of the range, 0.0 if NA
     wchar_t* name;
 } RANGE_INFO_T;
-
-typedef enum
-{
-    PS_CHANNEL_A,
-    PS_CHANNEL_B,
-    PS_CHANNEL_C,
-    PS_CHANNEL_D,
-    PS_CHANNEL_E,
-    PS_CHANNEL_F,
-    PS_CHANNEL_G,
-    PS_CHANNEL_H,
-    PS_CHANNEL_INVALID
-} PS_CHANNEL;
-
-typedef enum
-{
-    PS_AC,
-    PS_DC,
-    PS_DC_1M = PS_DC,
-    PS_DC_50R
-} PS_COUPLING;
 
 typedef void (__stdcall *psBlockReady)
 (

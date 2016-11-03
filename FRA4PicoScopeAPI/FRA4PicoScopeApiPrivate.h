@@ -5,5 +5,3 @@
 
 extern ScopeSelector* pScopeSelector;
 extern PicoScopeFRA* pFRA;
-
-void Initialize(void);

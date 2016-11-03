@@ -30,23 +30,30 @@
 // FRA4PICOSCOPE_API functions as being imported from a DLL, whereas this DLL sees symbols
 // defined with this macro as being exported.
 
-#ifdef FRA4PICOSCOPE_EXPORTS
+#ifdef FRA4PICOSCOPEAPI_EXPORTS
 #define FRA4PICOSCOPE_API __declspec(dllexport)
 #else
 #define FRA4PICOSCOPE_API __declspec(dllimport)
 #endif
 
+typedef enum
+{
+    FRA_API_STATUS_COMPLETE,
+    FRA_API_STATUS_IN_PROGRESS,
+    FRA_API_STATUS_IDLE,
+    FRA_API_STATUS_ERROR
+} FraApiStatus_T;
+
 #include <stdint.h>
-#include "PicoScopeFRA.h" // TBD remove from here when types get declared in FRA4PicoScopeInterfaceTypes.h
 #include "FRA4PicoScopeInterfaceTypes.h"
 
 // TBD - callback function registration 
 
 FRA4PICOSCOPE_API bool SetScope( char* sn );
-
 FRA4PICOSCOPE_API double GetMinFrequency(void);
-FRA4PICOSCOPE_API bool ExecuteFRA(double startFreqHz, double stopFreqHz, int stepsPerDecade);
-FRA4PICOSCOPE_API bool CancelFRA();
+FRA4PICOSCOPE_API bool StartFRA(double startFreqHz, double stopFreqHz, int stepsPerDecade);
+FRA4PICOSCOPE_API bool CancelFRA( void );
+FRA4PICOSCOPE_API FraApiStatus_T GetFraStatus(void);
 FRA4PICOSCOPE_API void SetFraSettings( SamplingMode_T samplingMode, bool sweepDescending, double phaseWrappingThreshold );
 FRA4PICOSCOPE_API void SetFraTuning( double purityLowerLimit, uint16_t extraSettlingTimeMs, uint8_t autorangeTriesPerStep,
                                       double autorangeTolerance, double smallSignalResolutionTolerance, double maxAutorangeAmplitude, uint16_t minCyclesCaptured );
@@ -54,5 +61,8 @@ FRA4PICOSCOPE_API bool SetupChannels( int inputChannel, int inputChannelCoupling
                                       int outputChannel, int outputChannelCoupling, int outputChannelAttenuation, double outputDcOffset,
                                       double signalVpp );
 FRA4PICOSCOPE_API void GetResults( int* numSteps, double** freqsLogHz, double** gainsDb, double** phasesDeg, double** unwrappedPhasesDeg );
-FRA4PICOSCOPE_API void EnableDiagnostics(wchar_t baseDataPath);
-FRA4PICOSCOPE_API void DisableDiagnostics(void);
+FRA4PICOSCOPE_API void EnableDiagnostics( wchar_t* baseDataPath );
+FRA4PICOSCOPE_API void DisableDiagnostics( void );
+FRA4PICOSCOPE_API const wchar_t* GetMessageLog(void);
+FRA4PICOSCOPE_API bool Initialize(void);
+FRA4PICOSCOPE_API void Cleanup(void);

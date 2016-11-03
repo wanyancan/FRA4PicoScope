@@ -24,20 +24,13 @@
 //////////////////////////////////////////////////////////////////////////////////////////////////
 
 #pragma once
+#include "FRA4PicoScopeInterfaceTypes.h"
 #include "PicoScopeInterface.h"
 #include <memory>
 #include <vector>
 #include <array>
 #include <string>
 #include <complex>
-
-typedef enum
-{
-    ATTEN_1X,
-    ATTEN_10X,
-    ATTEN_100X,
-    ATTEN_1000X
-} ATTEN_T;
 
 typedef enum
 {
@@ -109,12 +102,6 @@ typedef struct
     } responseData;
 
 } FRA_STATUS_MESSAGE_T;
-
-typedef enum
-{
-    LOW_NOISE,
-    HIGH_NOISE
-} SamplingMode_T;
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 //
