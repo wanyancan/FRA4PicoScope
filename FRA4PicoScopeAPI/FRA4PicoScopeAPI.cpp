@@ -17,42 +17,45 @@ wstring messageLog;
 
 DWORD WINAPI ExecuteFRA(LPVOID lpdwThreadParam);
 bool FraStatusCallback( FRA_STATUS_MESSAGE_T& fraStatus );
+void LogMessage(const wstring statusMessage);
 
-bool Initialize( void )
+bool Initialize( FRA_STATUS_CALLBACK fraCb )
 {
     if (!bInitialized)
     {
         pScopeSelector = new ScopeSelector();
-        pFRA = new PicoScopeFRA(FraStatusCallback); // TBD callback
-        
+        pFRA = new PicoScopeFRA(fraCb ? fraCb : FraStatusCallback);
+
         if (pScopeSelector && pFRA)
         {
-            bInitialized = true;
+            // Create execution thread and event
+            hExecuteFraEvent = CreateEventW(NULL, true, false, L"ExecuteFRA");
+
+            if ((HANDLE)NULL == hExecuteFraEvent)
+            {
+                LogMessage(L"Error: Could not initialize application event \"ExecuteFRA\".");
+            }
+            else if (ERROR_ALREADY_EXISTS == GetLastError())
+            {
+                LogMessage(L"Error: Cannot run multiple instances of FRA4PicoScopeAPI.");
+            }
+            else if (!ResetEvent(hExecuteFraEvent))
+            {
+                LogMessage(L"Error: Could not reset application event \"ExecuteFRA\".");
+            }
+            else
+            {
+                hExecuteFraThread = CreateThread(NULL, 0, ExecuteFRA, NULL, 0, NULL);
+                if ((HANDLE)NULL == hExecuteFraThread)
+                {
+                    LogMessage(L"Error: Could not initialize application FRA execution thread.");
+                }
+                else
+                {
+                    bInitialized = true;
+                }
+            }
         }
-    }
-
-    // Create execution thread and event
-    hExecuteFraEvent = CreateEventW(NULL, true, false, L"ExecuteFRA");
-
-    if ((HANDLE)NULL == hExecuteFraEvent)
-    {
-        MessageBox(0, L"Could not initialize application event \"ExecuteFRA\".", L"Fatal Error", MB_OK);
-    }
-    else if (ERROR_ALREADY_EXISTS == GetLastError())
-    {
-        MessageBox(0, L"Cannot run multiple instances of FRA4PicoScope.", L"Fatal Error", MB_OK);
-    }
-
-    if (!ResetEvent(hExecuteFraEvent))
-    {
-        MessageBox(0, L"Could not reset application event \"ExecuteFRA\".", L"Fatal Error", MB_OK);
-    }
-
-    hExecuteFraThread = CreateThread(NULL, 0, ExecuteFRA, NULL, 0, NULL);
-
-    if ((HANDLE)NULL == hExecuteFraThread)
-    {
-        MessageBox(0, L"Could not initialize application FRA execution thread.", L"Fatal Error", MB_OK);
     }
 
     return bInitialized;
@@ -94,9 +97,9 @@ bool CancelFRA( void )
     return true;
 }
 
-FRA4PICOSCOPE_API FraApiStatus_T GetFraStatus(void)
+FRA4PICOSCOPE_API FRA_STATUS_T GetFraStatus(void)
 {
-    return FRA_API_STATUS_COMPLETE;
+    return FRA_STATUS_COMPLETE;
 }
 
 void SetFraSettings( SamplingMode_T samplingMode, bool sweepDescending, double phaseWrappingThreshold )

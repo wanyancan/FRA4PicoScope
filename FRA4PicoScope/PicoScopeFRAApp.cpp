@@ -2008,7 +2008,7 @@ bool StoreSettings(void)
 
 bool FraStatusCallback( FRA_STATUS_MESSAGE_T& fraStatusMsg )
 {
-    if (fraStatusMsg.status == FRA_STATUS_PROGRESS)
+    if (fraStatusMsg.status == FRA_STATUS_IN_PROGRESS)
     {
         HWND hndCtrl;
         TCHAR szStatus[64];

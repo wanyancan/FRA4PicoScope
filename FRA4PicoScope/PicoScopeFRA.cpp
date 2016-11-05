@@ -426,7 +426,7 @@ bool PicoScopeFRA::ExecuteFRA(double startFreqHz, double stopFreqHz, int stepsPe
         }
 
         // Update the status to indicate the FRA has started
-        UpdateStatus( fraStatusMsg, FRA_STATUS_PROGRESS, 0, numSteps );
+        UpdateStatus( fraStatusMsg, FRA_STATUS_IN_PROGRESS, 0, numSteps );
 
         freqStepCounter = 1;
         freqStepIndex = mSweepDescending ? numSteps-1 : 0;
@@ -470,7 +470,7 @@ bool PicoScopeFRA::ExecuteFRA(double startFreqHz, double stopFreqHz, int stepsPe
                                 (void)CalculateGainAndPhase(&gainsDb[freqStepIndex], &phasesDeg[freqStepIndex]);
 
                                 // Notify progress
-                                UpdateStatus(fraStatusMsg, FRA_STATUS_PROGRESS, freqStepCounter, numSteps);
+                                UpdateStatus(fraStatusMsg, FRA_STATUS_IN_PROGRESS, freqStepCounter, numSteps);
                                 break;
                             }
                         }
@@ -538,7 +538,7 @@ bool PicoScopeFRA::ExecuteFRA(double startFreqHz, double stopFreqHz, int stepsPe
                     gainsDb[freqStepIndex] = 0.0;
                     phasesDeg[freqStepIndex] = 0.0;
                     // Notify progress
-                    UpdateStatus( fraStatusMsg, FRA_STATUS_PROGRESS, freqStepCounter, numSteps );
+                    UpdateStatus( fraStatusMsg, FRA_STATUS_IN_PROGRESS, freqStepCounter, numSteps );
                 }
                 else
                 {
