@@ -230,7 +230,8 @@ class PicoScopeFRA
         inline bool UpdateStatus( FRA_STATUS_MESSAGE_T &msg, FRA_STATUS_T status, int stepsComplete, int numSteps )
         {
             msg.status = status;
-            if (status == FRA_STATUS_IN_PROGRESS)
+            if (status == FRA_STATUS_IN_PROGRESS ||
+                status == FRA_STATUS_COMPLETE)
             {
                 msg.statusData.progress.numSteps = numSteps;
                 msg.statusData.progress.stepsComplete = stepsComplete;

@@ -41,12 +41,12 @@
 
 FRA4PICOSCOPE_API bool SetScope( char* sn );
 FRA4PICOSCOPE_API double GetMinFrequency(void);
-FRA4PICOSCOPE_API bool StartFRA(double startFreqHz, double stopFreqHz, int stepsPerDecade);
+FRA4PICOSCOPE_API bool StartFRA( double startFreqHz, double stopFreqHz, int stepsPerDecade );
 FRA4PICOSCOPE_API bool CancelFRA( void );
 FRA4PICOSCOPE_API FRA_STATUS_T GetFraStatus(void);
 FRA4PICOSCOPE_API void SetFraSettings( SamplingMode_T samplingMode, bool sweepDescending, double phaseWrappingThreshold );
 FRA4PICOSCOPE_API void SetFraTuning( double purityLowerLimit, uint16_t extraSettlingTimeMs, uint8_t autorangeTriesPerStep,
-                                      double autorangeTolerance, double smallSignalResolutionTolerance, double maxAutorangeAmplitude, uint16_t minCyclesCaptured );
+                                     double autorangeTolerance, double smallSignalResolutionTolerance, double maxAutorangeAmplitude, uint16_t minCyclesCaptured );
 FRA4PICOSCOPE_API bool SetupChannels( int inputChannel, int inputChannelCoupling, int inputChannelAttenuation, double inputDcOffset,
                                       int outputChannel, int outputChannelCoupling, int outputChannelAttenuation, double outputDcOffset,
                                       double signalVpp );

@@ -564,6 +564,8 @@ bool PicoScopeFRA::ExecuteFRA(double startFreqHz, double stopFreqHz, int stepsPe
 
         TransferLatestResults();
 
+        UpdateStatus(fraStatusMsg, FRA_STATUS_COMPLETE, freqStepCounter, numSteps);
+
         if (mDiagnosticsOn)
         {
             // Don't let failure to generate diagnostic plots be fatal.
