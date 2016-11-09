@@ -108,7 +108,42 @@ void LogMessage( const wstring statusMessage )
 
 bool SetScope( char* sn )
 {
-    return true;
+    bool retVal = false;
+    PicoScope* pScope;
+    bool bScopeFound = false;
+    std::vector<AvailableScopeDescription_T> scopes;
+    uint8_t idx;
+
+    pScopeSelector->GetAvailableScopes(scopes);
+
+    for (idx = 0; idx < scopes.size(); idx++)
+    {
+        if (scopes[idx].serialNumber == sn)
+        {
+            bScopeFound = true;
+            break;
+        }
+    }
+
+    if (bScopeFound)
+    {
+        pScope = pScopeSelector->OpenScope(scopes[idx]);
+        if (pScope)
+        {
+            pFRA->SetInstrument(pScope);
+            retVal = true;
+        }
+        else
+        {
+            retVal = false;
+        }
+    }
+    else
+    {
+        retVal = false;
+    }
+
+    return retVal;
 }
 
 double GetMinFrequency( void )
@@ -182,7 +217,7 @@ bool SetupChannels( int _inputChannel, int _inputChannelCoupling, int _inputChan
 
 void GetResults( int* numSteps, double** freqsLogHz, double** gainsDb, double** phasesDeg, double** unwrappedPhasesDeg )
 {
-
+    pFRA->GetResults( numSteps, freqsLogHz, gainsDb, phasesDeg, unwrappedPhasesDeg );
 }
 
 void EnableDiagnostics( wchar_t* _baseDataPath )
