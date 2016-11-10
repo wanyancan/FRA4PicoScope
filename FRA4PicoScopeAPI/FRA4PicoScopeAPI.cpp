@@ -98,6 +98,9 @@ void Cleanup( void )
     pScopeSelector = NULL;
     pFRA = NULL;
 
+    CloseHandle(hExecuteFraEvent);
+    CloseHandle(hExecuteFraThread);
+
     bInitialized = false;
 }
 
@@ -250,6 +253,7 @@ DWORD WINAPI ExecuteFRA(LPVOID lpdwThreadParam)
         if (!ResetEvent(hExecuteFraEvent))
         {
             LogMessage(L"Fatal error: Failed to reset FRA execution start event");
+            status = FRA_STATUS_FATAL_ERROR;
             return -1;
         }
 
@@ -288,6 +292,7 @@ DWORD WINAPI ExecuteFRA(LPVOID lpdwThreadParam)
         else
         {
             LogMessage(L"Fatal error: Invalid result from waiting on FRA execution start event");
+            status = FRA_STATUS_FATAL_ERROR;
             return -1;
         }
     }
