@@ -40,10 +40,10 @@
 #include "FRA4PicoScopeInterfaceTypes.h"
 
 FRA4PICOSCOPE_API bool SetScope( char* sn );
-FRA4PICOSCOPE_API double GetMinFrequency(void);
+FRA4PICOSCOPE_API double GetMinFrequency( void );
 FRA4PICOSCOPE_API bool StartFRA( double startFreqHz, double stopFreqHz, int stepsPerDecade );
 FRA4PICOSCOPE_API bool CancelFRA( void );
-FRA4PICOSCOPE_API FRA_STATUS_T GetFraStatus(void);
+FRA4PICOSCOPE_API FRA_STATUS_T GetFraStatus( void );
 FRA4PICOSCOPE_API void SetFraSettings( SamplingMode_T samplingMode, bool sweepDescending, double phaseWrappingThreshold );
 FRA4PICOSCOPE_API void SetFraTuning( double purityLowerLimit, uint16_t extraSettlingTimeMs, uint8_t autorangeTriesPerStep,
                                      double autorangeTolerance, double smallSignalResolutionTolerance, double maxAutorangeAmplitude, uint16_t minCyclesCaptured );
@@ -53,6 +53,9 @@ FRA4PICOSCOPE_API bool SetupChannels( int inputChannel, int inputChannelCoupling
 FRA4PICOSCOPE_API void GetResults( int* numSteps, double** freqsLogHz, double** gainsDb, double** phasesDeg, double** unwrappedPhasesDeg );
 FRA4PICOSCOPE_API void EnableDiagnostics( wchar_t* baseDataPath );
 FRA4PICOSCOPE_API void DisableDiagnostics( void );
-FRA4PICOSCOPE_API const wchar_t* GetMessageLog(void);
-FRA4PICOSCOPE_API bool Initialize(FRA_STATUS_CALLBACK fraCb);
-FRA4PICOSCOPE_API void Cleanup(void);
+FRA4PICOSCOPE_API void AutoClearMessageLog( bool bAutoClear );
+FRA4PICOSCOPE_API void EnableMessageLog( bool bEnable );
+FRA4PICOSCOPE_API const wchar_t* GetMessageLog( void );
+FRA4PICOSCOPE_API void ClearMessageLog( void );
+FRA4PICOSCOPE_API bool Initialize( FRA_STATUS_CALLBACK fraCb );
+FRA4PICOSCOPE_API void Cleanup( void );

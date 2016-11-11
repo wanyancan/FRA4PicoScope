@@ -15,6 +15,8 @@ HANDLE hExecuteFraThread;
 HANDLE hExecuteFraEvent;
 
 wstring messageLog;
+bool bLogMessages = false;
+bool bAutoClearLog = true;
 FRA_STATUS_CALLBACK FraStatusCallback = NULL;
 
 DWORD WINAPI ExecuteFRA(LPVOID lpdwThreadParam);
@@ -106,7 +108,10 @@ void Cleanup( void )
 
 void LogMessage( const wstring statusMessage )
 {
-    messageLog += statusMessage;
+    if (bLogMessages)
+    {
+        messageLog += statusMessage + TEXT("\n");
+    }
 }
 
 bool SetScope( char* sn )
@@ -166,6 +171,10 @@ bool StartFRA( double _startFreqHz, double _stopFreqHz, int _stepsPerDecade )
         if (WaitForSingleObject(hExecuteFraEvent, 0) == WAIT_TIMEOUT) // Is the event not already signalled?
         {
             retVal = SetEvent(hExecuteFraEvent) ? true : false;
+            if (retVal)
+            {
+                status = FRA_STATUS_IN_PROGRESS;
+            }
         }
     }
 
@@ -177,7 +186,7 @@ bool CancelFRA( void )
     return pFRA->CancelFRA();
 }
 
-FRA4PICOSCOPE_API FRA_STATUS_T GetFraStatus(void)
+FRA4PICOSCOPE_API FRA_STATUS_T GetFraStatus( void )
 {
     return status;
 }
@@ -234,17 +243,27 @@ void DisableDiagnostics( void )
     diagnosticsOn = false;
 }
 
-const wchar_t* GetMessageLog(void)
+void AutoClearMessageLog( bool bAutoClear )
+{
+    bAutoClearLog = bAutoClear;
+}
+
+void EnableMessageLog( bool bEnable )
+{
+    bLogMessages = bEnable;
+}
+
+const wchar_t* GetMessageLog( void )
 {
     return messageLog.c_str();
 }
 
-void ClearMessageLog(void)
+void ClearMessageLog( void )
 {
     messageLog = TEXT("");
 }
 
-DWORD WINAPI ExecuteFRA(LPVOID lpdwThreadParam)
+DWORD WINAPI ExecuteFRA( LPVOID lpdwThreadParam )
 {
     DWORD dwWaitResult;
 
@@ -261,6 +280,11 @@ DWORD WINAPI ExecuteFRA(LPVOID lpdwThreadParam)
 
         if (dwWaitResult == WAIT_OBJECT_0)
         {
+            if (bAutoClearLog)
+            {
+                ClearMessageLog();
+            }
+
             if (NULL == pScopeSelector->GetSelectedScope()) // Scope not created
             {
                 LogMessage(L"Error: Device not initialized.");
@@ -302,14 +326,19 @@ DWORD WINAPI ExecuteFRA(LPVOID lpdwThreadParam)
 
 bool LocalFraStatusCallback( FRA_STATUS_MESSAGE_T& fraStatus )
 {
-    status = fraStatus.status;
-
     if (FraStatusCallback)
     {
+        status = fraStatus.status;
         FraStatusCallback( fraStatus );
     }
     else
     {
+        // Don't pass along message status in polled mode since they are not
+        // a terminal state and happen while FRA is in-progress
+        if (FRA_STATUS_MESSAGE != fraStatus.status)
+        {
+            status = fraStatus.status;
+        }
         // Set interactive response parameters in a way to indicate that we should 
         // not proceed because there was no way to gather response from the application level.
         if (FRA_STATUS_AUTORANGE_LIMIT == fraStatus.status ||
@@ -317,6 +346,11 @@ bool LocalFraStatusCallback( FRA_STATUS_MESSAGE_T& fraStatus )
         {
             fraStatus.responseData.proceed = false;
         }
+    }
+
+    if (FRA_STATUS_MESSAGE == fraStatus.status)
+    {
+        LogMessage(fraStatus.statusText);
     }
 
     return true;
