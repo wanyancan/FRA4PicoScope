@@ -124,24 +124,34 @@ bool __stdcall SetScope( char* sn )
     PicoScope* pScope;
     bool bScopeFound = false;
     std::vector<AvailableScopeDescription_T> scopes;
+    AvailableScopeDescription_T scopeToOpen;
     uint8_t idx;
 
     if (bInitialized)
     {
         pScopeSelector->GetAvailableScopes(scopes);
 
-        for (idx = 0; idx < scopes.size(); idx++)
+        if ((NULL == sn || sn[0] == 0) && scopes.size() == 1)
         {
-            if (scopes[idx].serialNumber == sn)
+            bScopeFound = true;
+            scopeToOpen = scopes[0];
+        }
+        else
+        {
+            for (idx = 0; idx < scopes.size(); idx++)
             {
-                bScopeFound = true;
-                break;
+                if (scopes[idx].serialNumber == sn)
+                {
+                    bScopeFound = true;
+                    scopeToOpen = scopes[idx];
+                    break;
+                }
             }
         }
 
         if (bScopeFound)
         {
-            pScope = pScopeSelector->OpenScope(scopes[idx]);
+            pScope = pScopeSelector->OpenScope(scopeToOpen);
             if (pScope)
             {
                 pFRA->SetInstrument(pScope);
