@@ -126,33 +126,28 @@ bool __stdcall SetScope( char* sn )
     std::vector<AvailableScopeDescription_T> scopes;
     uint8_t idx;
 
-    pScopeSelector->GetAvailableScopes(scopes);
+    if (bInitialized)
+    {
+        pScopeSelector->GetAvailableScopes(scopes);
 
-    for (idx = 0; idx < scopes.size(); idx++)
-    {
-        if (scopes[idx].serialNumber == sn)
+        for (idx = 0; idx < scopes.size(); idx++)
         {
-            bScopeFound = true;
-            break;
+            if (scopes[idx].serialNumber == sn)
+            {
+                bScopeFound = true;
+                break;
+            }
         }
-    }
 
-    if (bScopeFound)
-    {
-        pScope = pScopeSelector->OpenScope(scopes[idx]);
-        if (pScope)
+        if (bScopeFound)
         {
-            pFRA->SetInstrument(pScope);
-            retVal = true;
+            pScope = pScopeSelector->OpenScope(scopes[idx]);
+            if (pScope)
+            {
+                pFRA->SetInstrument(pScope);
+                retVal = true;
+            }
         }
-        else
-        {
-            retVal = false;
-        }
-    }
-    else
-    {
-        retVal = false;
     }
 
     return retVal;
@@ -187,7 +182,14 @@ bool __stdcall StartFRA( double _startFreqHz, double _stopFreqHz, int _stepsPerD
 
 bool __stdcall CancelFRA( void )
 {
-    return pFRA->CancelFRA();
+    bool retVal = false;
+
+    if (bInitialized)
+    {
+        retVal = pFRA->CancelFRA();
+    }
+
+    return retVal;
 }
 
 FRA_STATUS_T __stdcall GetFraStatus( void )
@@ -203,7 +205,7 @@ void __stdcall SetFraSettings( SamplingMode_T _samplingMode, bool _sweepDescendi
 }
 
 void __stdcall SetFraTuning( double _purityLowerLimit, uint16_t _extraSettlingTimeMs, uint8_t _autorangeTriesPerStep,
-                   double _autorangeTolerance, double _smallSignalResolutionTolerance, double _maxAutorangeAmplitude, uint16_t _minCyclesCaptured )
+                             double _autorangeTolerance, double _smallSignalResolutionTolerance, double _maxAutorangeAmplitude, uint16_t _minCyclesCaptured )
 {
     purityLowerLimit = _purityLowerLimit;
     extraSettlingTimeMs = _extraSettlingTimeMs;
@@ -215,8 +217,8 @@ void __stdcall SetFraTuning( double _purityLowerLimit, uint16_t _extraSettlingTi
 }
 
 bool __stdcall SetupChannels( int _inputChannel, int _inputChannelCoupling, int _inputChannelAttenuation, double _inputDcOffset,
-                    int _outputChannel, int _outputChannelCoupling, int _outputChannelAttenuation, double _outputDcOffset,
-                    double _signalVpp)
+                              int _outputChannel, int _outputChannelCoupling, int _outputChannelAttenuation, double _outputDcOffset,
+                              double _signalVpp)
 {
     inputChannel = _inputChannel;
     inputChannelCoupling = _inputChannelCoupling;
@@ -247,25 +249,28 @@ int __stdcall GetNumSteps( void )
 void __stdcall GetResults( double* freqsLogHz, double* gainsDb, double* phasesDeg, double* unwrappedPhasesDeg )
 {
     int numSteps;
-    double *_freqsLogHz, *_gainsDb, *_phasesDeg, *_unwrappedPhasesDeg;
+    double *_freqsLogHz = NULL, *_gainsDb = NULL, *_phasesDeg = NULL, *_unwrappedPhasesDeg = NULL;
 
-    pFRA->GetResults( &numSteps, &_freqsLogHz, &_gainsDb, &_phasesDeg, &_unwrappedPhasesDeg );
+    if (pFRA)
+    {
+        pFRA->GetResults(&numSteps, &_freqsLogHz, &_gainsDb, &_phasesDeg, &_unwrappedPhasesDeg);
 
-    if (freqsLogHz &&_freqsLogHz)
-    {
-        memcpy( freqsLogHz, _freqsLogHz, numSteps*sizeof(double) );
-    }
-    if (gainsDb && _gainsDb)
-    {
-        memcpy(gainsDb, _gainsDb, numSteps*sizeof(double));
-    }
-    if (phasesDeg && _phasesDeg)
-    {
-        memcpy(phasesDeg, _phasesDeg, numSteps*sizeof(double));
-    }
-    if (unwrappedPhasesDeg && _unwrappedPhasesDeg)
-    {
-        memcpy(unwrappedPhasesDeg, _unwrappedPhasesDeg, numSteps*sizeof(double));
+        if (freqsLogHz && _freqsLogHz)
+        {
+            memcpy(freqsLogHz, _freqsLogHz, numSteps*sizeof(double));
+        }
+        if (gainsDb && _gainsDb)
+        {
+            memcpy(gainsDb, _gainsDb, numSteps*sizeof(double));
+        }
+        if (phasesDeg && _phasesDeg)
+        {
+            memcpy(phasesDeg, _phasesDeg, numSteps*sizeof(double));
+        }
+        if (unwrappedPhasesDeg && _unwrappedPhasesDeg)
+        {
+            memcpy(unwrappedPhasesDeg, _unwrappedPhasesDeg, numSteps*sizeof(double));
+        }
     }
 }
 
@@ -325,11 +330,13 @@ DWORD WINAPI ExecuteFRA( LPVOID lpdwThreadParam )
             if (NULL == pScopeSelector->GetSelectedScope()) // Scope not created
             {
                 LogMessage(L"Error: Device not initialized.");
+                status = FRA_STATUS_FATAL_ERROR;
                 continue;
             }
             else if (!(pScopeSelector->GetSelectedScope()->IsCompatible()))
             {
                 LogMessage(L"Error: Selected scope is not compatible.");
+                status = FRA_STATUS_FATAL_ERROR;
                 continue;
             }
 
@@ -343,11 +350,13 @@ DWORD WINAPI ExecuteFRA( LPVOID lpdwThreadParam )
                                              signalVpp))
             {
                 continue;
+                status = FRA_STATUS_FATAL_ERROR;
             }
 
             if (false == pFRA->ExecuteFRA(startFreqHz, stopFreqHz, stepsPerDecade))
             {
                 continue;
+                status = FRA_STATUS_FATAL_ERROR;
             }
         }
         else
