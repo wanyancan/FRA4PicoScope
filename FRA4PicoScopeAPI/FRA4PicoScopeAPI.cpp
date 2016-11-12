@@ -49,13 +49,17 @@ static uint16_t minCyclesCaptured = 16; // Default
 static bool diagnosticsOn = false; // Default
 static wstring baseDataPath = L"";
 
-bool Initialize( FRA_STATUS_CALLBACK fraCb )
+void __stdcall SetCallback( FRA_STATUS_CALLBACK fraCb )
+{
+    FraStatusCallback = fraCb;
+}
+
+bool __stdcall Initialize( void )
 {
     if (!bInitialized)
     {
         pScopeSelector = new ScopeSelector();
         pFRA = new PicoScopeFRA(LocalFraStatusCallback);
-        FraStatusCallback = fraCb;
 
         if (pScopeSelector && pFRA)
         {
@@ -92,7 +96,7 @@ bool Initialize( FRA_STATUS_CALLBACK fraCb )
     return bInitialized;
 }
 
-void Cleanup( void )
+void __stdcall Cleanup( void )
 {
     delete pScopeSelector;
     delete pFRA;
@@ -114,7 +118,7 @@ void LogMessage( const wstring statusMessage )
     }
 }
 
-bool SetScope( char* sn )
+bool __stdcall SetScope( char* sn )
 {
     bool retVal = false;
     PicoScope* pScope;
@@ -154,12 +158,12 @@ bool SetScope( char* sn )
     return retVal;
 }
 
-double GetMinFrequency( void )
+double __stdcall GetMinFrequency( void )
 {
     return pFRA->GetMinFrequency();
 }
 
-bool StartFRA( double _startFreqHz, double _stopFreqHz, int _stepsPerDecade )
+bool __stdcall StartFRA( double _startFreqHz, double _stopFreqHz, int _stepsPerDecade )
 {
     bool retVal = false;
 
@@ -181,24 +185,24 @@ bool StartFRA( double _startFreqHz, double _stopFreqHz, int _stepsPerDecade )
     return retVal;
 }
 
-bool CancelFRA( void )
+bool __stdcall CancelFRA( void )
 {
     return pFRA->CancelFRA();
 }
 
-FRA4PICOSCOPE_API FRA_STATUS_T GetFraStatus( void )
+FRA_STATUS_T __stdcall GetFraStatus( void )
 {
     return status;
 }
 
-void SetFraSettings( SamplingMode_T _samplingMode, bool _sweepDescending, double _phaseWrappingThreshold )
+void __stdcall SetFraSettings( SamplingMode_T _samplingMode, bool _sweepDescending, double _phaseWrappingThreshold )
 {
     samplingMode = _samplingMode;
     sweepDescending = _sweepDescending;
     phaseWrappingThreshold = _phaseWrappingThreshold;
 }
 
-void SetFraTuning( double _purityLowerLimit, uint16_t _extraSettlingTimeMs, uint8_t _autorangeTriesPerStep,
+void __stdcall SetFraTuning( double _purityLowerLimit, uint16_t _extraSettlingTimeMs, uint8_t _autorangeTriesPerStep,
                    double _autorangeTolerance, double _smallSignalResolutionTolerance, double _maxAutorangeAmplitude, uint16_t _minCyclesCaptured )
 {
     purityLowerLimit = _purityLowerLimit;
@@ -210,7 +214,7 @@ void SetFraTuning( double _purityLowerLimit, uint16_t _extraSettlingTimeMs, uint
     minCyclesCaptured = _minCyclesCaptured;
 }
 
-bool SetupChannels( int _inputChannel, int _inputChannelCoupling, int _inputChannelAttenuation, double _inputDcOffset,
+bool __stdcall SetupChannels( int _inputChannel, int _inputChannelCoupling, int _inputChannelAttenuation, double _inputDcOffset,
                     int _outputChannel, int _outputChannelCoupling, int _outputChannelAttenuation, double _outputDcOffset,
                     double _signalVpp)
 {
@@ -227,38 +231,71 @@ bool SetupChannels( int _inputChannel, int _inputChannelCoupling, int _inputChan
     return true;
 }
 
-void GetResults( int* numSteps, double** freqsLogHz, double** gainsDb, double** phasesDeg, double** unwrappedPhasesDeg )
+int __stdcall GetNumSteps( void )
 {
-    pFRA->GetResults( numSteps, freqsLogHz, gainsDb, phasesDeg, unwrappedPhasesDeg );
+    int retVal = 0;
+    double *freqsLogHz, *gainsDb, *phasesDeg, *unwrappedPhasesDeg;
+
+    if (pFRA)
+    {
+        pFRA->GetResults( &retVal, &freqsLogHz, &gainsDb, &phasesDeg, &unwrappedPhasesDeg );
+    }
+
+    return retVal;
 }
 
-void EnableDiagnostics( wchar_t* _baseDataPath )
+void __stdcall GetResults( double* freqsLogHz, double* gainsDb, double* phasesDeg, double* unwrappedPhasesDeg )
+{
+    int numSteps;
+    double *_freqsLogHz, *_gainsDb, *_phasesDeg, *_unwrappedPhasesDeg;
+
+    pFRA->GetResults( &numSteps, &_freqsLogHz, &_gainsDb, &_phasesDeg, &_unwrappedPhasesDeg );
+
+    if (freqsLogHz &&_freqsLogHz)
+    {
+        memcpy( freqsLogHz, _freqsLogHz, numSteps*sizeof(double) );
+    }
+    if (gainsDb && _gainsDb)
+    {
+        memcpy(gainsDb, _gainsDb, numSteps*sizeof(double));
+    }
+    if (phasesDeg && _phasesDeg)
+    {
+        memcpy(phasesDeg, _phasesDeg, numSteps*sizeof(double));
+    }
+    if (unwrappedPhasesDeg && _unwrappedPhasesDeg)
+    {
+        memcpy(unwrappedPhasesDeg, _unwrappedPhasesDeg, numSteps*sizeof(double));
+    }
+}
+
+void __stdcall EnableDiagnostics( wchar_t* _baseDataPath )
 {
     baseDataPath = _baseDataPath;
     diagnosticsOn = true;
 }
 
-void DisableDiagnostics( void )
+void __stdcall DisableDiagnostics( void )
 {
     diagnosticsOn = false;
 }
 
-void AutoClearMessageLog( bool bAutoClear )
+void __stdcall AutoClearMessageLog( bool bAutoClear )
 {
     bAutoClearLog = bAutoClear;
 }
 
-void EnableMessageLog( bool bEnable )
+void __stdcall EnableMessageLog( bool bEnable )
 {
     bLogMessages = bEnable;
 }
 
-const wchar_t* GetMessageLog( void )
+const wchar_t* __stdcall GetMessageLog( void )
 {
     return messageLog.c_str();
 }
 
-void ClearMessageLog( void )
+void __stdcall ClearMessageLog( void )
 {
     messageLog = TEXT("");
 }

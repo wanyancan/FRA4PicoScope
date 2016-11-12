@@ -30,32 +30,40 @@
 // FRA4PICOSCOPE_API functions as being imported from a DLL, whereas this DLL sees symbols
 // defined with this macro as being exported.
 
-#ifdef FRA4PICOSCOPEAPI_EXPORTS
-#define FRA4PICOSCOPE_API __declspec(dllexport)
+#ifdef __cplusplus
+#define EXTERN_C extern "C"
 #else
-#define FRA4PICOSCOPE_API __declspec(dllimport)
+#define EXTERN_C
+#endif
+
+#ifdef FRA4PICOSCOPEAPI_EXPORTS
+#define FRA4PICOSCOPE_API EXTERN_C __declspec(dllexport)
+#else
+#define FRA4PICOSCOPE_API EXTERN_C __declspec(dllimport)
 #endif
 
 #include <stdint.h>
 #include "FRA4PicoScopeInterfaceTypes.h"
 
-FRA4PICOSCOPE_API bool SetScope( char* sn );
-FRA4PICOSCOPE_API double GetMinFrequency( void );
-FRA4PICOSCOPE_API bool StartFRA( double startFreqHz, double stopFreqHz, int stepsPerDecade );
-FRA4PICOSCOPE_API bool CancelFRA( void );
-FRA4PICOSCOPE_API FRA_STATUS_T GetFraStatus( void );
-FRA4PICOSCOPE_API void SetFraSettings( SamplingMode_T samplingMode, bool sweepDescending, double phaseWrappingThreshold );
-FRA4PICOSCOPE_API void SetFraTuning( double purityLowerLimit, uint16_t extraSettlingTimeMs, uint8_t autorangeTriesPerStep,
-                                     double autorangeTolerance, double smallSignalResolutionTolerance, double maxAutorangeAmplitude, uint16_t minCyclesCaptured );
-FRA4PICOSCOPE_API bool SetupChannels( int inputChannel, int inputChannelCoupling, int inputChannelAttenuation, double inputDcOffset,
-                                      int outputChannel, int outputChannelCoupling, int outputChannelAttenuation, double outputDcOffset,
-                                      double signalVpp );
-FRA4PICOSCOPE_API void GetResults( int* numSteps, double** freqsLogHz, double** gainsDb, double** phasesDeg, double** unwrappedPhasesDeg );
-FRA4PICOSCOPE_API void EnableDiagnostics( wchar_t* baseDataPath );
-FRA4PICOSCOPE_API void DisableDiagnostics( void );
-FRA4PICOSCOPE_API void AutoClearMessageLog( bool bAutoClear );
-FRA4PICOSCOPE_API void EnableMessageLog( bool bEnable );
-FRA4PICOSCOPE_API const wchar_t* GetMessageLog( void );
-FRA4PICOSCOPE_API void ClearMessageLog( void );
-FRA4PICOSCOPE_API bool Initialize( FRA_STATUS_CALLBACK fraCb );
-FRA4PICOSCOPE_API void Cleanup( void );
+FRA4PICOSCOPE_API bool __stdcall SetScope( char* sn );
+FRA4PICOSCOPE_API double __stdcall GetMinFrequency( void );
+FRA4PICOSCOPE_API bool __stdcall StartFRA( double startFreqHz, double stopFreqHz, int stepsPerDecade );
+FRA4PICOSCOPE_API bool __stdcall CancelFRA( void );
+FRA4PICOSCOPE_API FRA_STATUS_T __stdcall GetFraStatus( void );
+FRA4PICOSCOPE_API void __stdcall SetFraSettings( SamplingMode_T samplingMode, bool sweepDescending, double phaseWrappingThreshold );
+FRA4PICOSCOPE_API void __stdcall SetFraTuning( double purityLowerLimit, uint16_t extraSettlingTimeMs, uint8_t autorangeTriesPerStep,
+                                               double autorangeTolerance, double smallSignalResolutionTolerance, double maxAutorangeAmplitude, uint16_t minCyclesCaptured );
+FRA4PICOSCOPE_API bool __stdcall SetupChannels( int inputChannel, int inputChannelCoupling, int inputChannelAttenuation, double inputDcOffset,
+                                                int outputChannel, int outputChannelCoupling, int outputChannelAttenuation, double outputDcOffset,
+                                                double signalVpp );
+FRA4PICOSCOPE_API int __stdcall GetNumSteps( void );
+FRA4PICOSCOPE_API void __stdcall GetResults( double* freqsLogHz, double* gainsDb, double* phasesDeg, double* unwrappedPhasesDeg );
+FRA4PICOSCOPE_API void __stdcall EnableDiagnostics( wchar_t* baseDataPath );
+FRA4PICOSCOPE_API void __stdcall DisableDiagnostics( void );
+FRA4PICOSCOPE_API void __stdcall AutoClearMessageLog( bool bAutoClear );
+FRA4PICOSCOPE_API void __stdcall EnableMessageLog( bool bEnable );
+FRA4PICOSCOPE_API const wchar_t* __stdcall GetMessageLog( void );
+FRA4PICOSCOPE_API void __stdcall ClearMessageLog( void );
+FRA4PICOSCOPE_API void __stdcall SetCallback( FRA_STATUS_CALLBACK fraCb );
+FRA4PICOSCOPE_API bool __stdcall Initialize( void );
+FRA4PICOSCOPE_API void __stdcall Cleanup( void );

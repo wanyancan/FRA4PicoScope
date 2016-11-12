@@ -1,0 +1,20 @@
+EXPORTS
+    SetScope=SetScope
+    GetMinFrequency=GetMinFrequency
+    StartFRA=StartFRA
+    CancelFRA=CancelFRA
+    GetFraStatus=GetFraStatus
+    SetFraSettings=SetFraSettings
+    SetFraTuning=SetFraTuning
+    SetupChannels=SetupChannels
+    GetNumSteps=GetNumSteps
+    GetResults=GetResults
+    EnableDiagnostics=EnableDiagnostics
+    DisableDiagnostics=DisableDiagnostics
+    AutoClearMessageLog=AutoClearMessageLog
+    EnableMessageLog=EnableMessageLog
+    GetMessageLog=GetMessageLog
+    ClearMessageLog=ClearMessageLog
+    SetCallback=SetCallback
+    Initialize=Initialize
+    Cleanup=Cleanup
