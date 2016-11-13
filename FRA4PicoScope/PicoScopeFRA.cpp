@@ -200,6 +200,7 @@ void PicoScopeFRA::SetInstrument( PicoScope* _ps )
 //                                                   take action
 //             [in] maxAutorangeAmplitude - Amplitude before we switch to next higher range.
 //             [in] minCyclesCaptured - Minimum cycles captured for stmulus signal
+//             [in] sweepDescending - if true, sweep from highest frequency to lowest
 //             [in] phaseWrappingThreshold - phase value to use as wrapping point (in degrees)
 //                                           absolute value should be less than 360
 //             [in] diagnosticsOn - Whether to output plots of time domain data

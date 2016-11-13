@@ -1,3 +1,30 @@
+''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''
+'
+' Frequency Response Analyzer for PicoScope
+'
+' Copyright (c) 2016 by Aaron Hexamer
+'
+' This file is part of the Frequency Response Analyzer for PicoScope program.
+'
+' Frequency Response Analyzer for PicoScope is free software: you can 
+' redistribute it and/or modify it under the terms of the GNU General Public 
+' License as published by the Free Software Foundation, either version 3 of 
+' the License, or (at your option) any later version.
+'
+' Frequency Response Analyzer for PicoScope is distributed in the hope that 
+' it will be useful,but WITHOUT ANY WARRANTY; without even the implied warranty of
+' MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+' GNU General Public License for more details.
+'
+' You should have received a copy of the GNU General Public License
+' along with Frequency Response Analyzer for PicoScope.  If not, see <http:'www.gnu.org/licenses/>.
+'
+' Module FRA4PicoScopeAPI.vba: VBA interface for the FRA4PicoScope API DLL
+'
+''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''
+
+Option Strict
+
 Public Enum PS_CHANNEL
     PS_CHANNEL_A
     PS_CHANNEL_B

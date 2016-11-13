@@ -1,5 +1,27 @@
-// FRA4PicoScopeAPI.cpp : Defines the implementation of the FRA4PicoScope API DLL.
+//////////////////////////////////////////////////////////////////////////////////////////////////
 //
+// Frequency Response Analyzer for PicoScope
+//
+// Copyright (c) 2016 by Aaron Hexamer
+//
+// This file is part of the Frequency Response Analyzer for PicoScope program.
+//
+// Frequency Response Analyzer for PicoScope is free software: you can 
+// redistribute it and/or modify it under the terms of the GNU General Public 
+// License as published by the Free Software Foundation, either version 3 of 
+// the License, or (at your option) any later version.
+//
+// Frequency Response Analyzer for PicoScope is distributed in the hope that 
+// it will be useful,but WITHOUT ANY WARRANTY; without even the implied warranty of
+// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+// GNU General Public License for more details.
+//
+// You should have received a copy of the GNU General Public License
+// along with Frequency Response Analyzer for PicoScope.  If not, see <http://www.gnu.org/licenses/>.
+//
+// Module FRA4PicoScopeAPI.cpp: Implementation for the FRA4PicoScope API DLL.
+//
+//////////////////////////////////////////////////////////////////////////////////////////////////
 
 #include "stdafx.h"
 #include "FRA4PicoScopeAPI.h"
@@ -17,10 +39,11 @@ HANDLE hExecuteFraEvent;
 wstring messageLog;
 bool bLogMessages = false;
 bool bAutoClearLog = true;
+static const size_t messageLogSizeLimit = 16777216; // 16MB
 FRA_STATUS_CALLBACK FraStatusCallback = NULL;
 
-DWORD WINAPI ExecuteFRA(LPVOID lpdwThreadParam);
-bool LocalFraStatusCallback( FRA_STATUS_MESSAGE_T& fraStatus );
+static DWORD WINAPI ExecuteFRA(LPVOID lpdwThreadParam);
+static bool LocalFraStatusCallback( FRA_STATUS_MESSAGE_T& fraStatus );
 void LogMessage(const wstring statusMessage);
 
 // Storage for passed FRA parameters
@@ -49,10 +72,34 @@ static uint16_t minCyclesCaptured = 16; // Default
 static bool diagnosticsOn = false; // Default
 static wstring baseDataPath = L"";
 
+////////////////////////////////////////////////////////////////////////////////////////////////////
+//
+// Name: SetCallback
+//
+// Purpose: Install a function to be called back when FRA status updates occur
+//
+// Parameters: [in] fraCb - pointer to the callback function
+//
+// Notes: None
+//
+///////////////////////////////////////////////////////////////////////////////////////////////////
+
 void __stdcall SetCallback( FRA_STATUS_CALLBACK fraCb )
 {
     FraStatusCallback = fraCb;
 }
+
+////////////////////////////////////////////////////////////////////////////////////////////////////
+//
+// Name: Initialize
+//
+// Purpose: Initialize data/objects, event handles, threads, etc.
+//
+// Parameters: [out] - returns a status indicating whether the initialization was successful
+//
+// Notes: Not called by DllMain to follow good design practice
+//
+///////////////////////////////////////////////////////////////////////////////////////////////////
 
 bool __stdcall Initialize( void )
 {
@@ -63,6 +110,11 @@ bool __stdcall Initialize( void )
 
         if (pScopeSelector && pFRA)
         {
+            pFRA->SetFraSettings( samplingMode, purityLowerLimit, extraSettlingTimeMs,
+                                  autorangeTriesPerStep, autorangeTolerance, smallSignalResolutionTolerance,
+                                  maxAutorangeAmplitude, minCyclesCaptured, sweepDescending,
+                                  phaseWrappingThreshold, diagnosticsOn, baseDataPath );
+
             // Create execution thread and event
             hExecuteFraEvent = CreateEventW(NULL, true, false, L"ExecuteFRA");
 
@@ -96,6 +148,18 @@ bool __stdcall Initialize( void )
     return bInitialized;
 }
 
+////////////////////////////////////////////////////////////////////////////////////////////////////
+//
+// Name: Cleanup
+//
+// Purpose: De-initialize data/objects, event handles, threads, etc.
+//
+// Parameters: N/A
+//
+// Notes: Not called by DllMain to follow good design practice
+//
+///////////////////////////////////////////////////////////////////////////////////////////////////
+
 void __stdcall Cleanup( void )
 {
     delete pScopeSelector;
@@ -110,13 +174,43 @@ void __stdcall Cleanup( void )
     bInitialized = false;
 }
 
+////////////////////////////////////////////////////////////////////////////////////////////////////
+//
+// Name: LogMessage
+//
+// Purpose: Logs messages to the internal log, which can be retrieved later by the client
+//
+// Parameters: [in] statusMessage - the text to be logged
+//
+// Notes: Limits message log to messageLogSizeLimit.  If it would exceed this it will be cleared
+//        first before adding the new message.
+//
+///////////////////////////////////////////////////////////////////////////////////////////////////
+
 void LogMessage( const wstring statusMessage )
 {
     if (bLogMessages)
     {
+        if (messageLog.size() + statusMessage.size() > messageLogSizeLimit)
+        {
+            messageLog = TEXT("");
+        }
         messageLog += statusMessage + TEXT("\n");
     }
 }
+
+////////////////////////////////////////////////////////////////////////////////////////////////////
+//
+// Name: SetScope
+//
+// Purpose: Open the scope and set it for FRA use
+//
+// Parameters: [in] sn - the serial number of the desired scope
+//             [out] - returns a status indicating whether the operation succeeded
+//
+// Notes: If the string is null or empty, it will try to open the only scope attached
+//
+///////////////////////////////////////////////////////////////////////////////////////////////////
 
 bool __stdcall SetScope( char* sn )
 {
@@ -163,10 +257,39 @@ bool __stdcall SetScope( char* sn )
     return retVal;
 }
 
+////////////////////////////////////////////////////////////////////////////////////////////////////
+//
+// Name: GetMinFrequency
+//
+// Purpose: Returns the minimum frequency setting possible.  I.e. the minimum possible value for
+//          the first parameter to StartFRA
+//
+// Parameters: [out] - returns the minimum frequency in Hz
+//
+// Notes: None
+//
+///////////////////////////////////////////////////////////////////////////////////////////////////
+
 double __stdcall GetMinFrequency( void )
 {
     return pFRA->GetMinFrequency();
 }
+
+////////////////////////////////////////////////////////////////////////////////////////////////////
+//
+// Name: StartFRA
+//
+// Purpose: Starts the FRA and immediately returns allowing the caller to do other processing
+//
+// Parameters: [in] _startFreqHz - Beginning frequency
+//             [in] _stopFreqHz - End frequency
+//             [in] _stepsPerDecade - Samples per every log10 frequency
+//             [out] - returns a status indicating whether the operation succeeded
+//
+// Notes: Since it returns immediately, the caller can either poll for completion, or receive
+//        callbacks indicating status
+//
+///////////////////////////////////////////////////////////////////////////////////////////////////
 
 bool __stdcall StartFRA( double _startFreqHz, double _stopFreqHz, int _stepsPerDecade )
 {
@@ -190,6 +313,18 @@ bool __stdcall StartFRA( double _startFreqHz, double _stopFreqHz, int _stepsPerD
     return retVal;
 }
 
+////////////////////////////////////////////////////////////////////////////////////////////////////
+//
+// Name: CancelFRA
+//
+// Purpose: Stops the FRA at the earliest possible stopping point
+//
+// Parameters: [out] - returns a status indicating whether the operation succeeded
+//
+// Notes: None
+//
+///////////////////////////////////////////////////////////////////////////////////////////////////
+
 bool __stdcall CancelFRA( void )
 {
     bool retVal = false;
@@ -202,17 +337,76 @@ bool __stdcall CancelFRA( void )
     return retVal;
 }
 
+////////////////////////////////////////////////////////////////////////////////////////////////////
+//
+// Name: GetFraStatus
+//
+// Purpose: Gets the status of the FRA
+//
+// Parameters: [out] - returns a status indicating FRA progress, completion or error
+//
+// Notes: Because this is for polled mode, some possible values of FRA_STATUS_T won't be returned.
+//        E.g. status messages won't be seen because the actual text is only available in the
+//        callback interface.  However the messages can still be retrieved through the message
+//        log even while in polled mode.
+//
+///////////////////////////////////////////////////////////////////////////////////////////////////
+
 FRA_STATUS_T __stdcall GetFraStatus( void )
 {
     return status;
 }
+
+////////////////////////////////////////////////////////////////////////////////////////////////////
+//
+// Name: SetFraSettings
+//
+// Purpose: Set basic setting that are optional to set, but may need to be set occassionally
+//
+// Parameters: [in] _samplingMode - Low or high noise sampling mode
+//             [in] _sweepDescending - if true, sweep from highest frequency to lowest
+//             [in] _phaseWrappingThreshold - phase value to use as wrapping point (in degrees)
+//                                            absolute value should be less than 360
+//
+//
+// Notes: None
+//
+///////////////////////////////////////////////////////////////////////////////////////////////////
 
 void __stdcall SetFraSettings( SamplingMode_T _samplingMode, bool _sweepDescending, double _phaseWrappingThreshold )
 {
     samplingMode = _samplingMode;
     sweepDescending = _sweepDescending;
     phaseWrappingThreshold = _phaseWrappingThreshold;
+
+    if (pFRA)
+    {
+        pFRA->SetFraSettings( samplingMode, purityLowerLimit, extraSettlingTimeMs,
+                              autorangeTriesPerStep, autorangeTolerance, smallSignalResolutionTolerance,
+                              maxAutorangeAmplitude, minCyclesCaptured, sweepDescending,
+                              phaseWrappingThreshold, diagnosticsOn, baseDataPath );
+    }
 }
+
+////////////////////////////////////////////////////////////////////////////////////////////////////
+//
+// Name: SetFraTuning
+//
+// Purpose: Set more advanced settings that are optional to set, but may need to be set rarely
+//
+// Parameters: [in] _purityLowerLimit - Lower limit on purity before we take action
+//             [in] _extraSettlingTimeMs - additional settling time to insert between setting up
+//                                         signal generator and sampling
+//             [in] _autorangeTriesPerStep - Number of range tries allowed
+//             [in] _autorangeTolerance - Hysterysis used to determine when the switch
+//             [in] _smallSignalResolutionTolerance - Lower limit on signal amplitide before we
+//                                                    take action
+//             [in] _maxAutorangeAmplitude - Amplitude before we switch to next higher range
+//             [in] _minCyclesCaptured - Minimum cycles captured for stmulus signal
+//
+// Notes: None
+//
+///////////////////////////////////////////////////////////////////////////////////////////////////
 
 void __stdcall SetFraTuning( double _purityLowerLimit, uint16_t _extraSettlingTimeMs, uint8_t _autorangeTriesPerStep,
                              double _autorangeTolerance, double _smallSignalResolutionTolerance, double _maxAutorangeAmplitude, uint16_t _minCyclesCaptured )
@@ -224,7 +418,36 @@ void __stdcall SetFraTuning( double _purityLowerLimit, uint16_t _extraSettlingTi
     smallSignalResolutionTolerance = _smallSignalResolutionTolerance;
     maxAutorangeAmplitude = _maxAutorangeAmplitude;
     minCyclesCaptured = _minCyclesCaptured;
+    
+    if (pFRA)
+    {
+        pFRA->SetFraSettings( samplingMode, purityLowerLimit, extraSettlingTimeMs,
+                              autorangeTriesPerStep, autorangeTolerance, smallSignalResolutionTolerance,
+                              maxAutorangeAmplitude, minCyclesCaptured, sweepDescending,
+                              phaseWrappingThreshold, diagnosticsOn, baseDataPath );
+    }
 }
+
+////////////////////////////////////////////////////////////////////////////////////////////////////
+//
+// Name: SetupChannels
+//
+// Purpose: Set the channel settings used in the FRA
+//
+// Parameters: [in] inputChannel - Channel to use for input signal
+//             [in] inputChannelCoupling - AC/DC coupling for input channel
+//             [in] inputChannelAttenuation - Attenuation setting for input channel
+//             [in] inputDcOffset - DC Offset for input channel
+//             [in] outputChannel - Channel to use for output signal
+//             [in] outputChannelCoupling - AC/DC coupling for output channel
+//             [in] outputChannelAttenuation - Attenuation setting for output channel
+//             [in] outputDcOffset - DC Offset for output channel
+//             [in] signalVpp - Volts peak to peak of the stimulus signal
+//             [out] return - Whether the function was successful.
+//
+// Notes: None
+//
+///////////////////////////////////////////////////////////////////////////////////////////////////
 
 bool __stdcall SetupChannels( int _inputChannel, int _inputChannelCoupling, int _inputChannelAttenuation, double _inputDcOffset,
                               int _outputChannel, int _outputChannelCoupling, int _outputChannelAttenuation, double _outputDcOffset,
@@ -243,6 +466,19 @@ bool __stdcall SetupChannels( int _inputChannel, int _inputChannelCoupling, int 
     return true;
 }
 
+////////////////////////////////////////////////////////////////////////////////////////////////////
+//
+// Name: GetNumSteps
+//
+// Purpose: Called after FRA execution completes to get the number of frequency samples taken
+//          Generally used to know how large the results arrays passed to GetResults need to be
+//
+// Parameters: [out] - the number of steps (frequency samples)
+//
+// Notes: None
+//
+///////////////////////////////////////////////////////////////////////////////////////////////////
+
 int __stdcall GetNumSteps( void )
 {
     int retVal = 0;
@@ -255,6 +491,22 @@ int __stdcall GetNumSteps( void )
 
     return retVal;
 }
+
+////////////////////////////////////////////////////////////////////////////////////////////////////
+//
+// Name: GetResults
+//
+// Purpose: Gets the FRA results
+//
+// Parameters: [out] freqsLogHz - array of frequency points taken, expressed in log base 10 Hz
+//             [out] gainsDb - array of gains at each frequency point of freqsLogHz, expressed in dB
+//             [out] phasesDeg - array of phase shifts at each frequency point of freqsLogHz, expressed in degrees
+//             [out] unwrappedPhasesDeg - array of unwrapped phase shifts at each frequency point of freqsLogHz,
+//                                        expressed in degrees
+//
+// Notes: Arrays are owned and to be properly allocted by the caller.
+//
+///////////////////////////////////////////////////////////////////////////////////////////////////
 
 void __stdcall GetResults( double* freqsLogHz, double* gainsDb, double* phasesDeg, double* unwrappedPhasesDeg )
 {
@@ -284,38 +536,124 @@ void __stdcall GetResults( double* freqsLogHz, double* gainsDb, double* phasesDe
     }
 }
 
+////////////////////////////////////////////////////////////////////////////////////////////////////
+//
+// Name: EnableDiagnostics
+//
+// Purpose: Turn on time domain diagnostic plot output
+//
+// Parameters: [in] _baseDataPath - where to put the "diag" directory, where the plot files will
+//                                  be stored
+//
+// Notes: None
+//
+///////////////////////////////////////////////////////////////////////////////////////////////////
+
 void __stdcall EnableDiagnostics( wchar_t* _baseDataPath )
 {
     baseDataPath = _baseDataPath;
     diagnosticsOn = true;
 }
 
+////////////////////////////////////////////////////////////////////////////////////////////////////
+//
+// Name: DisableDiagnostics
+//
+// Purpose: Turn off time domain diagnostic plot output
+//
+// Parameters: N/A
+//
+// Notes: None
+//
+///////////////////////////////////////////////////////////////////////////////////////////////////
+
 void __stdcall DisableDiagnostics( void )
 {
     diagnosticsOn = false;
 }
+
+////////////////////////////////////////////////////////////////////////////////////////////////////
+//
+// Name: AutoClearMessageLog
+//
+// Purpose: Turn on or off auto-clearing of the message log.  If on, the message log gets cleared
+//          at the start of each execution of FRA
+//
+// Parameters: [in] autoClear - true if on, false if off
+//
+// Notes: None
+//
+///////////////////////////////////////////////////////////////////////////////////////////////////
 
 void __stdcall AutoClearMessageLog( bool bAutoClear )
 {
     bAutoClearLog = bAutoClear;
 }
 
+////////////////////////////////////////////////////////////////////////////////////////////////////
+//
+// Name: EnableMessageLog
+//
+// Purpose: Turn on or off message logging
+//
+// Parameters: [in] bEnable - true if on, false if off
+//
+// Notes: None
+//
+///////////////////////////////////////////////////////////////////////////////////////////////////
+
 void __stdcall EnableMessageLog( bool bEnable )
 {
     bLogMessages = bEnable;
 }
+
+////////////////////////////////////////////////////////////////////////////////////////////////////
+//
+// Name: GetMessageLog
+//
+// Purpose: Gets a reference to the message log
+//
+// Parameters: [out] returns a pointer to a wide character string which contains the message log.
+//
+// Notes: None
+//
+///////////////////////////////////////////////////////////////////////////////////////////////////
 
 const wchar_t* __stdcall GetMessageLog( void )
 {
     return messageLog.c_str();
 }
 
+////////////////////////////////////////////////////////////////////////////////////////////////////
+//
+// Name: ClearMessageLog
+//
+// Purpose: Resets the message log
+//
+// Parameters: N/A
+//
+// Notes: None
+//
+///////////////////////////////////////////////////////////////////////////////////////////////////
+
 void __stdcall ClearMessageLog( void )
 {
     messageLog = TEXT("");
 }
 
-DWORD WINAPI ExecuteFRA( LPVOID lpdwThreadParam )
+////////////////////////////////////////////////////////////////////////////////////////////////////
+//
+// Name: ExecuteFRA
+//
+// Purpose: Internal thread function that controls the execution of the FRA and status setting.
+//
+// Parameters: See Windows API documentation
+//
+// Notes: None
+//
+///////////////////////////////////////////////////////////////////////////////////////////////////
+
+static DWORD WINAPI ExecuteFRA( LPVOID lpdwThreadParam )
 {
     DWORD dwWaitResult;
 
@@ -380,7 +718,21 @@ DWORD WINAPI ExecuteFRA( LPVOID lpdwThreadParam )
     return TRUE;
 }
 
-bool LocalFraStatusCallback( FRA_STATUS_MESSAGE_T& fraStatus )
+////////////////////////////////////////////////////////////////////////////////////////////////////
+//
+// Name: LocalFraStatusCallback
+//
+// Purpose: The actual callback passed to the PicoScopeFRA object.  It takes care of status setting
+//          for the polled case, calls the DLL client's callback (if it was set), and logs messages
+//          in the local message log.
+//
+// Parameters: [in] fraStatus - the status object passed by the PicoScopeFRA object.
+//
+// Notes: None
+//
+///////////////////////////////////////////////////////////////////////////////////////////////////
+
+static bool LocalFraStatusCallback( FRA_STATUS_MESSAGE_T& fraStatus )
 {
     if (FraStatusCallback)
     {

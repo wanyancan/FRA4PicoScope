@@ -19,7 +19,7 @@
 // You should have received a copy of the GNU General Public License
 // along with Frequency Response Analyzer for PicoScope.  If not, see <http://www.gnu.org/licenses/>.
 //
-// Module FRA4PicoScopeAPI.h: Header for the DLL build.
+// Module FRA4PicoScopeAPI.h: Header for the FRA4PicoScope API DLL.
 //
 //////////////////////////////////////////////////////////////////////////////////////////////////
 
