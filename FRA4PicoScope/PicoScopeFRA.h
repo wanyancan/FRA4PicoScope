@@ -158,7 +158,8 @@ class PicoScopeFRA
         FRA_STATUS_CALLBACK StatusCallback;
 
         double currentFreqHz;
-        double currentOutputVolts;
+        double currentStimulusVpp;
+        double maxStimulusVpp;
 
         double mStartFreqHz;
         double mStopFreqHz;
@@ -197,6 +198,9 @@ class PicoScopeFRA
         bool ovIn;
         bool ovOut;
         bool delayForAcCoupling;
+        double currentOutputAmplitudeVolts;
+        double currentInputAmplitudeVolts;
+        vector<double> idealStimulusVpp; // Recorded and used for predicting next stimulus Vpp
 
         AUTORANGE_STATUS_T inputChannelAutorangeStatus;
         AUTORANGE_STATUS_T outputChannelAutorangeStatus;
@@ -209,6 +213,10 @@ class PicoScopeFRA
         uint16_t mExtraSettlingTimeMs;      // Extra settling time between auto-range tries
         uint16_t mMinCyclesCaptured;        // Minimum whole stimulus signal cycles to capture
         bool mSweepDescending;              // Whether to sweep frequency from high to low
+        bool mAdaptiveStimulus;             // Whether to adjust stimulus Vpp to target an output goal
+        double mTargetSignalAmplitude;      // Target amplitude for measured signals, goal is that both signals be at least this large
+        double mTargetSignalAmplitudeTolerance; // Amount the smallest signal is allowed to exceed target signal amplitude (percent)
+        int maxAdaptiveStimulusRetries;     // max number of tries to adapt stimulus before failing
         double mPhaseWrappingThreshold;     // Phase value to use as wrapping point (in degrees); absolute value should be less than 360
 
         double rangeCounts; // Maximum ADC value
@@ -219,6 +227,8 @@ class PicoScopeFRA
         void AllocateFraData(void);
         // These variables are for keeping diagnostic data and sample data.
         int autorangeRetryCounter;
+        int adaptiveStimulusRetryCounter;
+        bool stimulusChanged;
         int freqStepCounter;
         int freqStepIndex;
         vector<int16_t>* pInputBuffer;
@@ -265,10 +275,11 @@ class PicoScopeFRA
 
         class FraFault : public exception {};
 
-        bool GetNumChannels(void);
         bool StartCapture( double measFreqHz );
         void GenerateFrequencyPoints();
         bool ProcessData();
+        void CalculateStepInitialStimulusVpp(void);
+        bool CheckStimulusTarget(void);
         bool CheckSignalRanges(void);
         bool CheckSignalOverflows(void);
         bool CalculateGainAndPhase( double* gain, double* phase );

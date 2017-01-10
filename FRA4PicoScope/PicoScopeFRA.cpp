@@ -119,10 +119,16 @@ PicoScopeFRA::PicoScopeFRA(FRA_STATUS_CALLBACK statusCB)
     mExtraSettlingTimeMs = 0;
     mMinCyclesCaptured = 0;
     mSweepDescending = false;
+    mAdaptiveStimulus = false;
+    mTargetSignalAmplitude = 0.0;
+    mTargetSignalAmplitudeTolerance = 0.0;
+    maxAdaptiveStimulusRetries = 0;
     mPhaseWrappingThreshold = 180.0;
     rangeCounts = 0.0;
     signalGeneratorPrecision = 0.0;
     autorangeRetryCounter = 0;
+    adaptiveStimulusRetryCounter = 0;
+    stimulusChanged = false;
     mDiagnosticsOn = false;
     rangeInfo = NULL;
     inputMinRange = 0;
@@ -134,7 +140,10 @@ PicoScopeFRA::PicoScopeFRA(FRA_STATUS_CALLBACK statusCB)
     numAvailableChannels = 2;
     maxScopeSamplesPerChannel = 0;
     currentFreqHz = 0.0;
-    currentOutputVolts = 0.0;
+    currentStimulusVpp = 0.0;
+    maxStimulusVpp = 0.0;
+    currentOutputAmplitudeVolts = 0.0;
+    currentInputAmplitudeVolts = 0.0;
     mStartFreqHz = 0.0;
     mStopFreqHz = 0.0;
     mStepsPerDecade = 10;
@@ -300,7 +309,7 @@ bool PicoScopeFRA::SetupChannels( int inputChannel, int inputChannelCoupling, in
     mInputDcOffset = inputDcOffset;
     mOutputDcOffset = outputDcOffset;
 
-    currentOutputVolts = signalVpp;
+    currentStimulusVpp = signalVpp;
 
     if (!(ps->Initialized()))
     {
@@ -398,7 +407,8 @@ bool PicoScopeFRA::ExecuteFRA(double startFreqHz, double stopFreqHz, int stepsPe
         while ((mSweepDescending && freqStepIndex >= 0) || (!mSweepDescending && freqStepIndex < numSteps))
         {
             currentFreqHz = freqsHz[freqStepIndex];
-            for (autorangeRetryCounter = 0; autorangeRetryCounter < maxAutorangeRetries; autorangeRetryCounter++)
+            for (autorangeRetryCounter = 0; autorangeRetryCounter < maxAutorangeRetries &&
+                                            adaptiveStimulusRetryCounter < maxAdaptiveStimulusRetries; )
             {
                 try
                 {
@@ -432,7 +442,6 @@ bool PicoScopeFRA::ExecuteFRA(double startFreqHz, double stopFreqHz, int stepsPe
                             {
                                 // Currently no error is possible so just cast to void
                                 (void)CalculateGainAndPhase(&gainsDb[freqStepIndex], &phasesDeg[freqStepIndex]);
-                                autorangeRetryCounter++; // reflect the attempt that succeeded
 
                                 // Notify progress
                                 UpdateStatus(fraStatusMsg, FRA_STATUS_PROGRESS, freqStepCounter, numSteps);
@@ -489,7 +498,7 @@ bool PicoScopeFRA::ExecuteFRA(double startFreqHz, double stopFreqHz, int stepsPe
                 }
                 diagNumSamplesToPlot[freqStepIndex] = inputMinData[freqStepIndex][0].size();
                 diagNumSamplesCaptured[freqStepIndex] = numSamples;
-                autoRangeTries[freqStepIndex] = autorangeRetryCounter;
+                autoRangeTries[freqStepIndex] = autorangeRetryCounter+1;
             }
 
             if (autorangeRetryCounter == maxAutorangeRetries)
@@ -919,6 +928,8 @@ void PicoScopeFRA::AllocateFraData(void)
 {
     int i;
 
+    idealStimulusVpp.resize(numSteps);
+
     inAmps.resize(numSteps);
     for (i = 0; i < numSteps; i++)
     {
@@ -1244,13 +1255,27 @@ bool PicoScopeFRA::StartCapture( double measFreqHz )
     FRA_STATUS_MESSAGE_T fraStatusMsg;
     wchar_t fraStatusText[128];
 
-    // Only setup the signal generator on the first auto-range try
     if (autorangeRetryCounter == 0)
     {
         swprintf( fraStatusText, 128, L"Status: Setting input frequency to %0.3lf Hz", measFreqHz );
         UpdateStatus( fraStatusMsg, FRA_STATUS_MESSAGE, fraStatusText );
+    }
 
-        if (!(ps->SetSignalGenerator((float)currentOutputVolts, (float)measFreqHz)))
+    if (mAdaptiveStimulus)
+    {
+        if (0 == adaptiveStimulusRetryCounter)
+        {
+            // Compute the initial stimulus Vpp since this is the first attempt at this frequency
+            CalculateStepInitialStimulusVpp();
+            stimulusChanged = true;
+        }
+        swprintf( fraStatusText, 128, L"Status: Setting input stimulus to %0.3lf Vpp", currentStimulusVpp );
+        UpdateStatus( fraStatusMsg, FRA_STATUS_MESSAGE, fraStatusText );
+    }
+
+    if (autorangeRetryCounter == 0 || stimulusChanged)
+    {
+        if (!(ps->SetSignalGenerator((float)currentStimulusVpp, (float)measFreqHz)))
         {
             return false;
         }
@@ -1371,19 +1396,24 @@ bool PicoScopeFRA::ProcessData(void)
     {
         // Both channels are over-range, don't bother with further analysis.
         retVal = false; // Signal to try again on a different range
+        autorangeRetryCounter++;
     }
     else if (false == CheckSignalRanges())
     {
         // At least one of the channels needs adjustment
         retVal = false; // Signal to try again on a different range
+        autorangeRetryCounter++;
     }
 
     // Run signal processing
     // 1) If both signal's ranges are acceptable
     //    OR
     // 2) If diagnostics are on and at least one of the signal's range is acceptable
-    if (retVal == true || (mDiagnosticsOn && (CHANNEL_OVERFLOW != inputChannelAutorangeStatus ||
-                                              CHANNEL_OVERFLOW != outputChannelAutorangeStatus)))
+    //    OR
+    // 3) If adaptive stimulus is on and at least one of the signal's range is acceptable
+    if (retVal == true || ((mDiagnosticsOn || mAdaptiveStimulus) &&
+                           (CHANNEL_OVERFLOW != inputChannelAutorangeStatus ||
+                            CHANNEL_OVERFLOW != outputChannelAutorangeStatus)))
     {
         uint32_t currentSampleIndex = 0;
         uint32_t maxDataRequestSize = ps->GetMaxDataRequestSize();
@@ -1417,6 +1447,17 @@ bool PicoScopeFRA::ProcessData(void)
             inputPurity[freqStepIndex][autorangeRetryCounter] = currentInputPurity;
             outputPurity[freqStepIndex][autorangeRetryCounter] = currentOutputPurity;
         }
+
+        if (mAdaptiveStimulus)
+        {
+            currentInputAmplitudeVolts = (inputAmplitude / (double)(ps->GetMaxValue())) * rangeInfo[currentInputChannelRange].rangeVolts;
+            currentOutputAmplitudeVolts = (outputAmplitude / (double)(ps->GetMaxValue())) * rangeInfo[currentOutputChannelRange].rangeVolts;
+
+            if (false == CheckStimulusTarget())
+            {
+                retVal = false;
+            }
+        }
     }
     if (mDiagnosticsOn)
     {
@@ -1428,6 +1469,90 @@ bool PicoScopeFRA::ProcessData(void)
     }
 
     return retVal;
+}
+
+////////////////////////////////////////////////////////////////////////////////////////////////////
+//
+// Name: PicoScopeFRA::CheckStimulusTarget
+//
+// Purpose: Determine whether the stimulus amplitude needs to change for adaptive stimulus mode
+//
+// Parameters: [out] return - false if the stimulus needs to change
+//
+// Notes: Strategy is to get the smaller signal within margin of target
+//        TBD - May need special handling of case where measured amplitude is so low that the
+//              new value will overshoot.
+//
+///////////////////////////////////////////////////////////////////////////////////////////////////
+
+bool PicoScopeFRA::CheckStimulusTarget(void)
+{
+    stimulusChanged = false;
+    double newStimulusFromInput = 0.0;
+    double newStimulusFromOutput = 0.0;
+
+    // Only bother checking on channels that are not over-range
+    if (CHANNEL_OVERFLOW != inputChannelAutorangeStatus)
+    {
+        if (currentInputAmplitudeVolts < mTargetSignalAmplitude ||
+            currentInputAmplitudeVolts > (1.0 + mTargetSignalAmplitudeTolerance) * mTargetSignalAmplitude)
+        {
+            // Calculate new value
+            newStimulusFromInput = currentStimulusVpp * (((1.0 + mTargetSignalAmplitudeTolerance / 2.0) * mTargetSignalAmplitude) / currentInputAmplitudeVolts);
+            stimulusChanged = true;
+        }
+    }
+    if (CHANNEL_OVERFLOW != outputChannelAutorangeStatus)
+    {
+        if (currentOutputAmplitudeVolts < mTargetSignalAmplitude ||
+            currentOutputAmplitudeVolts > (1.0 + mTargetSignalAmplitudeTolerance) * mTargetSignalAmplitude)
+        {
+            // Calculate new value
+            newStimulusFromOutput = currentStimulusVpp * (((1.0 + mTargetSignalAmplitudeTolerance / 2.0) * mTargetSignalAmplitude) / currentOutputAmplitudeVolts);
+            stimulusChanged = true;
+        }
+    }
+
+    if (stimulusChanged)
+    {
+        adaptiveStimulusRetryCounter++;
+        currentStimulusVpp = max(newStimulusFromInput, newStimulusFromOutput);
+    }
+
+    return (!stimulusChanged);
+}
+
+////////////////////////////////////////////////////////////////////////////////////////////////////
+//
+// Name: PicoScopeFRA::CalculateStepInitialStimulusVpp
+//
+// Purpose: Compute the initial value of stimulus amplitude for the new frequency for adaptive
+//          stimulus mode
+//
+// Parameters: None
+//
+// Notes: N/A
+//
+///////////////////////////////////////////////////////////////////////////////////////////////////
+
+void PicoScopeFRA::CalculateStepInitialStimulusVpp(void)
+{
+    if (1 == freqStepCounter)
+    {
+        // It's the very first try, so take a guess of max/2
+        currentStimulusVpp = maxStimulusVpp / 2.0;
+    }
+    else if (freqStepCounter > 2)
+    {
+        // Two prior values exist, so estimate new stimulus Vpp based on their slope
+        uint32_t idxMinus1, idxMinus2;
+        idxMinus1 = mSweepDescending ? freqStepIndex + 1 : freqStepIndex - 1;
+        idxMinus2 = mSweepDescending ? freqStepIndex + 2 : freqStepIndex - 2;
+        currentStimulusVpp = ((freqsHz[freqStepIndex] - freqsHz[idxMinus1]) *
+                              (idealStimulusVpp[idxMinus1] - idealStimulusVpp[idxMinus2])) /
+                              (freqsHz[idxMinus1] - freqsHz[idxMinus2]);
+    }
+    // if freqStepCounter is 2, then just keep the prior value.
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
