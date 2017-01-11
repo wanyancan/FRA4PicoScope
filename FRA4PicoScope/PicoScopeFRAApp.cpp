@@ -628,10 +628,24 @@ BOOL CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
                 exit(-1);
             }
 #if !defined(TEST_PLOTTING)
-            psFRA->SetFraSettings( pSettings->GetSamplingMode(), pSettings->GetPurityLowerLimit(), pSettings->GetExtraSettlingTimeMs(),
-                                   pSettings->GetAutorangeTriesPerStep(), pSettings->GetAutorangeTolerance(), pSettings->GetSmallSignalResolutionLimit(),
-                                   pSettings->GetMaxAutorangeAmplitude(), pSettings->GetMinCyclesCaptured(), pSettings->GetSweepDescending(),
-                                   pSettings->GetPhaseWrappingThreshold(), pSettings->GetTimeDomainPlotsEnabled(), dataDirectoryName );
+            psFRA->SetFraSettings( pSettings->GetSamplingMode(), pSettings->GetAdaptiveStimulusMode(), pSettings->GetTargetSignalAmplitude(),
+                                   pSettings->GetSweepDescending(), pSettings->GetPhaseWrappingThreshold() );
+
+            psFRA->SetFraTuning( pSettings->GetPurityLowerLimit(), pSettings->GetExtraSettlingTimeMs(),
+                                 pSettings->GetAutorangeTriesPerStep(), pSettings->GetAutorangeTolerance(),
+                                 pSettings->GetSmallSignalResolutionLimit(), pSettings->GetMaxAutorangeAmplitude(),
+                                 pSettings->GetAdaptiveStimulusTriesPerStep(), pSettings->GetTargetSignalAmplitudeTolerance(),
+                                 pSettings->GetMinCyclesCaptured() );
+
+            if (pSettings->GetTimeDomainPlotsEnabled())
+            {
+                psFRA->EnableDiagnostics(dataDirectoryName);
+            }
+            else
+            {
+                psFRA->DisableDiagnostics();
+            }
+            
             InitScope();
 #else
             HWND hndCtrl;
@@ -1415,6 +1429,9 @@ DWORD WINAPI ExecuteFRA(LPVOID lpdwThreadParam)
             startFreq = pSettings->GetStartFreqAsDouble();
             stopFreq = pSettings->GetStopFreqAsDouble();
             stepsPerDecade = pSettings->GetStepsPerDecadeAsInt();
+
+            psFRA->SetFraSettings( pSettings->GetSamplingMode(), pSettings->GetAdaptiveStimulusMode(), pSettings->GetTargetSignalAmplitude(),
+                                   pSettings->GetSweepDescending(), pSettings->GetPhaseWrappingThreshold() );
 
             if (false == psFRA -> SetupChannels( inputChannel, inputChannelCoupling, inputChannelAttenuation, inputDcOffset,
                                                  outputChannel, outputChannelCoupling, outputChannelAttenuation, outputDcOffset,

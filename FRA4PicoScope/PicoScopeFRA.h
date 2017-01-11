@@ -141,13 +141,17 @@ class PicoScopeFRA
         bool ExecuteFRA( double startFreqHz, double stopFreqHz, int stepsPerDecade );
         bool CancelFRA();
         static void SetCaptureStatus(PICO_STATUS status);
-        void SetFraSettings( SamplingMode_T samplingMode, double purityLowerLimit, uint16_t extraSettlingTimeMs, uint8_t autorangeTriesPerStep,
-                             double autorangeTolerance, double smallSignalResolutionTolerance, double maxAutorangeAmplitude, uint16_t minCyclesCaptured,
-                             bool sweepDescending, double phaseWrappingThreshold, bool diagnosticsOn, wstring baseDataPath );
+        void SetFraSettings( SamplingMode_T samplingMode, bool adaptiveStimulusMode, double targetSignalAmplitude,
+                             bool sweepDescending, double phaseWrappingThreshold );
+        void SetFraTuning( double purityLowerLimit, uint16_t extraSettlingTimeMs, uint8_t autorangeTriesPerStep,
+                           double autorangeTolerance, double smallSignalResolutionTolerance, double maxAutorangeAmplitude,
+                           uint8_t adaptiveStimulusTriesPerStep, double targetSignalAmplitudeTolerance, uint16_t minCyclesCaptured );
         bool SetupChannels( int inputChannel, int inputChannelCoupling, int inputChannelAttenuation, double inputDcOffset,
                             int outputChannel, int outputChannelCoupling, int outputChannelAttenuation, double outputDcOffset,
                             double signalVpp );
         void GetResults( int* numSteps, double** freqsLogHz, double** gainsDb, double** phasesDeg, double** unwrappedPhasesDeg );
+        void EnableDiagnostics( wstring baseDataPath );
+        void DisableDiagnostics( void );
 
     private:
         // Data about the scope
@@ -279,7 +283,7 @@ class PicoScopeFRA
         void GenerateFrequencyPoints();
         bool ProcessData();
         void CalculateStepInitialStimulusVpp(void);
-        bool CheckStimulusTarget(void);
+        bool CheckStimulusTarget(bool forceAdjust = false);
         bool CheckSignalRanges(void);
         bool CheckSignalOverflows(void);
         bool CalculateGainAndPhase( double* gain, double* phase );

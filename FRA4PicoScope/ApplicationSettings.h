@@ -100,6 +100,24 @@ class ApplicationSettings
             AppSettingsPropTree.put( "samplingMode", mode );
         }
 
+        inline bool GetAdaptiveStimulusMode( void )
+        {
+            return (bool)AppSettingsPropTree.get<bool>( "adaptiveStimulusMode" );
+        }
+        inline void SetSamplingMode( bool mode )
+        {
+            AppSettingsPropTree.put( "adaptiveStimulusMode", mode );
+        }
+
+        inline double GetTargetSignalAmplitude( void )
+        {
+            return (double)AppSettingsPropTree.get<double>( "targetSignalAmplitude" );
+        }
+        inline void SetTargetSignalAmplitude( double targetSignalAmplitude )
+        {
+            AppSettingsPropTree.put( "targetSignalAmplitude", targetSignalAmplitude );
+        }
+
         inline bool GetSweepDescending( void )
         {
             return AppSettingsPropTree.get<bool>( "sweepDescending" );
@@ -345,6 +363,24 @@ class ApplicationSettings
         inline void SetMaxAutorangeAmplitude( double maxAutorangeAmplitude )
         {
             AppSettingsPropTree.put( "expert.maxAutorangeAmplitude", maxAutorangeAmplitude );
+        }
+
+        inline uint8_t GetAdaptiveStimulusTriesPerStep( void )
+        {
+            return AppSettingsPropTree.get<uint8_t>( "expert.adaptiveStimulusTriesPerStep" );
+        }
+        inline void SetAdaptiveStimulusTriesPerStep( uint8_t adaptiveStimulusTriesPerStep )
+        {
+            AppSettingsPropTree.put( "expert.adaptiveStimulusTriesPerStep", adaptiveStimulusTriesPerStep );
+        }
+
+        inline double GetTargetSignalAmplitudeTolerance( void )
+        {
+            return AppSettingsPropTree.get<double>( "expert.targetSignalAmplitudeTolerance" );
+        }
+        inline void SetTargetSignalAmplitudeTolerance( double targetSignalAmplitudeTolerance )
+        {
+            AppSettingsPropTree.put( "expert.targetSignalAmplitudeTolerance", targetSignalAmplitudeTolerance );
         }
 
         inline uint16_t GetMinCyclesCaptured( void )

@@ -206,22 +206,40 @@ void PicoScopeFRA::SetInstrument( PicoScope* _ps )
 //
 ///////////////////////////////////////////////////////////////////////////////////////////////////
 
-void PicoScopeFRA::SetFraSettings( SamplingMode_T samplingMode, double purityLowerLimit, uint16_t extraSettlingTimeMs, uint8_t autorangeTriesPerStep,
-                                   double autorangeTolerance, double smallSignalResolutionTolerance, double maxAutorangeAmplitude, uint16_t minCyclesCaptured,
-                                   bool sweepDescending, double phaseWrappingThreshold, bool diagnosticsOn, wstring baseDataPath )
+void PicoScopeFRA::SetFraSettings( SamplingMode_T samplingMode, bool adaptiveStimulusMode, double targetSignalAmplitude,
+                                   bool sweepDescending, double phaseWrappingThreshold )
 {
     mSamplingMode = samplingMode;
+    mAdaptiveStimulus = adaptiveStimulusMode;
+    mTargetSignalAmplitude = targetSignalAmplitude;
+    mSweepDescending = sweepDescending;
+    mPhaseWrappingThreshold = phaseWrappingThreshold;
+}
+
+void PicoScopeFRA::SetFraTuning( double purityLowerLimit, uint16_t extraSettlingTimeMs, uint8_t autorangeTriesPerStep,
+                                 double autorangeTolerance, double smallSignalResolutionTolerance, double maxAutorangeAmplitude,
+                                 uint8_t adaptiveStimulusTriesPerStep, double targetSignalAmplitudeTolerance, uint16_t minCyclesCaptured )
+{
     mPurityLowerLimit = purityLowerLimit;
     mExtraSettlingTimeMs = extraSettlingTimeMs;
     maxAutorangeRetries = autorangeTriesPerStep;
     minAmplitudeRatioTolerance = autorangeTolerance;
     minAllowedAmplitudeRatio = smallSignalResolutionTolerance;
     maxAmplitudeRatio = maxAutorangeAmplitude;
+    maxAdaptiveStimulusRetries = adaptiveStimulusTriesPerStep;
+    mTargetSignalAmplitudeTolerance = targetSignalAmplitudeTolerance;
     mMinCyclesCaptured = minCyclesCaptured;
-    mSweepDescending = sweepDescending;
-    mPhaseWrappingThreshold = phaseWrappingThreshold;
-    mDiagnosticsOn = diagnosticsOn;
+}
+
+void PicoScopeFRA::EnableDiagnostics(wstring baseDataPath)
+{
+    mDiagnosticsOn = true;
     mBaseDataPath = baseDataPath;
+}
+
+void PicoScopeFRA::DisableDiagnostics(void)
+{
+    mDiagnosticsOn = false;
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -1457,6 +1475,11 @@ bool PicoScopeFRA::ProcessData(void)
             {
                 retVal = false;
             }
+            else
+            {
+                CheckStimulusTarget(true);
+                idealStimulusVpp[freqStepIndex] = currentStimulusVpp;
+            }
         }
     }
     if (mDiagnosticsOn)
@@ -1477,7 +1500,11 @@ bool PicoScopeFRA::ProcessData(void)
 //
 // Purpose: Determine whether the stimulus amplitude needs to change for adaptive stimulus mode
 //
-// Parameters: [out] return - false if the stimulus needs to change
+// Parameters: [in] forceAdjust - if true, re-calculate regardless of whether the input or
+//                                output amplitude are acceptable (within target + tolerance).
+//                                useful for one final calculation of ideal stimulus.
+//                                Defaults to false.
+//             [out] return - false if the stimulus needs to change
 //
 // Notes: Strategy is to get the smaller signal within margin of target
 //        TBD - May need special handling of case where measured amplitude is so low that the
@@ -1485,7 +1512,7 @@ bool PicoScopeFRA::ProcessData(void)
 //
 ///////////////////////////////////////////////////////////////////////////////////////////////////
 
-bool PicoScopeFRA::CheckStimulusTarget(void)
+bool PicoScopeFRA::CheckStimulusTarget(bool forceAdjust)
 {
     stimulusChanged = false;
     double newStimulusFromInput = 0.0;
@@ -1495,7 +1522,8 @@ bool PicoScopeFRA::CheckStimulusTarget(void)
     if (CHANNEL_OVERFLOW != inputChannelAutorangeStatus)
     {
         if (currentInputAmplitudeVolts < mTargetSignalAmplitude ||
-            currentInputAmplitudeVolts > (1.0 + mTargetSignalAmplitudeTolerance) * mTargetSignalAmplitude)
+            currentInputAmplitudeVolts > (1.0 + mTargetSignalAmplitudeTolerance) * mTargetSignalAmplitude ||
+            forceAdjust)
         {
             // Calculate new value
             newStimulusFromInput = currentStimulusVpp * (((1.0 + mTargetSignalAmplitudeTolerance / 2.0) * mTargetSignalAmplitude) / currentInputAmplitudeVolts);
@@ -1505,7 +1533,8 @@ bool PicoScopeFRA::CheckStimulusTarget(void)
     if (CHANNEL_OVERFLOW != outputChannelAutorangeStatus)
     {
         if (currentOutputAmplitudeVolts < mTargetSignalAmplitude ||
-            currentOutputAmplitudeVolts > (1.0 + mTargetSignalAmplitudeTolerance) * mTargetSignalAmplitude)
+            currentOutputAmplitudeVolts > (1.0 + mTargetSignalAmplitudeTolerance) * mTargetSignalAmplitude ||
+            forceAdjust)
         {
             // Calculate new value
             newStimulusFromOutput = currentStimulusVpp * (((1.0 + mTargetSignalAmplitudeTolerance / 2.0) * mTargetSignalAmplitude) / currentOutputAmplitudeVolts);
