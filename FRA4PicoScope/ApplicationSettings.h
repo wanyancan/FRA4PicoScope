@@ -486,13 +486,22 @@ class ApplicationSettings
             ScopeSettingsPropTree.put(L"picoScope.outputChannel.dcOffset", wstring(dcOffset));
         }
 
-        inline const wstring GetInputSignalVpp()
+        inline const wstring GetStimulusVpp()
         {
-            return ScopeSettingsPropTree.get<wstring>(L"picoScope.fraParam.signalVpp");
+            return ScopeSettingsPropTree.get<wstring>(L"picoScope.fraParam.stimulusVpp");
         }
-        inline void SetInputSignalVpp(const wchar_t* inputSignalVpp)
+        inline void SetStimulusVpp(const wchar_t* stimulusVpp)
         {
-            ScopeSettingsPropTree.put(L"picoScope.fraParam.signalVpp", wstring(inputSignalVpp));
+            ScopeSettingsPropTree.put(L"picoScope.fraParam.stimulusVpp", wstring(stimulusVpp));
+        }
+
+        inline const wstring GetMaxStimulusVpp()
+        {
+            return ScopeSettingsPropTree.get<wstring>(L"picoScope.fraParam.maxStimulusVpp");
+        }
+        inline void SetMaxStimulusVpp(const wchar_t* maxStimulusVpp)
+        {
+            ScopeSettingsPropTree.put(L"picoScope.fraParam.maxStimulusVpp", wstring(maxStimulusVpp));
         }
 
         inline const wstring GetStartFreq()
@@ -531,9 +540,13 @@ class ApplicationSettings
         {
             return ScopeSettingsPropTree.get<double>(L"picoScope.outputChannel.dcOffset");
         }
-        inline double GetInputSignalVppAsDouble()
+        inline double GetStimulusVppAsDouble()
         {
-            return ScopeSettingsPropTree.get<double>(L"picoScope.fraParam.signalVpp");
+            return ScopeSettingsPropTree.get<double>(L"picoScope.fraParam.stimulusVpp");
+        }
+        inline double GetMaxStimulusVppAsDouble()
+        {
+            return ScopeSettingsPropTree.get<double>(L"picoScope.fraParam.maxStimulusVpp");
         }
         inline double GetStartFreqAsDouble()
         {

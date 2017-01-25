@@ -141,7 +141,7 @@ PicoScopeFRA::PicoScopeFRA(FRA_STATUS_CALLBACK statusCB)
     maxScopeSamplesPerChannel = 0;
     currentFreqHz = 0.0;
     currentStimulusVpp = 0.0;
-    maxStimulusVpp = 0.0;
+    mMaxStimulusVpp = 0.0;
     currentOutputAmplitudeVolts = 0.0;
     currentInputAmplitudeVolts = 0.0;
     mStartFreqHz = 0.0;
@@ -178,7 +178,7 @@ void PicoScopeFRA::SetInstrument( PicoScope* _ps )
     rangeCounts = ps->GetMaxValue();
 
     // Setup arbitrary initial settings to force a calculation of maxScopeSamplesPerChannel
-    SetupChannels( PS_CHANNEL_A, PS_AC, ATTEN_1X, 0.0, PS_CHANNEL_B, PS_AC, ATTEN_1X, 0.0, 0.0 );
+    SetupChannels( PS_CHANNEL_A, PS_AC, ATTEN_1X, 0.0, PS_CHANNEL_B, PS_AC, ATTEN_1X, 0.0, 0.0, 0.0 );
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -283,7 +283,10 @@ double PicoScopeFRA::GetMinFrequency(void)
 //             [in] outputChannelCoupling - AC/DC coupling for output channel
 //             [in] outputChannelAttenuation - Attenuation setting for output channel
 //             [in] outputDcOffset - DC Offset for output channel
-//             [in] signalVpp - Volts peak to peak of the stimulus signal
+//             [in] initialStimulusVpp - Volts peak to peak of the stimulus signal; initial for
+//                                       adaptive stimulus mode, constant otherwise
+//             [in] maxStimulusVpp - Maximum volts peak to peak of the stimulus signal; used
+//                                   in adaptive stimulus mode.
 //             [out] return - Whether the function was successful.
 //
 // Notes: 
@@ -292,7 +295,7 @@ double PicoScopeFRA::GetMinFrequency(void)
 
 bool PicoScopeFRA::SetupChannels( int inputChannel, int inputChannelCoupling, int inputChannelAttenuation, double inputDcOffset,
                                   int outputChannel, int outputChannelCoupling, int outputChannelAttenuation, double outputDcOffset,
-                                  double signalVpp )
+                                  double initialStimulusVpp, double maxStimulusVpp )
 {
     FRA_STATUS_MESSAGE_T fraStatusMsg;
     PS_RANGE inputRange;
@@ -307,7 +310,7 @@ bool PicoScopeFRA::SetupChannels( int inputChannel, int inputChannelCoupling, in
 
     for (inputRange = inputMaxRange; inputRange > inputMinRange; inputRange--)
     {
-        if (signalVpp > 2.0*rangeInfo[inputRange].rangeVolts*attenInfo[mInputChannelAttenuation]*inputRangeInitialEstimateMargin)
+        if (initialStimulusVpp > 2.0*rangeInfo[inputRange].rangeVolts*attenInfo[mInputChannelAttenuation]*inputRangeInitialEstimateMargin)
         {
             inputRange++; // We stepped one too far, so backup
             inputRange = min(inputRange, inputMaxRange); // Just in case, so we can't get an illegal range
@@ -327,7 +330,8 @@ bool PicoScopeFRA::SetupChannels( int inputChannel, int inputChannelCoupling, in
     mInputDcOffset = inputDcOffset;
     mOutputDcOffset = outputDcOffset;
 
-    currentStimulusVpp = signalVpp;
+    mMaxStimulusVpp = maxStimulusVpp;
+    currentStimulusVpp = initialStimulusVpp;
 
     if (!(ps->Initialized()))
     {
@@ -1545,7 +1549,7 @@ bool PicoScopeFRA::CheckStimulusTarget(bool forceAdjust)
     if (stimulusChanged)
     {
         adaptiveStimulusRetryCounter++;
-        currentStimulusVpp = max(newStimulusFromInput, newStimulusFromOutput);
+        currentStimulusVpp = min(mMaxStimulusVpp, max(newStimulusFromInput, newStimulusFromOutput));
     }
 
     return (!stimulusChanged);
@@ -1566,12 +1570,7 @@ bool PicoScopeFRA::CheckStimulusTarget(bool forceAdjust)
 
 void PicoScopeFRA::CalculateStepInitialStimulusVpp(void)
 {
-    if (1 == freqStepCounter)
-    {
-        // It's the very first try, so take a guess of max/2
-        currentStimulusVpp = maxStimulusVpp / 2.0;
-    }
-    else if (freqStepCounter > 2)
+    if (freqStepCounter > 2)
     {
         // Two prior values exist, so estimate new stimulus Vpp based on their slope
         uint32_t idxMinus1, idxMinus2;
@@ -1581,6 +1580,7 @@ void PicoScopeFRA::CalculateStepInitialStimulusVpp(void)
                               (idealStimulusVpp[idxMinus1] - idealStimulusVpp[idxMinus2])) /
                               (freqsHz[idxMinus1] - freqsHz[idxMinus2]);
     }
+    // if freqStepCounter is 1, then just start with the initialized value
     // if freqStepCounter is 2, then just keep the prior value.
 }
 

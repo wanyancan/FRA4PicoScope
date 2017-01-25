@@ -1234,9 +1234,9 @@ BOOL LoadControlsData(HWND hDlg)
     Edit_LimitText( hndCtrl, 16 );
     Edit_SetText( hndCtrl, pSettings->GetOutputDcOffset().c_str() );
 
-    hndCtrl = GetDlgItem( hDlg, IDC_INPUT_SIGNAL_VPP );
+    hndCtrl = GetDlgItem( hDlg, IDC_STIMULUS_VPP );
     Edit_LimitText( hndCtrl, 16 );
-    Edit_SetText( hndCtrl, pSettings->GetInputSignalVpp().c_str() );
+    Edit_SetText( hndCtrl, pSettings->GetStimulusVpp().c_str() );
 
     hndCtrl = GetDlgItem( hDlg, IDC_FRA_START_FREQ );
     Edit_LimitText( hndCtrl, 16 );
@@ -1366,7 +1366,8 @@ DWORD WINAPI ExecuteFRA(LPVOID lpdwThreadParam)
     int outputChannelCoupling = 0;
     int outputChannelAttenuation = 0;
     double outputDcOffset = 0.0;
-    double signalVpp = 0.0;
+    double stimulusVpp = 0.0;
+    double maxStimulusVpp = 0.0;
     double startFreq = 0;
     double stopFreq = 0;
     int stepsPerDecade = 0;
@@ -1425,7 +1426,8 @@ DWORD WINAPI ExecuteFRA(LPVOID lpdwThreadParam)
             outputChannelAttenuation = pSettings->GetOutputAttenuation();
             inputDcOffset = pSettings->GetInputDcOffsetAsDouble();
             outputDcOffset = pSettings->GetOutputDcOffsetAsDouble();
-            signalVpp = pSettings->GetInputSignalVppAsDouble();
+            stimulusVpp = pSettings->GetStimulusVppAsDouble();
+            maxStimulusVpp = pSettings->GetMaxStimulusVppAsDouble();
             startFreq = pSettings->GetStartFreqAsDouble();
             stopFreq = pSettings->GetStopFreqAsDouble();
             stepsPerDecade = pSettings->GetStepsPerDecadeAsInt();
@@ -1435,7 +1437,7 @@ DWORD WINAPI ExecuteFRA(LPVOID lpdwThreadParam)
 
             if (false == psFRA -> SetupChannels( inputChannel, inputChannelCoupling, inputChannelAttenuation, inputDcOffset,
                                                  outputChannel, outputChannelCoupling, outputChannelAttenuation, outputDcOffset,
-                                                 signalVpp ))
+                                                 stimulusVpp, maxStimulusVpp ))
             {
                 continue;
             }
@@ -1656,7 +1658,8 @@ bool ValidateSettings(void)
     wstringstream wss;
     double inputDcOffset;
     double outputDcOffset;
-    double signalVpp;
+    double stimulusVpp;
+    double stimulusTarget;
     double startFreq;
     double stopFreq;
     tuple <bool, double, double> freqScale;
@@ -1696,25 +1699,62 @@ bool ValidateSettings(void)
         retVal = false;
     }
 
-    hndCtrl = GetDlgItem( hMainWnd, IDC_INPUT_SIGNAL_VPP );
+    hndCtrl = GetDlgItem( hMainWnd, IDC_STIMULUS_VPP );
     Edit_GetText( hndCtrl, editText, 16 );
-    if (!WStringToDouble(editText, signalVpp))
+    if (!WStringToDouble(editText, stimulusVpp))
     {
-        LogMessage( L"Input signal Vpp is not a valid number." );
+        LogMessage( L"Stimulus Vpp is not a valid number." );
         retVal = false;
     }
-    else if (signalVpp <= 0.0)
+    else if (stimulusVpp <= 0.0)
     {
-        LogMessage( L"Input signal Vpp must be > 0.0" );
+        LogMessage( L"Stimulus Vpp must be > 0.0" );
         retVal = false;
     }
     else
     {
         double maxSignalVpp = pScopeSelector->GetSelectedScope()->GetMaxFuncGenVpp();
-        if (signalVpp > maxSignalVpp)
+        if (stimulusVpp > maxSignalVpp)
         {
             wstringstream wss;
-            wss << L"Input signal Vpp must be <= " << fixed << setprecision(1) << maxSignalVpp;
+            wss << L"Stimulus Vpp must be <= " << fixed << setprecision(1) << maxSignalVpp;
+            LogMessage( wss.str() );
+            retVal = false;
+        }
+    }
+
+    hndCtrl = GetDlgItem( hMainWnd, IDC_STIMULUS_TARGET );
+    Edit_GetText( hndCtrl, editText, 16 );
+    if (!WStringToDouble(editText, stimulusTarget))
+    {
+        LogMessage( L"Stimulus target is not a valid number." );
+        retVal = false;
+    }
+    else if (stimulusTarget <= 0.0)
+    {
+        LogMessage( L"Stimulus target must be > 0.0" );
+        retVal = false;
+    }
+
+    hndCtrl = GetDlgItem( hMainWnd, IDC_MAX_STIMULUS_VPP );
+    Edit_GetText( hndCtrl, editText, 16 );
+    if (!WStringToDouble(editText, stimulusVpp))
+    {
+        LogMessage( L"Maximum stimulus Vpp is not a valid number." );
+        retVal = false;
+    }
+    else if (stimulusVpp <= 0.0)
+    {
+        LogMessage( L"Maximum stimulus Vpp must be > 0.0" );
+        retVal = false;
+    }
+    else
+    {
+        double maxSignalVpp = pScopeSelector->GetSelectedScope()->GetMaxFuncGenVpp();
+        if (stimulusVpp > maxSignalVpp)
+        {
+            wstringstream wss;
+            wss << L"Maximum stimulus Vpp must be <= " << fixed << setprecision(1) << maxSignalVpp;
             LogMessage( wss.str() );
             retVal = false;
         }
@@ -1859,9 +1899,17 @@ bool StoreSettings(void)
     Edit_GetText( hndCtrl, editText, 16 );
     pSettings -> SetOutputDcOffset( editText );
 
-    hndCtrl = GetDlgItem( hMainWnd, IDC_INPUT_SIGNAL_VPP );
+    hndCtrl = GetDlgItem( hMainWnd, IDC_STIMULUS_VPP );
     Edit_GetText( hndCtrl, editText, 16 );
-    pSettings -> SetInputSignalVpp( editText );
+    pSettings -> SetStimulusVpp( editText );
+
+    hndCtrl = GetDlgItem( hMainWnd, IDC_STIMULUS_TARGET );
+    Edit_GetText( hndCtrl, editText, 16 );
+    pSettings -> SetStimulusVpp( editText );
+
+    hndCtrl = GetDlgItem( hMainWnd, IDC_MAX_STIMULUS_VPP );
+    Edit_GetText( hndCtrl, editText, 16 );
+    pSettings -> SetMaxStimulusVpp( editText );
 
     // FRA inputs
     hndCtrl = GetDlgItem( hMainWnd, IDC_FRA_START_FREQ );

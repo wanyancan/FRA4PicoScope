@@ -34,7 +34,7 @@
 #define IDC_OUTPUT_COUPLING             511
 #define IDC_OUTPUT_DC_OFFS              512
 #define IDC_OUTPUT_BWLIM                513
-#define IDC_INPUT_SIGNAL_VPP            514
+#define IDC_STIMULUS_VPP                514
 #define IDC_FRA_START_FREQ              515
 #define IDC_FRA_STOP_FREQ               516
 #define IDC_FRA_STEPS_PER_DECADE        517
@@ -51,6 +51,8 @@
 #define IDC_COPY                        528
 #define IDC_CLEAR                       529
 #define IDC_AUTOCLEAR                   530
+#define IDC_STIMULUS_TARGET             531
+#define IDC_MAX_STIMULUS_VPP            532
 #define IDC_SCOPE_SELECT_LIST           535
 #define IDC_FREQ_AXIS_AUTOSCALE         540
 #define IDC_GAIN_AXIS_AUTOSCALE         541
@@ -104,7 +106,11 @@
 #define IDC_TEXT_25                     594
 #define IDC_TEXT_26                     595
 #define IDC_TEXT_27                     596
+#define IDC_TEXT_28                     597
+#define IDC_TEXT_29                     598
+#define IDC_TEXT_30                     599
 #define IDR_MAINFRAME                   600
+#define IDC_TEXT_31                     600
 #define IDB_PLOT_UNAVAILABLE            700
 #define IDB_SEPARATOR                   701
 #define IDC_RADIO1                      1000
@@ -128,6 +134,9 @@
 #define IDC_EDIT10                      1019
 #define IDC_EDIT11                      1020
 #define IDC_COMBO3                      1021
+#define IDC_EDIT12                      1022
+#define IDC_ADAPTIVE_STIMULUS           1023
+#define IDC_CHECK3                      1024
 #define IDC_STATIC                      -1
 
 // Next default values for new objects
@@ -136,7 +145,7 @@
 #ifndef APSTUDIO_READONLY_SYMBOLS
 #define _APS_NEXT_RESOURCE_VALUE        104
 #define _APS_NEXT_COMMAND_VALUE         40002
-#define _APS_NEXT_CONTROL_VALUE         1022
+#define _APS_NEXT_CONTROL_VALUE         1025
 #define _APS_NEXT_SYMED_VALUE           101
 #endif
 #endif
