@@ -109,7 +109,11 @@ class ApplicationSettings
             AppSettingsPropTree.put( "adaptiveStimulusMode", mode );
         }
 
-        inline double GetTargetSignalAmplitude( void )
+        inline const string GetTargetSignalAmplitude( void )
+        {
+            return AppSettingsPropTree.get<string>( "targetSignalAmplitude" );
+        }
+        inline double GetTargetSignalAmplitudeAsDouble( void )
         {
             return (double)AppSettingsPropTree.get<double>( "targetSignalAmplitude" );
         }

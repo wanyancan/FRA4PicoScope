@@ -91,7 +91,7 @@
 #define IDC_TEXT_10                     579
 #define IDC_TEXT_11                     580
 #define IDC_TEXT_12                     581
-#define IDC_TEXT_13                     582
+#define IDC_TEXT_STIMULUS_TITLE         582
 #define IDC_TEXT_14                     583
 #define IDC_TEXT_15                     584
 #define IDC_TEXT_16                     585
@@ -106,11 +106,11 @@
 #define IDC_TEXT_25                     594
 #define IDC_TEXT_26                     595
 #define IDC_TEXT_27                     596
-#define IDC_TEXT_28                     597
-#define IDC_TEXT_29                     598
-#define IDC_TEXT_30                     599
-#define IDR_MAINFRAME                   600
-#define IDC_TEXT_31                     600
+#define IDC_TEXT_STIMULUS_TARGET_TITLE  597
+#define IDC_TEXT_STIMULUS_TARGET_UNITS  598
+#define IDC_TEXT_MAX_STIMULUS_VPP_TITLE 599
+#define IDC_TEXT_MAX_STIMULUS_VPP_UNITS 600
+#define IDR_MAINFRAME                   601
 #define IDB_PLOT_UNAVAILABLE            700
 #define IDB_SEPARATOR                   701
 #define IDC_RADIO1                      1000

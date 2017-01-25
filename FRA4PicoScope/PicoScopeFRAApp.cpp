@@ -628,7 +628,7 @@ BOOL CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
                 exit(-1);
             }
 #if !defined(TEST_PLOTTING)
-            psFRA->SetFraSettings( pSettings->GetSamplingMode(), pSettings->GetAdaptiveStimulusMode(), pSettings->GetTargetSignalAmplitude(),
+            psFRA->SetFraSettings( pSettings->GetSamplingMode(), pSettings->GetAdaptiveStimulusMode(), pSettings->GetTargetSignalAmplitudeAsDouble(),
                                    pSettings->GetSweepDescending(), pSettings->GetPhaseWrappingThreshold() );
 
             psFRA->SetFraTuning( pSettings->GetPurityLowerLimit(), pSettings->GetExtraSettlingTimeMs(),
@@ -1238,6 +1238,49 @@ BOOL LoadControlsData(HWND hDlg)
     Edit_LimitText( hndCtrl, 16 );
     Edit_SetText( hndCtrl, pSettings->GetStimulusVpp().c_str() );
 
+    if (pSettings->GetAdaptiveStimulusMode())
+    {
+        hndCtrl = GetDlgItem(hDlg, IDC_TEXT_STIMULUS_TITLE);
+        Static_SetText(hndCtrl, L"Initial Stimulus Signal");
+
+        hndCtrl = GetDlgItem(hDlg, IDC_STIMULUS_TARGET);
+        ShowWindow( hndCtrl, SW_SHOW );
+        Edit_LimitText( hndCtrl, 16 );
+        // TODO probably have to make the app settings a wptree (like scope settings)
+        //Edit_SetText( hndCtrl, pSettings->GetTargetSignalAmplitude().c_str() );
+        hndCtrl = GetDlgItem(hDlg, IDC_TEXT_STIMULUS_TARGET_TITLE);
+        ShowWindow( hndCtrl, SW_SHOW );
+        hndCtrl = GetDlgItem(hDlg, IDC_TEXT_STIMULUS_TARGET_UNITS);
+        ShowWindow( hndCtrl, SW_SHOW );
+
+        hndCtrl = GetDlgItem( hDlg, IDC_MAX_STIMULUS_VPP );
+        Edit_LimitText( hndCtrl, 16 );
+        Edit_SetText( hndCtrl, pSettings->GetMaxStimulusVpp().c_str() );
+        hndCtrl = GetDlgItem(hDlg, IDC_TEXT_MAX_STIMULUS_VPP_TITLE);
+        ShowWindow( hndCtrl, SW_SHOW );
+        hndCtrl = GetDlgItem(hDlg, IDC_TEXT_MAX_STIMULUS_VPP_UNITS);
+        ShowWindow( hndCtrl, SW_SHOW );
+    }
+    else
+    {
+        hndCtrl = GetDlgItem(hDlg, IDC_TEXT_STIMULUS_TITLE);
+        Static_SetText(hndCtrl, L"Stimulus Signal");
+
+        hndCtrl = GetDlgItem(hDlg, IDC_STIMULUS_TARGET);
+        ShowWindow( hndCtrl, SW_HIDE );
+        hndCtrl = GetDlgItem(hDlg, IDC_TEXT_STIMULUS_TARGET_TITLE);
+        ShowWindow( hndCtrl, SW_HIDE );
+        hndCtrl = GetDlgItem(hDlg, IDC_TEXT_STIMULUS_TARGET_UNITS);
+        ShowWindow( hndCtrl, SW_HIDE );
+
+        hndCtrl = GetDlgItem( hDlg, IDC_MAX_STIMULUS_VPP );
+        ShowWindow( hndCtrl, SW_HIDE );
+        hndCtrl = GetDlgItem(hDlg, IDC_TEXT_MAX_STIMULUS_VPP_TITLE);
+        ShowWindow( hndCtrl, SW_HIDE );
+        hndCtrl = GetDlgItem(hDlg, IDC_TEXT_MAX_STIMULUS_VPP_UNITS);
+        ShowWindow( hndCtrl, SW_HIDE );
+    }
+
     hndCtrl = GetDlgItem( hDlg, IDC_FRA_START_FREQ );
     Edit_LimitText( hndCtrl, 16 );
     Edit_SetText( hndCtrl, pSettings->GetStartFreq().c_str() );
@@ -1432,7 +1475,7 @@ DWORD WINAPI ExecuteFRA(LPVOID lpdwThreadParam)
             stopFreq = pSettings->GetStopFreqAsDouble();
             stepsPerDecade = pSettings->GetStepsPerDecadeAsInt();
 
-            psFRA->SetFraSettings( pSettings->GetSamplingMode(), pSettings->GetAdaptiveStimulusMode(), pSettings->GetTargetSignalAmplitude(),
+            psFRA->SetFraSettings( pSettings->GetSamplingMode(), pSettings->GetAdaptiveStimulusMode(), pSettings->GetTargetSignalAmplitudeAsDouble(),
                                    pSettings->GetSweepDescending(), pSettings->GetPhaseWrappingThreshold() );
 
             if (false == psFRA -> SetupChannels( inputChannel, inputChannelCoupling, inputChannelAttenuation, inputDcOffset,

@@ -419,7 +419,8 @@ bool ApplicationSettings::ReadScopeSettings( PicoScope* pScope )
 bool ApplicationSettings::InitializeScopeSettingsFile(PicoScope* pScope)
 {
     bool retVal = true;
-    wstringstream signalVppSS;
+    wstringstream stimulusVppSS;
+    wstringstream maxStimulusVppSS;
     wstringstream startFreqSS;
     wstringstream stopFreqSS;
     double midSigGenVpp;
@@ -437,11 +438,13 @@ bool ApplicationSettings::InitializeScopeSettingsFile(PicoScope* pScope)
 
     midSigGenVpp = floor((pScope->GetMinFuncGenVpp() + pScope->GetMaxFuncGenVpp()) / 2.0);
 
-    signalVppSS << fixed << setprecision(1) << midSigGenVpp;
+    stimulusVppSS << fixed << setprecision(1) << midSigGenVpp;
+    maxStimulusVppSS << fixed << setprecision(1) << pScope->GetMaxFuncGenVpp();
     startFreqSS << fixed << setprecision(1) << (max(1.0, pScope->GetMinFuncGenFreq())); // Make frequency at least 1.0 since 0.0 (DC) makes no sense for FRA
     stopFreqSS << fixed << setprecision(1) << (pScope->GetMaxFuncGenFreq());
 
-    ScopeSettingsPropTree.put( L"picoScope.fraParam.signalVpp", signalVppSS.str().c_str() );
+    ScopeSettingsPropTree.put( L"picoScope.fraParam.stimulusVpp", stimulusVppSS.str().c_str() );
+    ScopeSettingsPropTree.put( L"picoScope.fraParam.maxStimulusVpp", maxStimulusVppSS.str().c_str() );
     ScopeSettingsPropTree.put( L"picoScope.fraParam.startFrequency", startFreqSS.str().c_str() );
     ScopeSettingsPropTree.put( L"picoScope.fraParam.stopFrequency", stopFreqSS.str().c_str() );
     ScopeSettingsPropTree.put( L"picoScope.fraParam.stepsPerDecade", 10 );
@@ -500,7 +503,8 @@ void ApplicationSettings::SetNoScopeSettings( void )
     ScopeSettingsPropTree.put( L"picoScope.outputChannel.coupling", PS_AC );
     ScopeSettingsPropTree.put( L"picoScope.outputChannel.dcOffset", L"0.0" );
 
-    ScopeSettingsPropTree.put( L"picoScope.fraParam.signalVpp", L"0.0" );
+    ScopeSettingsPropTree.put( L"picoScope.fraParam.stimulusVpp", L"0.0" );
+    ScopeSettingsPropTree.put( L"picoScope.fraParam.maxStimulusVpp", L"0.0" );
     ScopeSettingsPropTree.put( L"picoScope.fraParam.startFrequency", L"0.0" );
     ScopeSettingsPropTree.put( L"picoScope.fraParam.stopFrequency", L"0.0" );
     ScopeSettingsPropTree.put( L"picoScope.fraParam.stepsPerDecade", 10 );
