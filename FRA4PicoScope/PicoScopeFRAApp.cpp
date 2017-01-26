@@ -1246,14 +1246,14 @@ BOOL LoadControlsData(HWND hDlg)
         hndCtrl = GetDlgItem(hDlg, IDC_STIMULUS_TARGET);
         ShowWindow( hndCtrl, SW_SHOW );
         Edit_LimitText( hndCtrl, 16 );
-        // TODO probably have to make the app settings a wptree (like scope settings)
-        //Edit_SetText( hndCtrl, pSettings->GetTargetSignalAmplitude().c_str() );
+        Edit_SetText( hndCtrl, pSettings->GetTargetSignalAmplitude().c_str() );
         hndCtrl = GetDlgItem(hDlg, IDC_TEXT_STIMULUS_TARGET_TITLE);
         ShowWindow( hndCtrl, SW_SHOW );
         hndCtrl = GetDlgItem(hDlg, IDC_TEXT_STIMULUS_TARGET_UNITS);
         ShowWindow( hndCtrl, SW_SHOW );
 
         hndCtrl = GetDlgItem( hDlg, IDC_MAX_STIMULUS_VPP );
+        ShowWindow( hndCtrl, SW_SHOW );
         Edit_LimitText( hndCtrl, 16 );
         Edit_SetText( hndCtrl, pSettings->GetMaxStimulusVpp().c_str() );
         hndCtrl = GetDlgItem(hDlg, IDC_TEXT_MAX_STIMULUS_VPP_TITLE);
@@ -1948,7 +1948,7 @@ bool StoreSettings(void)
 
     hndCtrl = GetDlgItem( hMainWnd, IDC_STIMULUS_TARGET );
     Edit_GetText( hndCtrl, editText, 16 );
-    pSettings -> SetStimulusVpp( editText );
+    pSettings -> SetTargetSignalAmplitude( editText );
 
     hndCtrl = GetDlgItem( hMainWnd, IDC_MAX_STIMULUS_VPP );
     Edit_GetText( hndCtrl, editText, 16 );

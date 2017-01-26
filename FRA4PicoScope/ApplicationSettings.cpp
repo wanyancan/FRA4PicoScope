@@ -85,7 +85,7 @@ ApplicationSettings::~ApplicationSettings(void)
 bool ApplicationSettings::ReadApplicationSettings( void )
 {
     bool retVal = true;
-    ifstream settingsFileInputStream;
+    wifstream settingsFileInputStream;
 
     try
     {
@@ -93,6 +93,7 @@ bool ApplicationSettings::ReadApplicationSettings( void )
 
         if (settingsFileInputStream)
         {
+            settingsFileInputStream.imbue(locale(locale::empty(), new codecvt_utf8<wchar_t>));
             read_xml(settingsFileInputStream, AppSettingsPropTree, xml_parser::trim_whitespace);
             AppSettingsPropTreeClean = AppSettingsPropTree;
             CheckSettingsVersionAndUpgrade();
@@ -129,100 +130,102 @@ bool ApplicationSettings::ReadApplicationSettings( void )
 bool ApplicationSettings::InitializeApplicationSettingsFile( void )
 {
     bool retVal = true;
-    ofstream settingsFileOutputStream;
+    wofstream settingsFileOutputStream;
 
     try
     {
         AppSettingsPropTree.clear();
 
-        AppSettingsPropTree.put( "appVersion", string(appVersionString) );
+        wstring appVersionStringW = wstring_convert<codecvt_utf8<wchar_t>>().from_bytes(appVersionString);
+        AppSettingsPropTree.put( L"appVersion", appVersionStringW );
 
-        AppSettingsPropTree.put( "mostRecentScope.SN", string("None") );
-        AppSettingsPropTree.put( "mostRecentScope.family", PS_NO_FAMILY );
+        AppSettingsPropTree.put( L"mostRecentScope.SN", wstring(L"None") );
+        AppSettingsPropTree.put( L"mostRecentScope.family", PS_NO_FAMILY );
 
-        AppSettingsPropTree.put( "samplingMode", LOW_NOISE );
-        AppSettingsPropTree.put( "adaptiveStimulusMode", false );
-        AppSettingsPropTree.put( "targetSignalAmplitude", 0.1 ); // 100 mV
-        AppSettingsPropTree.put( "sweepDescending", false );
+        AppSettingsPropTree.put( L"samplingMode", LOW_NOISE );
+        AppSettingsPropTree.put( L"adaptiveStimulusMode", false );
+        AppSettingsPropTree.put( L"targetSignalAmplitude", 0.1 ); // 100 mV
+        AppSettingsPropTree.put( L"sweepDescending", false );
 
-        AppSettingsPropTree.put( "plot.freqAxis.autoscale", true );
-        AppSettingsPropTree.put( "plot.freqAxis.min", 0.0 );
-        AppSettingsPropTree.put( "plot.freqAxis.max", 0.0 );
-        AppSettingsPropTree.put( "plot.freqAxis.majorTickInterval", 0.0 );
-        AppSettingsPropTree.put( "plot.freqAxis.minorTicksPerMajorInterval", 0 );
-        AppSettingsPropTree.put( "plot.freqAxis.majorGrids", true );
-        AppSettingsPropTree.put( "plot.freqAxis.minorGrids", true );
+        AppSettingsPropTree.put( L"plot.freqAxis.autoscale", true );
+        AppSettingsPropTree.put( L"plot.freqAxis.min", 0.0 );
+        AppSettingsPropTree.put( L"plot.freqAxis.max", 0.0 );
+        AppSettingsPropTree.put( L"plot.freqAxis.majorTickInterval", 0.0 );
+        AppSettingsPropTree.put( L"plot.freqAxis.minorTicksPerMajorInterval", 0 );
+        AppSettingsPropTree.put( L"plot.freqAxis.majorGrids", true );
+        AppSettingsPropTree.put( L"plot.freqAxis.minorGrids", true );
 
-        AppSettingsPropTree.put( "plot.gainAxis.autoscale", true );
-        AppSettingsPropTree.put( "plot.gainAxis.min", 0.0 );
-        AppSettingsPropTree.put( "plot.gainAxis.max", 0.0 );
-        AppSettingsPropTree.put( "plot.gainAxis.majorTickInterval", 0.0 );
-        AppSettingsPropTree.put( "plot.gainAxis.minorTicksPerMajorInterval", 0 );
-        AppSettingsPropTree.put( "plot.gainAxis.majorGrids", true );
-        AppSettingsPropTree.put( "plot.gainAxis.minorGrids", true );
-        AppSettingsPropTree.put( "plot.gainAxis.masterGrids", true );
+        AppSettingsPropTree.put( L"plot.gainAxis.autoscale", true );
+        AppSettingsPropTree.put( L"plot.gainAxis.min", 0.0 );
+        AppSettingsPropTree.put( L"plot.gainAxis.max", 0.0 );
+        AppSettingsPropTree.put( L"plot.gainAxis.majorTickInterval", 0.0 );
+        AppSettingsPropTree.put( L"plot.gainAxis.minorTicksPerMajorInterval", 0 );
+        AppSettingsPropTree.put( L"plot.gainAxis.majorGrids", true );
+        AppSettingsPropTree.put( L"plot.gainAxis.minorGrids", true );
+        AppSettingsPropTree.put( L"plot.gainAxis.masterGrids", true );
 
-        AppSettingsPropTree.put( "plot.phaseAxis.autoscale", true );
-        AppSettingsPropTree.put( "plot.phaseAxis.min", 0.0 );
-        AppSettingsPropTree.put( "plot.phaseAxis.max", 0.0 );
-        AppSettingsPropTree.put( "plot.phaseAxis.majorTickInterval", 0.0 );
-        AppSettingsPropTree.put( "plot.phaseAxis.minorTicksPerMajorInterval", 0 );
-        AppSettingsPropTree.put( "plot.phaseAxis.majorGrids", false );
-        AppSettingsPropTree.put( "plot.phaseAxis.minorGrids", false );
-        AppSettingsPropTree.put( "plot.phaseAxis.masterGrids", false );
+        AppSettingsPropTree.put( L"plot.phaseAxis.autoscale", true );
+        AppSettingsPropTree.put( L"plot.phaseAxis.min", 0.0 );
+        AppSettingsPropTree.put( L"plot.phaseAxis.max", 0.0 );
+        AppSettingsPropTree.put( L"plot.phaseAxis.majorTickInterval", 0.0 );
+        AppSettingsPropTree.put( L"plot.phaseAxis.minorTicksPerMajorInterval", 0 );
+        AppSettingsPropTree.put( L"plot.phaseAxis.majorGrids", false );
+        AppSettingsPropTree.put( L"plot.phaseAxis.minorGrids", false );
+        AppSettingsPropTree.put( L"plot.phaseAxis.masterGrids", false );
 
-        AppSettingsPropTree.put( "plot.autoAxes", true );
-        AppSettingsPropTree.put( "plot.plotGain", true );
-        AppSettingsPropTree.put( "plot.plotPhase", true );
-        AppSettingsPropTree.put( "plot.plotGainMargin", false );
-        AppSettingsPropTree.put( "plot.plotPhaseMargin", false );
-        AppSettingsPropTree.put( "plot.plotUnwrappedPhase", false );
-        AppSettingsPropTree.put( "plot.phaseWrappingThreshold", 180.0 );
-        AppSettingsPropTree.put( "plot.gainMarginPhaseCrossover", 0.0 );
+        AppSettingsPropTree.put( L"plot.autoAxes", true );
+        AppSettingsPropTree.put( L"plot.plotGain", true );
+        AppSettingsPropTree.put( L"plot.plotPhase", true );
+        AppSettingsPropTree.put( L"plot.plotGainMargin", false );
+        AppSettingsPropTree.put( L"plot.plotPhaseMargin", false );
+        AppSettingsPropTree.put( L"plot.plotUnwrappedPhase", false );
+        AppSettingsPropTree.put( L"plot.phaseWrappingThreshold", 180.0 );
+        AppSettingsPropTree.put( L"plot.gainMarginPhaseCrossover", 0.0 );
 
-        AppSettingsPropTree.put( "plot.screenColor.background.red", 0 );
-        AppSettingsPropTree.put( "plot.screenColor.background.green", 0 );
-        AppSettingsPropTree.put( "plot.screenColor.background.blue", 0 );
-        AppSettingsPropTree.put( "plot.screenColor.axesGridsLabels.red", 0 );
-        AppSettingsPropTree.put( "plot.screenColor.axesGridsLabels.green", 0 );
-        AppSettingsPropTree.put( "plot.screenColor.axesGridsLabels.blue", 0 );
-        AppSettingsPropTree.put( "plot.screenColor.gainPlot.red", 0 );
-        AppSettingsPropTree.put( "plot.screenColor.gainPlot.green", 0 );
-        AppSettingsPropTree.put( "plot.screenColor.gainPlot.blue", 0 );
-        AppSettingsPropTree.put( "plot.screenColor.phasePlot.red", 0 );
-        AppSettingsPropTree.put( "plot.screenColor.phasePlot.green", 0 );
-        AppSettingsPropTree.put( "plot.screenColor.phasePlot.blue", 0 );
-        AppSettingsPropTree.put( "plot.savedImageFileColor.background.red", 0 );
-        AppSettingsPropTree.put( "plot.savedImageFileColor.background.green", 0 );
-        AppSettingsPropTree.put( "plot.savedImageFileColor.background.blue", 0 );
-        AppSettingsPropTree.put( "plot.savedImageFileColor.axesGridsLabels.red", 0 );
-        AppSettingsPropTree.put( "plot.savedImageFileColor.axesGridsLabels.green", 0 );
-        AppSettingsPropTree.put( "plot.savedImageFileColor.axesGridsLabels.blue", 0 );
-        AppSettingsPropTree.put( "plot.savedImageFileColor.gainPlot.red", 0 );
-        AppSettingsPropTree.put( "plot.savedImageFileColor.gainPlot.green", 0 );
-        AppSettingsPropTree.put( "plot.savedImageFileColor.gainPlot.blue", 0 );
-        AppSettingsPropTree.put( "plot.savedImageFileColor.phasePlot.red", 0 );
-        AppSettingsPropTree.put( "plot.savedImageFileColor.phasePlot.green", 0 );
-        AppSettingsPropTree.put( "plot.savedImageFileColor.phasePlot.blue", 0 );
+        AppSettingsPropTree.put( L"plot.screenColor.background.red", 0 );
+        AppSettingsPropTree.put( L"plot.screenColor.background.green", 0 );
+        AppSettingsPropTree.put( L"plot.screenColor.background.blue", 0 );
+        AppSettingsPropTree.put( L"plot.screenColor.axesGridsLabels.red", 0 );
+        AppSettingsPropTree.put( L"plot.screenColor.axesGridsLabels.green", 0 );
+        AppSettingsPropTree.put( L"plot.screenColor.axesGridsLabels.blue", 0 );
+        AppSettingsPropTree.put( L"plot.screenColor.gainPlot.red", 0 );
+        AppSettingsPropTree.put( L"plot.screenColor.gainPlot.green", 0 );
+        AppSettingsPropTree.put( L"plot.screenColor.gainPlot.blue", 0 );
+        AppSettingsPropTree.put( L"plot.screenColor.phasePlot.red", 0 );
+        AppSettingsPropTree.put( L"plot.screenColor.phasePlot.green", 0 );
+        AppSettingsPropTree.put( L"plot.screenColor.phasePlot.blue", 0 );
+        AppSettingsPropTree.put( L"plot.savedImageFileColor.background.red", 0 );
+        AppSettingsPropTree.put( L"plot.savedImageFileColor.background.green", 0 );
+        AppSettingsPropTree.put( L"plot.savedImageFileColor.background.blue", 0 );
+        AppSettingsPropTree.put( L"plot.savedImageFileColor.axesGridsLabels.red", 0 );
+        AppSettingsPropTree.put( L"plot.savedImageFileColor.axesGridsLabels.green", 0 );
+        AppSettingsPropTree.put( L"plot.savedImageFileColor.axesGridsLabels.blue", 0 );
+        AppSettingsPropTree.put( L"plot.savedImageFileColor.gainPlot.red", 0 );
+        AppSettingsPropTree.put( L"plot.savedImageFileColor.gainPlot.green", 0 );
+        AppSettingsPropTree.put( L"plot.savedImageFileColor.gainPlot.blue", 0 );
+        AppSettingsPropTree.put( L"plot.savedImageFileColor.phasePlot.red", 0 );
+        AppSettingsPropTree.put( L"plot.savedImageFileColor.phasePlot.green", 0 );
+        AppSettingsPropTree.put( L"plot.savedImageFileColor.phasePlot.blue", 0 );
 
-        AppSettingsPropTree.put( "diagnostics.logVerbosityLevel", 0 );
-        AppSettingsPropTree.put( "diagnostics.timeDomainPlots", false );
+        AppSettingsPropTree.put( L"diagnostics.logVerbosityLevel", 0 );
+        AppSettingsPropTree.put( L"diagnostics.timeDomainPlots", false );
 
-        AppSettingsPropTree.put( "expert.purityLowerLimit", 0.80 ); // 80%
-        AppSettingsPropTree.put( "expert.extraSettlingTimeMs", 0 );
-        AppSettingsPropTree.put( "expert.autorangeTriesPerStep", 10 );
-        AppSettingsPropTree.put( "expert.autorangeTolerance", 0.10 );
-        AppSettingsPropTree.put( "expert.smallSignalResolutionLimit", 0.0 );
-        AppSettingsPropTree.put( "expert.maxAutorangeAmplitude", 1.0 );
-        AppSettingsPropTree.put( "expert.adaptiveStimulusTriesPerStep", 10 );
-        AppSettingsPropTree.put( "expert.targetSignalAmplitudeTolerance", 0.10 ); // 10%
-        AppSettingsPropTree.put( "expert.minCyclesCaptured", 16 ); // Bin width 6.25% of stimulus frequency
+        AppSettingsPropTree.put( L"expert.purityLowerLimit", 0.80 ); // 80%
+        AppSettingsPropTree.put( L"expert.extraSettlingTimeMs", 0 );
+        AppSettingsPropTree.put( L"expert.autorangeTriesPerStep", 10 );
+        AppSettingsPropTree.put( L"expert.autorangeTolerance", 0.10 );
+        AppSettingsPropTree.put( L"expert.smallSignalResolutionLimit", 0.0 );
+        AppSettingsPropTree.put( L"expert.maxAutorangeAmplitude", 1.0 );
+        AppSettingsPropTree.put( L"expert.adaptiveStimulusTriesPerStep", 10 );
+        AppSettingsPropTree.put( L"expert.targetSignalAmplitudeTolerance", 0.10 ); // 10%
+        AppSettingsPropTree.put( L"expert.minCyclesCaptured", 16 ); // Bin width 6.25% of stimulus frequency
 
         settingsFileOutputStream.open( appDataFilename.c_str(), ios::out );
 
         if (settingsFileOutputStream)
         {
-            xml_writer_settings<std::string> settings(' ', 4);
+            settingsFileOutputStream.imbue(locale(locale::empty(), new codecvt_utf8<wchar_t>));
+            xml_writer_settings<std::wstring> settings(wchar_t(' '), 4);
             write_xml(settingsFileOutputStream, AppSettingsPropTree, settings);
             AppSettingsPropTreeClean = AppSettingsPropTree;
         }
@@ -293,7 +296,7 @@ void ApplicationSettings::CheckSettingsVersionAndUpgrade(void)
 bool ApplicationSettings::WriteApplicationSettings( void )
 {
     bool retVal = true;
-    ofstream settingsFileOutputStream;
+    wofstream settingsFileOutputStream;
 
     if (AppSettingsPropTree != AppSettingsPropTreeClean)
     {
@@ -303,7 +306,8 @@ bool ApplicationSettings::WriteApplicationSettings( void )
 
             if (settingsFileOutputStream)
             {
-                xml_writer_settings<std::string> settings(' ', 4);
+                settingsFileOutputStream.imbue(locale(locale::empty(), new codecvt_utf8<wchar_t>));
+                xml_writer_settings<std::wstring> settings(wchar_t(' '), 4);
                 write_xml(settingsFileOutputStream, AppSettingsPropTree, settings);
                 AppSettingsPropTreeClean = AppSettingsPropTree;
             }
