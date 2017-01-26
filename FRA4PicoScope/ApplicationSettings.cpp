@@ -144,7 +144,7 @@ bool ApplicationSettings::InitializeApplicationSettingsFile( void )
 
         AppSettingsPropTree.put( L"samplingMode", LOW_NOISE );
         AppSettingsPropTree.put( L"adaptiveStimulusMode", false );
-        AppSettingsPropTree.put( L"targetSignalAmplitude", 0.1 ); // 100 mV
+        AppSettingsPropTree.put( L"targetSignalAmplitude", L"0.1" ); // 100 mV
         AppSettingsPropTree.put( L"sweepDescending", false );
 
         AppSettingsPropTree.put( L"plot.freqAxis.autoscale", true );
