@@ -429,8 +429,8 @@ bool PicoScopeFRA::ExecuteFRA(double startFreqHz, double stopFreqHz, int stepsPe
         while ((mSweepDescending && freqStepIndex >= 0) || (!mSweepDescending && freqStepIndex < numSteps))
         {
             currentFreqHz = freqsHz[freqStepIndex];
-            for (autorangeRetryCounter = 0; autorangeRetryCounter < maxAutorangeRetries &&
-                                            adaptiveStimulusRetryCounter < maxAdaptiveStimulusRetries; )
+            for (autorangeRetryCounter = 0, adaptiveStimulusRetryCounter = 0;
+                 autorangeRetryCounter < maxAutorangeRetries && adaptiveStimulusRetryCounter < maxAdaptiveStimulusRetries; )
             {
                 try
                 {
@@ -523,9 +523,11 @@ bool PicoScopeFRA::ExecuteFRA(double startFreqHz, double stopFreqHz, int stepsPe
                 autoRangeTries[freqStepIndex] = autorangeRetryCounter+1;
             }
 
-            if (autorangeRetryCounter == maxAutorangeRetries)
+            if (autorangeRetryCounter == maxAutorangeRetries ||
+                adaptiveStimulusRetryCounter == maxAdaptiveStimulusRetries)
             {
                 // This is a temporary solution until we implement a fully interactive one.
+                // TODO - change to FRA_STATUS_RETRY_LIMIT_REACHED and parameterize
                 UpdateStatus( fraStatusMsg, FRA_STATUS_AUTORANGE_LIMIT, inputChannelAutorangeStatus, outputChannelAutorangeStatus );
                 if (true == fraStatusMsg.responseData.proceed)
                 {
@@ -1479,7 +1481,7 @@ bool PicoScopeFRA::ProcessData(void)
             {
                 retVal = false;
             }
-            else
+            else if (CHANNEL_OVERFLOW != inputChannelAutorangeStatus && CHANNEL_OVERFLOW != outputChannelAutorangeStatus)
             {
                 CheckStimulusTarget(true);
                 idealStimulusVpp[freqStepIndex] = currentStimulusVpp;
@@ -1511,48 +1513,80 @@ bool PicoScopeFRA::ProcessData(void)
 //             [out] return - false if the stimulus needs to change
 //
 // Notes: Strategy is to get the smaller signal within margin of target
-//        TBD - May need special handling of case where measured amplitude is so low that the
-//              new value will overshoot.
 //
 ///////////////////////////////////////////////////////////////////////////////////////////////////
 
 bool PicoScopeFRA::CheckStimulusTarget(bool forceAdjust)
 {
-    stimulusChanged = false;
+    bool stimulusRecomputed = false;
     double newStimulusFromInput = 0.0;
     double newStimulusFromOutput = 0.0;
+    int inputRelation = 0; // -1 => under target; 1 => over target; 0 => within target
+    int outputRelation = 0; // -1 => under target; 1 => over target; 0 => within target
 
     // Only bother checking on channels that are not over-range
     if (CHANNEL_OVERFLOW != inputChannelAutorangeStatus)
     {
-        if (currentInputAmplitudeVolts < mTargetSignalAmplitude ||
-            currentInputAmplitudeVolts > (1.0 + mTargetSignalAmplitudeTolerance) * mTargetSignalAmplitude ||
-            forceAdjust)
+        if (currentInputAmplitudeVolts < mTargetSignalAmplitude)
+        {
+            inputRelation = -1;
+        }
+        else if (currentInputAmplitudeVolts > (1.0 + mTargetSignalAmplitudeTolerance) * mTargetSignalAmplitude)
+        {
+            inputRelation = 1;
+        }
+        else
+        {
+            inputRelation = 0;
+        }
+
+        if (0 != inputRelation || forceAdjust)
         {
             // Calculate new value
             newStimulusFromInput = currentStimulusVpp * (((1.0 + mTargetSignalAmplitudeTolerance / 2.0) * mTargetSignalAmplitude) / currentInputAmplitudeVolts);
-            stimulusChanged = true;
+            stimulusRecomputed = true;
         }
     }
+    // else - just leave as "OK" since auto-ranging will cause a retry
     if (CHANNEL_OVERFLOW != outputChannelAutorangeStatus)
     {
-        if (currentOutputAmplitudeVolts < mTargetSignalAmplitude ||
-            currentOutputAmplitudeVolts > (1.0 + mTargetSignalAmplitudeTolerance) * mTargetSignalAmplitude ||
-            forceAdjust)
+        if (currentOutputAmplitudeVolts < mTargetSignalAmplitude)
+        {
+            outputRelation = -1;
+        }
+        else if (currentOutputAmplitudeVolts > (1.0 + mTargetSignalAmplitudeTolerance) * mTargetSignalAmplitude)
+        {
+            outputRelation = 1;
+        }
+        else
+        {
+            outputRelation = 0;
+        }
+
+        if (0 != outputRelation || forceAdjust)
         {
             // Calculate new value
             newStimulusFromOutput = currentStimulusVpp * (((1.0 + mTargetSignalAmplitudeTolerance / 2.0) * mTargetSignalAmplitude) / currentOutputAmplitudeVolts);
-            stimulusChanged = true;
+            stimulusRecomputed = true;
         }
     }
+    // else - just leave as "OK" since auto-ranging will cause a retry
 
-    if (stimulusChanged)
+    if (stimulusRecomputed && (inputRelation+outputRelation) != 1)
     {
         adaptiveStimulusRetryCounter++;
         currentStimulusVpp = min(mMaxStimulusVpp, max(newStimulusFromInput, newStimulusFromOutput));
+        return false;
     }
-
-    return (!stimulusChanged);
+    else if (forceAdjust)
+    {
+        currentStimulusVpp = min(mMaxStimulusVpp, max(newStimulusFromInput, newStimulusFromOutput));
+        return true;
+    }
+    else
+    {
+        return true;
+    }
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -1576,9 +1610,10 @@ void PicoScopeFRA::CalculateStepInitialStimulusVpp(void)
         uint32_t idxMinus1, idxMinus2;
         idxMinus1 = mSweepDescending ? freqStepIndex + 1 : freqStepIndex - 1;
         idxMinus2 = mSweepDescending ? freqStepIndex + 2 : freqStepIndex - 2;
-        currentStimulusVpp = ((freqsHz[freqStepIndex] - freqsHz[idxMinus1]) *
-                              (idealStimulusVpp[idxMinus1] - idealStimulusVpp[idxMinus2])) /
-                              (freqsHz[idxMinus1] - freqsHz[idxMinus2]);
+        currentStimulusVpp += ((freqsHz[freqStepIndex] - freqsHz[idxMinus1]) *
+                               (idealStimulusVpp[idxMinus1] - idealStimulusVpp[idxMinus2])) /
+                               (freqsHz[idxMinus1] - freqsHz[idxMinus2]);
+        currentStimulusVpp = min(mMaxStimulusVpp, max(ps->GetMinFuncGenVpp() , currentStimulusVpp));
     }
     // if freqStepCounter is 1, then just start with the initialized value
     // if freqStepCounter is 2, then just keep the prior value.

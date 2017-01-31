@@ -1238,15 +1238,20 @@ BOOL LoadControlsData(HWND hDlg)
     Edit_LimitText( hndCtrl, 16 );
     Edit_SetText( hndCtrl, pSettings->GetStimulusVpp().c_str() );
 
+    // Always populate these, otherwise store on run/exit won't work as designed
+    hndCtrl = GetDlgItem(hDlg, IDC_STIMULUS_TARGET);
+    Edit_SetText( hndCtrl, pSettings->GetTargetSignalAmplitude().c_str() );
+    hndCtrl = GetDlgItem( hDlg, IDC_MAX_STIMULUS_VPP );
+    Edit_SetText( hndCtrl, pSettings->GetMaxStimulusVpp().c_str() );
+
     if (pSettings->GetAdaptiveStimulusMode())
     {
         hndCtrl = GetDlgItem(hDlg, IDC_TEXT_STIMULUS_TITLE);
-        Static_SetText(hndCtrl, L"Initial Stimulus Signal");
+        Static_SetText(hndCtrl, L"Initial Stimulus");
 
         hndCtrl = GetDlgItem(hDlg, IDC_STIMULUS_TARGET);
         ShowWindow( hndCtrl, SW_SHOW );
         Edit_LimitText( hndCtrl, 16 );
-        Edit_SetText( hndCtrl, pSettings->GetTargetSignalAmplitude().c_str() );
         hndCtrl = GetDlgItem(hDlg, IDC_TEXT_STIMULUS_TARGET_TITLE);
         ShowWindow( hndCtrl, SW_SHOW );
         hndCtrl = GetDlgItem(hDlg, IDC_TEXT_STIMULUS_TARGET_UNITS);
@@ -1255,7 +1260,6 @@ BOOL LoadControlsData(HWND hDlg)
         hndCtrl = GetDlgItem( hDlg, IDC_MAX_STIMULUS_VPP );
         ShowWindow( hndCtrl, SW_SHOW );
         Edit_LimitText( hndCtrl, 16 );
-        Edit_SetText( hndCtrl, pSettings->GetMaxStimulusVpp().c_str() );
         hndCtrl = GetDlgItem(hDlg, IDC_TEXT_MAX_STIMULUS_VPP_TITLE);
         ShowWindow( hndCtrl, SW_SHOW );
         hndCtrl = GetDlgItem(hDlg, IDC_TEXT_MAX_STIMULUS_VPP_UNITS);
@@ -1264,7 +1268,7 @@ BOOL LoadControlsData(HWND hDlg)
     else
     {
         hndCtrl = GetDlgItem(hDlg, IDC_TEXT_STIMULUS_TITLE);
-        Static_SetText(hndCtrl, L"Stimulus Signal");
+        Static_SetText(hndCtrl, L"Stimulus");
 
         hndCtrl = GetDlgItem(hDlg, IDC_STIMULUS_TARGET);
         ShowWindow( hndCtrl, SW_HIDE );
