@@ -527,7 +527,7 @@ bool PicoScopeFRA::ExecuteFRA(double startFreqHz, double stopFreqHz, int stepsPe
                 adaptiveStimulusRetryCounter == maxAdaptiveStimulusRetries)
             {
                 // This is a temporary solution until we implement a fully interactive one.
-                // TODO - change to FRA_STATUS_RETRY_LIMIT_REACHED and parameterize
+                // TODO - change to FRA_STATUS_RETRY_LIMIT_REACHED and parameterize so we can tell user about all ranging issues (measurement and stimulus) in one interaction
                 UpdateStatus( fraStatusMsg, FRA_STATUS_AUTORANGE_LIMIT, inputChannelAutorangeStatus, outputChannelAutorangeStatus );
                 if (true == fraStatusMsg.responseData.proceed)
                 {
