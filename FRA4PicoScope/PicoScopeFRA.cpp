@@ -1518,7 +1518,6 @@ bool PicoScopeFRA::ProcessData(void)
 
 bool PicoScopeFRA::CheckStimulusTarget(bool forceAdjust)
 {
-    bool stimulusRecomputed = false;
     double newStimulusFromInput = 0.0;
     double newStimulusFromOutput = 0.0;
     int inputRelation = 0; // -1 => under target; 1 => over target; 0 => within target
@@ -1544,10 +1543,9 @@ bool PicoScopeFRA::CheckStimulusTarget(bool forceAdjust)
         {
             // Calculate new value
             newStimulusFromInput = currentStimulusVpp * (((1.0 + mTargetSignalAmplitudeTolerance / 2.0) * mTargetSignalAmplitude) / currentInputAmplitudeVolts);
-            stimulusRecomputed = true;
         }
     }
-    // else - just leave as "OK" since auto-ranging will cause a retry
+    // else - just leave inputRelation as "OK" since auto-ranging will cause a retry
     if (CHANNEL_OVERFLOW != outputChannelAutorangeStatus)
     {
         if (currentOutputAmplitudeVolts < mTargetSignalAmplitude)
@@ -1567,25 +1565,19 @@ bool PicoScopeFRA::CheckStimulusTarget(bool forceAdjust)
         {
             // Calculate new value
             newStimulusFromOutput = currentStimulusVpp * (((1.0 + mTargetSignalAmplitudeTolerance / 2.0) * mTargetSignalAmplitude) / currentOutputAmplitudeVolts);
-            stimulusRecomputed = true;
         }
     }
-    // else - just leave as "OK" since auto-ranging will cause a retry
+    // else - just leave outputRelation as "OK" since auto-ranging will cause a retry
 
-    if (stimulusRecomputed && (inputRelation+outputRelation) != 1)
+    if (((inputRelation == 0 && outputRelation != -1) || (outputRelation == 0 && inputRelation != -1)) && !forceAdjust)
     {
-        adaptiveStimulusRetryCounter++;
-        currentStimulusVpp = min(mMaxStimulusVpp, max(newStimulusFromInput, newStimulusFromOutput));
-        return false;
-    }
-    else if (forceAdjust)
-    {
-        currentStimulusVpp = min(mMaxStimulusVpp, max(newStimulusFromInput, newStimulusFromOutput));
         return true;
     }
     else
     {
-        return true;
+        adaptiveStimulusRetryCounter += forceAdjust ? 0 : 1;
+        currentStimulusVpp = max(ps->GetMinFuncGenVpp(), min(mMaxStimulusVpp, max(newStimulusFromInput, newStimulusFromOutput)));
+        return forceAdjust;
     }
 }
 
