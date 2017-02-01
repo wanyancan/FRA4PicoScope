@@ -628,13 +628,13 @@ BOOL CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
                 exit(-1);
             }
 #if !defined(TEST_PLOTTING)
-            psFRA->SetFraSettings( pSettings->GetSamplingMode(), pSettings->GetAdaptiveStimulusMode(), pSettings->GetTargetSignalAmplitudeAsDouble(),
+            psFRA->SetFraSettings( pSettings->GetSamplingMode(), pSettings->GetAdaptiveStimulusMode(), pSettings->GetTargetResponseAmplitudeAsDouble(),
                                    pSettings->GetSweepDescending(), pSettings->GetPhaseWrappingThreshold() );
 
             psFRA->SetFraTuning( pSettings->GetPurityLowerLimit(), pSettings->GetExtraSettlingTimeMs(),
                                  pSettings->GetAutorangeTriesPerStep(), pSettings->GetAutorangeTolerance(),
                                  pSettings->GetSmallSignalResolutionLimit(), pSettings->GetMaxAutorangeAmplitude(),
-                                 pSettings->GetAdaptiveStimulusTriesPerStep(), pSettings->GetTargetSignalAmplitudeTolerance(),
+                                 pSettings->GetAdaptiveStimulusTriesPerStep(), pSettings->GetTargetResponseAmplitudeTolerance(),
                                  pSettings->GetMinCyclesCaptured() );
 
             if (pSettings->GetTimeDomainPlotsEnabled())
@@ -1239,8 +1239,8 @@ BOOL LoadControlsData(HWND hDlg)
     Edit_SetText( hndCtrl, pSettings->GetStimulusVpp().c_str() );
 
     // Always populate these, otherwise store on run/exit won't work as designed
-    hndCtrl = GetDlgItem(hDlg, IDC_STIMULUS_TARGET);
-    Edit_SetText( hndCtrl, pSettings->GetTargetSignalAmplitude().c_str() );
+    hndCtrl = GetDlgItem(hDlg, IDC_RESPONSE_TARGET);
+    Edit_SetText( hndCtrl, pSettings->GetTargetResponseAmplitude().c_str() );
     hndCtrl = GetDlgItem( hDlg, IDC_MAX_STIMULUS_VPP );
     Edit_SetText( hndCtrl, pSettings->GetMaxStimulusVpp().c_str() );
 
@@ -1249,12 +1249,12 @@ BOOL LoadControlsData(HWND hDlg)
         hndCtrl = GetDlgItem(hDlg, IDC_TEXT_STIMULUS_TITLE);
         Static_SetText(hndCtrl, L"Initial Stimulus");
 
-        hndCtrl = GetDlgItem(hDlg, IDC_STIMULUS_TARGET);
+        hndCtrl = GetDlgItem(hDlg, IDC_RESPONSE_TARGET);
         ShowWindow( hndCtrl, SW_SHOW );
         Edit_LimitText( hndCtrl, 16 );
-        hndCtrl = GetDlgItem(hDlg, IDC_TEXT_STIMULUS_TARGET_TITLE);
+        hndCtrl = GetDlgItem(hDlg, IDC_TEXT_RESPONSE_TARGET_TITLE);
         ShowWindow( hndCtrl, SW_SHOW );
-        hndCtrl = GetDlgItem(hDlg, IDC_TEXT_STIMULUS_TARGET_UNITS);
+        hndCtrl = GetDlgItem(hDlg, IDC_TEXT_RESPONSE_TARGET_UNITS);
         ShowWindow( hndCtrl, SW_SHOW );
 
         hndCtrl = GetDlgItem( hDlg, IDC_MAX_STIMULUS_VPP );
@@ -1270,11 +1270,11 @@ BOOL LoadControlsData(HWND hDlg)
         hndCtrl = GetDlgItem(hDlg, IDC_TEXT_STIMULUS_TITLE);
         Static_SetText(hndCtrl, L"Stimulus");
 
-        hndCtrl = GetDlgItem(hDlg, IDC_STIMULUS_TARGET);
+        hndCtrl = GetDlgItem(hDlg, IDC_RESPONSE_TARGET);
         ShowWindow( hndCtrl, SW_HIDE );
-        hndCtrl = GetDlgItem(hDlg, IDC_TEXT_STIMULUS_TARGET_TITLE);
+        hndCtrl = GetDlgItem(hDlg, IDC_TEXT_RESPONSE_TARGET_TITLE);
         ShowWindow( hndCtrl, SW_HIDE );
-        hndCtrl = GetDlgItem(hDlg, IDC_TEXT_STIMULUS_TARGET_UNITS);
+        hndCtrl = GetDlgItem(hDlg, IDC_TEXT_RESPONSE_TARGET_UNITS);
         ShowWindow( hndCtrl, SW_HIDE );
 
         hndCtrl = GetDlgItem( hDlg, IDC_MAX_STIMULUS_VPP );
@@ -1479,7 +1479,7 @@ DWORD WINAPI ExecuteFRA(LPVOID lpdwThreadParam)
             stopFreq = pSettings->GetStopFreqAsDouble();
             stepsPerDecade = pSettings->GetStepsPerDecadeAsInt();
 
-            psFRA->SetFraSettings( pSettings->GetSamplingMode(), pSettings->GetAdaptiveStimulusMode(), pSettings->GetTargetSignalAmplitudeAsDouble(),
+            psFRA->SetFraSettings( pSettings->GetSamplingMode(), pSettings->GetAdaptiveStimulusMode(), pSettings->GetTargetResponseAmplitudeAsDouble(),
                                    pSettings->GetSweepDescending(), pSettings->GetPhaseWrappingThreshold() );
 
             if (false == psFRA -> SetupChannels( inputChannel, inputChannelCoupling, inputChannelAttenuation, inputDcOffset,
@@ -1706,7 +1706,7 @@ bool ValidateSettings(void)
     double inputDcOffset;
     double outputDcOffset;
     double stimulusVpp;
-    double stimulusTarget;
+    double responseTarget;
     double startFreq;
     double stopFreq;
     tuple <bool, double, double> freqScale;
@@ -1770,16 +1770,16 @@ bool ValidateSettings(void)
         }
     }
 
-    hndCtrl = GetDlgItem( hMainWnd, IDC_STIMULUS_TARGET );
+    hndCtrl = GetDlgItem( hMainWnd, IDC_RESPONSE_TARGET );
     Edit_GetText( hndCtrl, editText, 16 );
-    if (!WStringToDouble(editText, stimulusTarget))
+    if (!WStringToDouble(editText, responseTarget))
     {
-        LogMessage( L"Stimulus target is not a valid number." );
+        LogMessage( L"Response target is not a valid number." );
         retVal = false;
     }
-    else if (stimulusTarget <= 0.0)
+    else if (responseTarget <= 0.0)
     {
-        LogMessage( L"Stimulus target must be > 0.0" );
+        LogMessage( L"Response target must be > 0.0" );
         retVal = false;
     }
 
@@ -1950,9 +1950,9 @@ bool StoreSettings(void)
     Edit_GetText( hndCtrl, editText, 16 );
     pSettings -> SetStimulusVpp( editText );
 
-    hndCtrl = GetDlgItem( hMainWnd, IDC_STIMULUS_TARGET );
+    hndCtrl = GetDlgItem( hMainWnd, IDC_RESPONSE_TARGET );
     Edit_GetText( hndCtrl, editText, 16 );
-    pSettings -> SetTargetSignalAmplitude( editText );
+    pSettings -> SetTargetResponseAmplitude( editText );
 
     hndCtrl = GetDlgItem( hMainWnd, IDC_MAX_STIMULUS_VPP );
     Edit_GetText( hndCtrl, editText, 16 );

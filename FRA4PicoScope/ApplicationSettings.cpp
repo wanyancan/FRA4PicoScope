@@ -144,7 +144,7 @@ bool ApplicationSettings::InitializeApplicationSettingsFile( void )
 
         AppSettingsPropTree.put( L"samplingMode", LOW_NOISE );
         AppSettingsPropTree.put( L"adaptiveStimulusMode", false );
-        AppSettingsPropTree.put( L"targetSignalAmplitude", L"0.1" ); // 100 mV
+        AppSettingsPropTree.put( L"targetResponseAmplitude", L"0.1" ); // 100 mV
         AppSettingsPropTree.put( L"sweepDescending", false );
 
         AppSettingsPropTree.put( L"plot.freqAxis.autoscale", true );
@@ -217,7 +217,7 @@ bool ApplicationSettings::InitializeApplicationSettingsFile( void )
         AppSettingsPropTree.put( L"expert.smallSignalResolutionLimit", 0.0 );
         AppSettingsPropTree.put( L"expert.maxAutorangeAmplitude", 1.0 );
         AppSettingsPropTree.put( L"expert.adaptiveStimulusTriesPerStep", 10 );
-        AppSettingsPropTree.put( L"expert.targetSignalAmplitudeTolerance", 0.10 ); // 10%
+        AppSettingsPropTree.put( L"expert.targetResponseAmplitudeTolerance", 0.10 ); // 10%
         AppSettingsPropTree.put( L"expert.minCyclesCaptured", 16 ); // Bin width 6.25% of stimulus frequency
 
         settingsFileOutputStream.open( appDataFilename.c_str(), ios::out );

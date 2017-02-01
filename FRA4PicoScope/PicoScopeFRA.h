@@ -217,8 +217,8 @@ class PicoScopeFRA
         uint16_t mMinCyclesCaptured;        // Minimum whole stimulus signal cycles to capture
         bool mSweepDescending;              // Whether to sweep frequency from high to low
         bool mAdaptiveStimulus;             // Whether to adjust stimulus Vpp to target an output goal
-        double mTargetSignalAmplitude;      // Target amplitude for measured signals, goal is that both signals be at least this large
-        double mTargetSignalAmplitudeTolerance; // Amount the smallest signal is allowed to exceed target signal amplitude (percent)
+        double mTargetResponseAmplitude;      // Target amplitude for measured signals, goal is that both signals be at least this large
+        double mTargetResponseAmplitudeTolerance; // Amount the smallest signal is allowed to exceed target signal amplitude (percent)
         double mMaxStimulusVpp;             // Maximum allowed stimulus voltage in adaptive stimulus mode
         int maxAdaptiveStimulusRetries;     // Maximum number of tries to adapt stimulus before failing
         double mPhaseWrappingThreshold;     // Phase value to use as wrapping point (in degrees); absolute value should be less than 360

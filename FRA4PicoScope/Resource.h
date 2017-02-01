@@ -51,7 +51,7 @@
 #define IDC_COPY                        528
 #define IDC_CLEAR                       529
 #define IDC_AUTOCLEAR                   530
-#define IDC_STIMULUS_TARGET             531
+#define IDC_RESPONSE_TARGET             531
 #define IDC_MAX_STIMULUS_VPP            532
 #define IDC_SCOPE_SELECT_LIST           535
 #define IDC_FREQ_AXIS_AUTOSCALE         540
@@ -106,8 +106,8 @@
 #define IDC_TEXT_25                     594
 #define IDC_TEXT_26                     595
 #define IDC_TEXT_27                     596
-#define IDC_TEXT_STIMULUS_TARGET_TITLE  597
-#define IDC_TEXT_STIMULUS_TARGET_UNITS  598
+#define IDC_TEXT_RESPONSE_TARGET_TITLE  597
+#define IDC_TEXT_RESPONSE_TARGET_UNITS  598
 #define IDC_TEXT_MAX_STIMULUS_VPP_TITLE 599
 #define IDC_TEXT_MAX_STIMULUS_VPP_UNITS 600
 #define IDR_MAINFRAME                   601

@@ -120,8 +120,8 @@ PicoScopeFRA::PicoScopeFRA(FRA_STATUS_CALLBACK statusCB)
     mMinCyclesCaptured = 0;
     mSweepDescending = false;
     mAdaptiveStimulus = false;
-    mTargetSignalAmplitude = 0.0;
-    mTargetSignalAmplitudeTolerance = 0.0;
+    mTargetResponseAmplitude = 0.0;
+    mTargetResponseAmplitudeTolerance = 0.0;
     maxAdaptiveStimulusRetries = 0;
     mPhaseWrappingThreshold = 180.0;
     rangeCounts = 0.0;
@@ -211,7 +211,7 @@ void PicoScopeFRA::SetFraSettings( SamplingMode_T samplingMode, bool adaptiveSti
 {
     mSamplingMode = samplingMode;
     mAdaptiveStimulus = adaptiveStimulusMode;
-    mTargetSignalAmplitude = targetSignalAmplitude;
+    mTargetResponseAmplitude = targetSignalAmplitude;
     mSweepDescending = sweepDescending;
     mPhaseWrappingThreshold = phaseWrappingThreshold;
 }
@@ -227,7 +227,7 @@ void PicoScopeFRA::SetFraTuning( double purityLowerLimit, uint16_t extraSettling
     minAllowedAmplitudeRatio = smallSignalResolutionTolerance;
     maxAmplitudeRatio = maxAutorangeAmplitude;
     maxAdaptiveStimulusRetries = adaptiveStimulusTriesPerStep;
-    mTargetSignalAmplitudeTolerance = targetSignalAmplitudeTolerance;
+    mTargetResponseAmplitudeTolerance = targetSignalAmplitudeTolerance;
     mMinCyclesCaptured = minCyclesCaptured;
 }
 
@@ -1526,11 +1526,11 @@ bool PicoScopeFRA::CheckStimulusTarget(bool forceAdjust)
     // Only bother checking on channels that are not over-range
     if (CHANNEL_OVERFLOW != inputChannelAutorangeStatus)
     {
-        if (currentInputAmplitudeVolts < mTargetSignalAmplitude)
+        if (currentInputAmplitudeVolts < mTargetResponseAmplitude)
         {
             inputRelation = -1;
         }
-        else if (currentInputAmplitudeVolts > (1.0 + mTargetSignalAmplitudeTolerance) * mTargetSignalAmplitude)
+        else if (currentInputAmplitudeVolts > (1.0 + mTargetResponseAmplitudeTolerance) * mTargetResponseAmplitude)
         {
             inputRelation = 1;
         }
@@ -1542,17 +1542,17 @@ bool PicoScopeFRA::CheckStimulusTarget(bool forceAdjust)
         if (0 != inputRelation || forceAdjust)
         {
             // Calculate new value
-            newStimulusFromInput = currentStimulusVpp * (((1.0 + mTargetSignalAmplitudeTolerance / 2.0) * mTargetSignalAmplitude) / currentInputAmplitudeVolts);
+            newStimulusFromInput = currentStimulusVpp * (((1.0 + mTargetResponseAmplitudeTolerance / 2.0) * mTargetResponseAmplitude) / currentInputAmplitudeVolts);
         }
     }
     // else - just leave inputRelation as "OK" since auto-ranging will cause a retry
     if (CHANNEL_OVERFLOW != outputChannelAutorangeStatus)
     {
-        if (currentOutputAmplitudeVolts < mTargetSignalAmplitude)
+        if (currentOutputAmplitudeVolts < mTargetResponseAmplitude)
         {
             outputRelation = -1;
         }
-        else if (currentOutputAmplitudeVolts > (1.0 + mTargetSignalAmplitudeTolerance) * mTargetSignalAmplitude)
+        else if (currentOutputAmplitudeVolts > (1.0 + mTargetResponseAmplitudeTolerance) * mTargetResponseAmplitude)
         {
             outputRelation = 1;
         }
@@ -1564,7 +1564,7 @@ bool PicoScopeFRA::CheckStimulusTarget(bool forceAdjust)
         if (0 != outputRelation || forceAdjust)
         {
             // Calculate new value
-            newStimulusFromOutput = currentStimulusVpp * (((1.0 + mTargetSignalAmplitudeTolerance / 2.0) * mTargetSignalAmplitude) / currentOutputAmplitudeVolts);
+            newStimulusFromOutput = currentStimulusVpp * (((1.0 + mTargetResponseAmplitudeTolerance / 2.0) * mTargetResponseAmplitude) / currentOutputAmplitudeVolts);
         }
     }
     // else - just leave outputRelation as "OK" since auto-ranging will cause a retry

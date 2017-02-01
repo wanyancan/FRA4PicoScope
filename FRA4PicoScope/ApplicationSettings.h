@@ -115,17 +115,17 @@ class ApplicationSettings
             AppSettingsPropTree.put( L"adaptiveStimulusMode", mode );
         }
 
-        inline const wstring GetTargetSignalAmplitude( void )
+        inline const wstring GetTargetResponseAmplitude( void )
         {
-            return AppSettingsPropTree.get<wstring>( L"targetSignalAmplitude" );
+            return AppSettingsPropTree.get<wstring>( L"targetResponseAmplitude" );
         }
-        inline double GetTargetSignalAmplitudeAsDouble( void )
+        inline double GetTargetResponseAmplitudeAsDouble( void )
         {
-            return (double)AppSettingsPropTree.get<double>( L"targetSignalAmplitude" );
+            return (double)AppSettingsPropTree.get<double>( L"targetResponseAmplitude" );
         }
-        inline void SetTargetSignalAmplitude( wchar_t* targetSignalAmplitude )
+        inline void SetTargetResponseAmplitude( wchar_t* targetResponseAmplitude )
         {
-            AppSettingsPropTree.put( L"targetSignalAmplitude", targetSignalAmplitude );
+            AppSettingsPropTree.put( L"targetResponseAmplitude", targetResponseAmplitude );
         }
 
         inline bool GetSweepDescending( void )
@@ -384,13 +384,13 @@ class ApplicationSettings
             AppSettingsPropTree.put( L"expert.adaptiveStimulusTriesPerStep", adaptiveStimulusTriesPerStep );
         }
 
-        inline double GetTargetSignalAmplitudeTolerance( void )
+        inline double GetTargetResponseAmplitudeTolerance( void )
         {
-            return AppSettingsPropTree.get<double>( L"expert.targetSignalAmplitudeTolerance" );
+            return AppSettingsPropTree.get<double>( L"expert.targetResponseAmplitudeTolerance" );
         }
-        inline void SetTargetSignalAmplitudeTolerance( double targetSignalAmplitudeTolerance )
+        inline void SetTargetResponseAmplitudeTolerance( double targetResponseAmplitudeTolerance )
         {
-            AppSettingsPropTree.put( L"expert.targetSignalAmplitudeTolerance", targetSignalAmplitudeTolerance );
+            AppSettingsPropTree.put( L"expert.targetResponseAmplitudeTolerance", targetResponseAmplitudeTolerance );
         }
 
         inline uint16_t GetMinCyclesCaptured( void )
