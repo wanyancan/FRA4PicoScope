@@ -137,6 +137,10 @@
 #define IDC_EDIT12                      1022
 #define IDC_ADAPTIVE_STIMULUS           1023
 #define IDC_CHECK3                      1024
+#define IDC_CHECK2                      1025
+#define IDC_COMBO4                      1026
+#define IDC_EDIT13                      1027
+#define IDC_EDIT14                      1028
 #define IDC_STATIC                      -1
 
 // Next default values for new objects
@@ -145,7 +149,7 @@
 #ifndef APSTUDIO_READONLY_SYMBOLS
 #define _APS_NEXT_RESOURCE_VALUE        104
 #define _APS_NEXT_COMMAND_VALUE         40002
-#define _APS_NEXT_CONTROL_VALUE         1025
+#define _APS_NEXT_CONTROL_VALUE         1026
 #define _APS_NEXT_SYMED_VALUE           101
 #endif
 #endif
