@@ -240,6 +240,7 @@ class PicoScope
         virtual bool GetModel( wstring &model ) = 0;
         virtual bool GetSerialNumber( wstring &sn ) = 0;
         virtual bool SetupChannel( PS_CHANNEL channel, PS_COUPLING coupling, PS_RANGE range, float offset ) = 0;
+        virtual bool DisableAllDigitalChannels( void ) = 0;
         virtual bool DisableChannel( PS_CHANNEL channel ) = 0;
         virtual bool SetSignalGenerator( double vPP, double frequency ) = 0;
         virtual bool DisableSignalGenerator( void ) = 0;

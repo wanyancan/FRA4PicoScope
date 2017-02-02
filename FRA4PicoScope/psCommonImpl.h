@@ -43,6 +43,7 @@ bool IsCompatible( void );
 bool GetModel( wstring &model );
 bool GetSerialNumber( wstring &sn );
 bool SetupChannel( PS_CHANNEL channel, PS_COUPLING coupling, PS_RANGE range, float offset );
+bool DisableAllDigitalChannels( void );
 bool DisableChannel( PS_CHANNEL channel );
 bool SetSignalGenerator( double vPP, double frequency );
 bool DisableSignalGenerator( void );

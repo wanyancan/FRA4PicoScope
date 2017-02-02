@@ -626,6 +626,42 @@ bool CommonMethod(SCOPE_FAMILY_LT, SetupChannel)( PS_CHANNEL channel, PS_COUPLIN
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 //
+// Name: Common method DisableAllDigitalChannels
+//
+// Purpose: Disable all digital channels
+//
+// Parameters: [out] return - whether the function succeeded
+//
+// Notes: When digital channels are on, they can reduce available sampling frequency
+//
+///////////////////////////////////////////////////////////////////////////////////////////////////
+
+bool CommonMethod(SCOPE_FAMILY_LT, DisableAllDigitalChannels)(void)
+{
+    bool retVal = true;
+#if defined(PS2000A) || defined(PS3000A)
+    PICO_STATUS status;
+    wstringstream fraStatusText;
+
+    if (PICO_ERROR(CommonApi(SCOPE_FAMILY_LT, SetDigitalPort)( handle, CommonEnum(SCOPE_FAMILY_UT,DIGITAL_PORT0), 0, 0 )))
+    {
+        fraStatusText << L"Error: Failed to disable digital channels 0-7: " << status;
+        LogMessage( fraStatusText.str() );
+        retVal = false;
+    }
+
+    if (PICO_ERROR(CommonApi(SCOPE_FAMILY_LT, SetDigitalPort)( handle, CommonEnum(SCOPE_FAMILY_UT,DIGITAL_PORT1), 0, 0 )))
+    {
+        fraStatusText << L"Error: Failed to disable digital channels 8-15: " << status;
+        LogMessage( fraStatusText.str() );
+        retVal = false;
+    }
+#endif
+    return retVal;
+}
+
+////////////////////////////////////////////////////////////////////////////////////////////////////
+//
 // Name: Common method DisableChannel
 //
 // Purpose: Disable a channel

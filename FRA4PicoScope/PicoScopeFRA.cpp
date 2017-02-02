@@ -179,6 +179,7 @@ void PicoScopeFRA::SetInstrument( PicoScope* _ps )
 
     // Setup arbitrary initial settings to force a calculation of maxScopeSamplesPerChannel
     SetupChannels( PS_CHANNEL_A, PS_AC, ATTEN_1X, 0.0, PS_CHANNEL_B, PS_AC, ATTEN_1X, 0.0, 0.0, 0.0 );
+
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -366,6 +367,7 @@ bool PicoScopeFRA::SetupChannels( int inputChannel, int inputChannelCoupling, in
             }
         }
     }
+    ps->DisableAllDigitalChannels(); // Ignore failures, which may occur if the scope is not connected to aux DC power
 
     // Get the maximum scope samples per channel
     if (!(ps->GetMaxSamples(&maxScopeSamplesPerChannel)))
