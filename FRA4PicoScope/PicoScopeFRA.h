@@ -141,13 +141,17 @@ class PicoScopeFRA
         bool ExecuteFRA( double startFreqHz, double stopFreqHz, int stepsPerDecade );
         bool CancelFRA();
         static void SetCaptureStatus(PICO_STATUS status);
-        void SetFraSettings( SamplingMode_T samplingMode, double purityLowerLimit, uint16_t extraSettlingTimeMs, uint8_t autorangeTriesPerStep,
-                             double autorangeTolerance, double smallSignalResolutionTolerance, double maxAutorangeAmplitude, uint16_t minCyclesCaptured,
-                             bool sweepDescending, double phaseWrappingThreshold, bool diagnosticsOn, wstring baseDataPath );
+        void SetFraSettings( SamplingMode_T samplingMode, bool adaptiveStimulusMode, double targetSignalAmplitude,
+                             bool sweepDescending, double phaseWrappingThreshold );
+        void SetFraTuning( double purityLowerLimit, uint16_t extraSettlingTimeMs, uint8_t autorangeTriesPerStep,
+                           double autorangeTolerance, double smallSignalResolutionTolerance, double maxAutorangeAmplitude,
+                           uint8_t adaptiveStimulusTriesPerStep, double targetSignalAmplitudeTolerance, uint16_t minCyclesCaptured );
         bool SetupChannels( int inputChannel, int inputChannelCoupling, int inputChannelAttenuation, double inputDcOffset,
                             int outputChannel, int outputChannelCoupling, int outputChannelAttenuation, double outputDcOffset,
-                            double signalVpp );
+                            double initialSignalVpp, double maxSignalVpp );
         void GetResults( int* numSteps, double** freqsLogHz, double** gainsDb, double** phasesDeg, double** unwrappedPhasesDeg );
+        void EnableDiagnostics( wstring baseDataPath );
+        void DisableDiagnostics( void );
 
     private:
         // Data about the scope
@@ -158,7 +162,7 @@ class PicoScopeFRA
         FRA_STATUS_CALLBACK StatusCallback;
 
         double currentFreqHz;
-        double currentOutputVolts;
+        double currentStimulusVpp;
 
         double mStartFreqHz;
         double mStopFreqHz;
@@ -197,11 +201,14 @@ class PicoScopeFRA
         bool ovIn;
         bool ovOut;
         bool delayForAcCoupling;
+        double currentOutputAmplitudeVolts;
+        double currentInputAmplitudeVolts;
+        vector<double> idealStimulusVpp; // Recorded and used for predicting next stimulus Vpp
 
         AUTORANGE_STATUS_T inputChannelAutorangeStatus;
         AUTORANGE_STATUS_T outputChannelAutorangeStatus;
 
-        double mPurityLowerLimit;           // Lowest allowed purity before we turn up the stimulus amplitude
+        double mPurityLowerLimit;           // Lowest allowed purity before we warn the user and allow action
         double minAllowedAmplitudeRatio;    // Lowest amplitude we will tolerate for measurement on lowest range.
         double minAmplitudeRatioTolerance;  // Tolerance so that when we step up we're not over maxAmplitudeRatio
         double maxAmplitudeRatio;           // Max we want an amplitude to be before switching ranges
@@ -209,6 +216,11 @@ class PicoScopeFRA
         uint16_t mExtraSettlingTimeMs;      // Extra settling time between auto-range tries
         uint16_t mMinCyclesCaptured;        // Minimum whole stimulus signal cycles to capture
         bool mSweepDescending;              // Whether to sweep frequency from high to low
+        bool mAdaptiveStimulus;             // Whether to adjust stimulus Vpp to target an output goal
+        double mTargetResponseAmplitude;      // Target amplitude for measured signals, goal is that both signals be at least this large
+        double mTargetResponseAmplitudeTolerance; // Amount the smallest signal is allowed to exceed target signal amplitude (percent)
+        double mMaxStimulusVpp;             // Maximum allowed stimulus voltage in adaptive stimulus mode
+        int maxAdaptiveStimulusRetries;     // Maximum number of tries to adapt stimulus before failing
         double mPhaseWrappingThreshold;     // Phase value to use as wrapping point (in degrees); absolute value should be less than 360
 
         double rangeCounts; // Maximum ADC value
@@ -219,6 +231,8 @@ class PicoScopeFRA
         void AllocateFraData(void);
         // These variables are for keeping diagnostic data and sample data.
         int autorangeRetryCounter;
+        int adaptiveStimulusRetryCounter;
+        bool stimulusChanged;
         int freqStepCounter;
         int freqStepIndex;
         vector<int16_t>* pInputBuffer;
@@ -265,10 +279,11 @@ class PicoScopeFRA
 
         class FraFault : public exception {};
 
-        bool GetNumChannels(void);
         bool StartCapture( double measFreqHz );
         void GenerateFrequencyPoints();
         bool ProcessData();
+        void CalculateStepInitialStimulusVpp(void);
+        bool CheckStimulusTarget(bool forceAdjust = false);
         bool CheckSignalRanges(void);
         bool CheckSignalOverflows(void);
         bool CalculateGainAndPhase( double* gain, double* phase );

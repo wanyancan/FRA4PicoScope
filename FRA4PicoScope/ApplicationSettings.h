@@ -30,6 +30,7 @@
 #define _SCL_SECURE_NO_WARNINGS
 
 #include <string>
+#include <codecvt>
 #include <tuple>
 
 #include <boost/property_tree/ptree.hpp>
@@ -66,303 +67,348 @@ class ApplicationSettings
         inline string GetApplicationVersion(void)
         {
             string versionString;
+            wstring versionStringW;
             try
             {
-                versionString = AppSettingsPropTree.get<string>( "appVersion" );
+                versionStringW = AppSettingsPropTree.get<wstring>( L"appVersion" );
+                versionString = wstring_convert<codecvt_utf8<wchar_t>>().to_bytes(versionStringW);
             }
             catch ( const ptree_error& pte )
             {
                 UNREFERENCED_PARAMETER(pte);
                 versionString = "unknown";
             }
+
             return versionString;
         }
 
         inline void GetMostRecentScope( ScopeDriverFamily_T& family, string& sn )
         {
-            sn = AppSettingsPropTree.get<string>( "mostRecentScope.SN" );
-            family = (ScopeDriverFamily_T)AppSettingsPropTree.get<int>( "mostRecentScope.family" );
+            wstring snW = AppSettingsPropTree.get<wstring>( L"mostRecentScope.SN" );
+            sn = wstring_convert<codecvt_utf8<wchar_t>>().to_bytes(snW);
+            family = (ScopeDriverFamily_T)AppSettingsPropTree.get<int>( L"mostRecentScope.family" );
         }
 
         inline void SetMostRecentScope( ScopeDriverFamily_T family, string sn )
         {
-            AppSettingsPropTree.put( "mostRecentScope.SN", sn );
-            AppSettingsPropTree.put( "mostRecentScope.family", family );
+            wstring snW = wstring_convert<codecvt_utf8<wchar_t>>().from_bytes(sn);
+            AppSettingsPropTree.put( L"mostRecentScope.SN", snW );
+            AppSettingsPropTree.put( L"mostRecentScope.family", family );
         }
 
         // Accessors/Mutators for Application Settings
         inline SamplingMode_T GetSamplingMode( void )
         {
-            return (SamplingMode_T)AppSettingsPropTree.get<int>( "samplingMode" );
+            return (SamplingMode_T)AppSettingsPropTree.get<int>( L"samplingMode" );
         }
         inline void SetSamplingMode( SamplingMode_T mode )
         {
-            AppSettingsPropTree.put( "samplingMode", mode );
+            AppSettingsPropTree.put( L"samplingMode", mode );
+        }
+
+        inline bool GetAdaptiveStimulusMode( void )
+        {
+            return (bool)AppSettingsPropTree.get<bool>( L"adaptiveStimulusMode" );
+        }
+        inline void SetSamplingMode( bool mode )
+        {
+            AppSettingsPropTree.put( L"adaptiveStimulusMode", mode );
+        }
+
+        inline const wstring GetTargetResponseAmplitude( void )
+        {
+            return AppSettingsPropTree.get<wstring>( L"targetResponseAmplitude" );
+        }
+        inline double GetTargetResponseAmplitudeAsDouble( void )
+        {
+            return (double)AppSettingsPropTree.get<double>( L"targetResponseAmplitude" );
+        }
+        inline void SetTargetResponseAmplitude( wchar_t* targetResponseAmplitude )
+        {
+            AppSettingsPropTree.put( L"targetResponseAmplitude", targetResponseAmplitude );
         }
 
         inline bool GetSweepDescending( void )
         {
-            return AppSettingsPropTree.get<bool>( "sweepDescending" );
+            return AppSettingsPropTree.get<bool>( L"sweepDescending" );
         }
         inline void SetSweepDescending( bool sweepDescending )
         {
-            AppSettingsPropTree.put( "sweepDescending", sweepDescending );
+            AppSettingsPropTree.put( L"sweepDescending", sweepDescending );
         }
 
         // Plot settings
 
         inline tuple<bool, double, double> GetFreqScale(void)
         {
-            auto retVal = make_tuple( AppSettingsPropTree.get<bool>( "plot.freqAxis.autoscale" ),
-                                      AppSettingsPropTree.get<double>( "plot.freqAxis.min" ),
-                                      AppSettingsPropTree.get<double>( "plot.freqAxis.max" ) );
+            auto retVal = make_tuple( AppSettingsPropTree.get<bool>( L"plot.freqAxis.autoscale" ),
+                                      AppSettingsPropTree.get<double>( L"plot.freqAxis.min" ),
+                                      AppSettingsPropTree.get<double>( L"plot.freqAxis.max" ) );
             return retVal;
         }
         inline void SetFreqScale(tuple<bool, double, double> freqScale)
         {
-            AppSettingsPropTree.put( "plot.freqAxis.autoscale", get<0>(freqScale) );
-            AppSettingsPropTree.put( "plot.freqAxis.min", get<1>(freqScale) );
-            AppSettingsPropTree.put( "plot.freqAxis.max", get<2>(freqScale) );
+            AppSettingsPropTree.put( L"plot.freqAxis.autoscale", get<0>(freqScale) );
+            AppSettingsPropTree.put( L"plot.freqAxis.min", get<1>(freqScale) );
+            AppSettingsPropTree.put( L"plot.freqAxis.max", get<2>(freqScale) );
         }
 
         inline tuple<bool, double, double> GetGainScale(void)
         {
-            auto retVal = make_tuple( AppSettingsPropTree.get<bool>( "plot.gainAxis.autoscale" ),
-                                      AppSettingsPropTree.get<double>( "plot.gainAxis.min" ),
-                                      AppSettingsPropTree.get<double>( "plot.gainAxis.max" ) );
+            auto retVal = make_tuple( AppSettingsPropTree.get<bool>( L"plot.gainAxis.autoscale" ),
+                                      AppSettingsPropTree.get<double>( L"plot.gainAxis.min" ),
+                                      AppSettingsPropTree.get<double>( L"plot.gainAxis.max" ) );
             return retVal;
         }
         inline void SetGainScale(tuple<bool, double, double> gainScale)
         {
-            AppSettingsPropTree.put( "plot.gainAxis.autoscale", get<0>(gainScale) );
-            AppSettingsPropTree.put( "plot.gainAxis.min", get<1>(gainScale) );
-            AppSettingsPropTree.put( "plot.gainAxis.max", get<2>(gainScale) );
+            AppSettingsPropTree.put( L"plot.gainAxis.autoscale", get<0>(gainScale) );
+            AppSettingsPropTree.put( L"plot.gainAxis.min", get<1>(gainScale) );
+            AppSettingsPropTree.put( L"plot.gainAxis.max", get<2>(gainScale) );
         }
 
         inline tuple<bool, double, double> GetPhaseScale(void)
         {
-            auto retVal = make_tuple( AppSettingsPropTree.get<bool>( "plot.phaseAxis.autoscale" ),
-                                      AppSettingsPropTree.get<double>( "plot.phaseAxis.min" ),
-                                      AppSettingsPropTree.get<double>( "plot.phaseAxis.max" ) );
+            auto retVal = make_tuple( AppSettingsPropTree.get<bool>( L"plot.phaseAxis.autoscale" ),
+                                      AppSettingsPropTree.get<double>( L"plot.phaseAxis.min" ),
+                                      AppSettingsPropTree.get<double>( L"plot.phaseAxis.max" ) );
             return retVal;
         }
         inline void SetPhaseScale(tuple<bool, double, double> phaseScale)
         {
-            AppSettingsPropTree.put( "plot.phaseAxis.autoscale", get<0>(phaseScale) );
-            AppSettingsPropTree.put( "plot.phaseAxis.min", get<1>(phaseScale) );
-            AppSettingsPropTree.put( "plot.phaseAxis.max", get<2>(phaseScale) );
+            AppSettingsPropTree.put( L"plot.phaseAxis.autoscale", get<0>(phaseScale) );
+            AppSettingsPropTree.put( L"plot.phaseAxis.min", get<1>(phaseScale) );
+            AppSettingsPropTree.put( L"plot.phaseAxis.max", get<2>(phaseScale) );
         }
 
         inline tuple<double, uint8_t, bool, bool> GetFreqIntervals(void)
         {
-            auto retVal = make_tuple( AppSettingsPropTree.get<double>( "plot.freqAxis.majorTickInterval" ),
-                                      AppSettingsPropTree.get<uint8_t>( "plot.freqAxis.minorTicksPerMajorInterval" ),
-                                      AppSettingsPropTree.get<bool>( "plot.freqAxis.majorGrids" ),
-                                      AppSettingsPropTree.get<bool>( "plot.freqAxis.minorGrids" ));
+            auto retVal = make_tuple( AppSettingsPropTree.get<double>( L"plot.freqAxis.majorTickInterval" ),
+                                      AppSettingsPropTree.get<uint8_t>( L"plot.freqAxis.minorTicksPerMajorInterval" ),
+                                      AppSettingsPropTree.get<bool>( L"plot.freqAxis.majorGrids" ),
+                                      AppSettingsPropTree.get<bool>( L"plot.freqAxis.minorGrids" ));
             return retVal;
         }
         inline void SetFreqIntervals(tuple<double, uint8_t, bool, bool> freqIntervals)
         {
-            AppSettingsPropTree.put( "plot.freqAxis.majorTickInterval", get<0>(freqIntervals) );
-            AppSettingsPropTree.put( "plot.freqAxis.minorTicksPerMajorInterval", get<1>(freqIntervals) );
-            AppSettingsPropTree.put( "plot.freqAxis.majorGrids", get<2>(freqIntervals) );
-            AppSettingsPropTree.put( "plot.freqAxis.minorGrids", get<3>(freqIntervals) );
+            AppSettingsPropTree.put( L"plot.freqAxis.majorTickInterval", get<0>(freqIntervals) );
+            AppSettingsPropTree.put( L"plot.freqAxis.minorTicksPerMajorInterval", get<1>(freqIntervals) );
+            AppSettingsPropTree.put( L"plot.freqAxis.majorGrids", get<2>(freqIntervals) );
+            AppSettingsPropTree.put( L"plot.freqAxis.minorGrids", get<3>(freqIntervals) );
         }
 
         inline tuple<double, uint8_t, bool, bool> GetGainIntervals(void)
         {
-            auto retVal = make_tuple( AppSettingsPropTree.get<double>( "plot.gainAxis.majorTickInterval" ),
-                                      AppSettingsPropTree.get<uint8_t>( "plot.gainAxis.minorTicksPerMajorInterval" ),
-                                      AppSettingsPropTree.get<bool>( "plot.gainAxis.majorGrids" ),
-                                      AppSettingsPropTree.get<bool>( "plot.gainAxis.minorGrids" ));
+            auto retVal = make_tuple( AppSettingsPropTree.get<double>( L"plot.gainAxis.majorTickInterval" ),
+                                      AppSettingsPropTree.get<uint8_t>( L"plot.gainAxis.minorTicksPerMajorInterval" ),
+                                      AppSettingsPropTree.get<bool>( L"plot.gainAxis.majorGrids" ),
+                                      AppSettingsPropTree.get<bool>( L"plot.gainAxis.minorGrids" ));
             return retVal;
         }
         inline void SetGainIntervals(tuple<double, uint8_t, bool, bool> gainIntervals)
         {
-            AppSettingsPropTree.put( "plot.gainAxis.majorTickInterval", get<0>(gainIntervals) );
-            AppSettingsPropTree.put( "plot.gainAxis.minorTicksPerMajorInterval", get<1>(gainIntervals) );
-            AppSettingsPropTree.put( "plot.gainAxis.majorGrids", get<2>(gainIntervals) );
-            AppSettingsPropTree.put( "plot.gainAxis.minorGrids", get<3>(gainIntervals) );
+            AppSettingsPropTree.put( L"plot.gainAxis.majorTickInterval", get<0>(gainIntervals) );
+            AppSettingsPropTree.put( L"plot.gainAxis.minorTicksPerMajorInterval", get<1>(gainIntervals) );
+            AppSettingsPropTree.put( L"plot.gainAxis.majorGrids", get<2>(gainIntervals) );
+            AppSettingsPropTree.put( L"plot.gainAxis.minorGrids", get<3>(gainIntervals) );
         }
 
         inline bool GetGainMasterIntervals(void)
         {
-            return AppSettingsPropTree.get<bool>( "plot.gainAxis.masterGrids" );
+            return AppSettingsPropTree.get<bool>( L"plot.gainAxis.masterGrids" );
         }
         inline void SetGainMasterIntervals( bool masterIntervals )
         {
-            AppSettingsPropTree.put( "plot.gainAxis.masterGrids", masterIntervals );
+            AppSettingsPropTree.put( L"plot.gainAxis.masterGrids", masterIntervals );
         }
 
         inline tuple<double, uint8_t, bool, bool> GetPhaseIntervals(void)
         {
-            auto retVal = make_tuple( AppSettingsPropTree.get<double>( "plot.phaseAxis.majorTickInterval" ),
-                                      AppSettingsPropTree.get<uint8_t>( "plot.phaseAxis.minorTicksPerMajorInterval" ),
-                                      AppSettingsPropTree.get<bool>( "plot.phaseAxis.majorGrids" ),
-                                      AppSettingsPropTree.get<bool>( "plot.phaseAxis.minorGrids" ));
+            auto retVal = make_tuple( AppSettingsPropTree.get<double>( L"plot.phaseAxis.majorTickInterval" ),
+                                      AppSettingsPropTree.get<uint8_t>( L"plot.phaseAxis.minorTicksPerMajorInterval" ),
+                                      AppSettingsPropTree.get<bool>( L"plot.phaseAxis.majorGrids" ),
+                                      AppSettingsPropTree.get<bool>( L"plot.phaseAxis.minorGrids" ));
             return retVal;
         }
         inline void SetPhaseIntervals(tuple<double, uint8_t, bool, bool> phaseIntervals)
         {
-            AppSettingsPropTree.put( "plot.phaseAxis.majorTickInterval", get<0>(phaseIntervals) );
-            AppSettingsPropTree.put( "plot.phaseAxis.minorTicksPerMajorInterval", get<1>(phaseIntervals) );
-            AppSettingsPropTree.put( "plot.phaseAxis.majorGrids", get<2>(phaseIntervals) );
-            AppSettingsPropTree.put( "plot.phaseAxis.minorGrids", get<3>(phaseIntervals) );
+            AppSettingsPropTree.put( L"plot.phaseAxis.majorTickInterval", get<0>(phaseIntervals) );
+            AppSettingsPropTree.put( L"plot.phaseAxis.minorTicksPerMajorInterval", get<1>(phaseIntervals) );
+            AppSettingsPropTree.put( L"plot.phaseAxis.majorGrids", get<2>(phaseIntervals) );
+            AppSettingsPropTree.put( L"plot.phaseAxis.minorGrids", get<3>(phaseIntervals) );
         }
 
         inline bool GetPhaseMasterIntervals(void)
         {
-            return AppSettingsPropTree.get<bool>( "plot.phaseAxis.masterGrids" );
+            return AppSettingsPropTree.get<bool>( L"plot.phaseAxis.masterGrids" );
         }
         inline void SetPhaseMasterIntervals( bool masterIntervals )
         {
-            AppSettingsPropTree.put( "plot.phaseAxis.masterGrids", masterIntervals );
+            AppSettingsPropTree.put( L"plot.phaseAxis.masterGrids", masterIntervals );
         }
 
         inline bool GetAutoAxes(void)
         {
-            return AppSettingsPropTree.get<bool>( "plot.autoAxes" );
+            return AppSettingsPropTree.get<bool>( L"plot.autoAxes" );
         }
         inline void SetAutoAxes( bool autoAxes )
         {
-            AppSettingsPropTree.put( "plot.autoAxes", autoAxes );
+            AppSettingsPropTree.put( L"plot.autoAxes", autoAxes );
         }
 
         inline bool GetPlotGain(void)
         {
-            return AppSettingsPropTree.get<bool>( "plot.plotGain" );
+            return AppSettingsPropTree.get<bool>( L"plot.plotGain" );
         }
         inline void SetPlotGain( bool plotGain )
         {
-            AppSettingsPropTree.put( "plot.plotGain", plotGain );
+            AppSettingsPropTree.put( L"plot.plotGain", plotGain );
         }
 
         inline bool GetPlotPhase(void)
         {
-            return AppSettingsPropTree.get<bool>( "plot.plotPhase" );
+            return AppSettingsPropTree.get<bool>( L"plot.plotPhase" );
         }
         inline void SetPlotPhase( bool plotPhase )
         {
-            AppSettingsPropTree.put( "plot.plotPhase", plotPhase );
+            AppSettingsPropTree.put( L"plot.plotPhase", plotPhase );
         }
 
         inline bool GetPlotGainMargin(void)
         {
-            return AppSettingsPropTree.get<bool>( "plot.plotGainMargin" );
+            return AppSettingsPropTree.get<bool>( L"plot.plotGainMargin" );
         }
         inline void SetPlotGainMargin( bool plotGainMargin )
         {
-            AppSettingsPropTree.put( "plot.plotGainMargin", plotGainMargin );
+            AppSettingsPropTree.put( L"plot.plotGainMargin", plotGainMargin );
         }
 
         inline bool GetPlotPhaseMargin(void)
         {
-            return AppSettingsPropTree.get<bool>( "plot.plotPhaseMargin" );
+            return AppSettingsPropTree.get<bool>( L"plot.plotPhaseMargin" );
         }
         inline void SetPlotPhaseMargin( bool plotPhaseMargin )
         {
-            AppSettingsPropTree.put( "plot.plotPhaseMargin", plotPhaseMargin );
+            AppSettingsPropTree.put( L"plot.plotPhaseMargin", plotPhaseMargin );
         }
 
         inline bool GetPlotUnwrappedPhase(void)
         {
-            return AppSettingsPropTree.get<bool>( "plot.plotUnwrappedPhase" );
+            return AppSettingsPropTree.get<bool>( L"plot.plotUnwrappedPhase" );
         }
         inline void SetPlotUnwrappedPhase( bool plotUnwrappedPhase )
         {
-            AppSettingsPropTree.put( "plot.plotUnwrappedPhase", plotUnwrappedPhase );
+            AppSettingsPropTree.put( L"plot.plotUnwrappedPhase", plotUnwrappedPhase );
         }
 
         inline double GetPhaseWrappingThreshold(void)
         {
-            return AppSettingsPropTree.get<double>( "plot.phaseWrappingThreshold" );
+            return AppSettingsPropTree.get<double>( L"plot.phaseWrappingThreshold" );
         }
         inline void SetPhaseWrappingThreshold( double phaseWrappingThreshold )
         {
-            AppSettingsPropTree.put( "plot.phaseWrappingThreshold", phaseWrappingThreshold );
+            AppSettingsPropTree.put( L"plot.phaseWrappingThreshold", phaseWrappingThreshold );
         }
 
         inline double GetGainMarginPhaseCrossover(void)
         {
-            return AppSettingsPropTree.get<double>( "plot.gainMarginPhaseCrossover" );
+            return AppSettingsPropTree.get<double>( L"plot.gainMarginPhaseCrossover" );
         }
         inline void SetGainMarginPhaseCrossover( double gainMarginPhaseCrossover )
         {
-            AppSettingsPropTree.put( "plot.gainMarginPhaseCrossover", gainMarginPhaseCrossover );
+            AppSettingsPropTree.put( L"plot.gainMarginPhaseCrossover", gainMarginPhaseCrossover );
         }
 
         // Expert settings
 
         inline double GetPurityLowerLimit( void )
         {
-            return AppSettingsPropTree.get<double>( "expert.purityLowerLimit" );
+            return AppSettingsPropTree.get<double>( L"expert.purityLowerLimit" );
         }
         inline void SetPurityLowerLimit( double purityLowerLimit )
         {
-            AppSettingsPropTree.put( "expert.purityLowerLimit", purityLowerLimit );
+            AppSettingsPropTree.put( L"expert.purityLowerLimit", purityLowerLimit );
         }
 
         inline uint16_t GetExtraSettlingTimeMs( void )
         {
-            return AppSettingsPropTree.get<uint16_t>( "expert.extraSettlingTimeMs" );
+            return AppSettingsPropTree.get<uint16_t>( L"expert.extraSettlingTimeMs" );
         }
         inline void SetExtraSettlingTimeMs( uint16_t extraSettlingTimeMs )
         {
-            AppSettingsPropTree.put( "expert.extraSettlingTimeMs", extraSettlingTimeMs );
+            AppSettingsPropTree.put( L"expert.extraSettlingTimeMs", extraSettlingTimeMs );
         }
 
         inline uint8_t GetAutorangeTriesPerStep( void )
         {
-            return AppSettingsPropTree.get<uint8_t>( "expert.autorangeTriesPerStep" );
+            return AppSettingsPropTree.get<uint8_t>( L"expert.autorangeTriesPerStep" );
         }
         inline void SetAutorangeTriesPerStep( uint8_t autorangeTriesPerStep )
         {
-            AppSettingsPropTree.put( "expert.autorangeTriesPerStep", autorangeTriesPerStep );
+            AppSettingsPropTree.put( L"expert.autorangeTriesPerStep", autorangeTriesPerStep );
         }
 
         inline double GetAutorangeTolerance( void )
         {
-            return AppSettingsPropTree.get<double>( "expert.autorangeTolerance" );
+            return AppSettingsPropTree.get<double>( L"expert.autorangeTolerance" );
         }
         inline void SetAutorangeTolerance( double autorangeTolerance )
         {
-            AppSettingsPropTree.put( "expert.autorangeTolerance", autorangeTolerance );
+            AppSettingsPropTree.put( L"expert.autorangeTolerance", autorangeTolerance );
         }
 
         inline double GetSmallSignalResolutionLimit( void )
         {
-            return AppSettingsPropTree.get<double>( "expert.smallSignalResolutionLimit" );
+            return AppSettingsPropTree.get<double>( L"expert.smallSignalResolutionLimit" );
         }
         inline void SetSmallSignalResolutionLimit( double smallSignalResolutionLimit )
         {
-            AppSettingsPropTree.put( "expert.smallSignalResolutionLimit", smallSignalResolutionLimit );
+            AppSettingsPropTree.put( L"expert.smallSignalResolutionLimit", smallSignalResolutionLimit );
         }
 
         inline double GetMaxAutorangeAmplitude( void )
         {
-            return AppSettingsPropTree.get<double>( "expert.maxAutorangeAmplitude" );
+            return AppSettingsPropTree.get<double>( L"expert.maxAutorangeAmplitude" );
         }
         inline void SetMaxAutorangeAmplitude( double maxAutorangeAmplitude )
         {
-            AppSettingsPropTree.put( "expert.maxAutorangeAmplitude", maxAutorangeAmplitude );
+            AppSettingsPropTree.put( L"expert.maxAutorangeAmplitude", maxAutorangeAmplitude );
+        }
+
+        inline uint8_t GetAdaptiveStimulusTriesPerStep( void )
+        {
+            return AppSettingsPropTree.get<uint8_t>( L"expert.adaptiveStimulusTriesPerStep" );
+        }
+        inline void SetAdaptiveStimulusTriesPerStep( uint8_t adaptiveStimulusTriesPerStep )
+        {
+            AppSettingsPropTree.put( L"expert.adaptiveStimulusTriesPerStep", adaptiveStimulusTriesPerStep );
+        }
+
+        inline double GetTargetResponseAmplitudeTolerance( void )
+        {
+            return AppSettingsPropTree.get<double>( L"expert.targetResponseAmplitudeTolerance" );
+        }
+        inline void SetTargetResponseAmplitudeTolerance( double targetResponseAmplitudeTolerance )
+        {
+            AppSettingsPropTree.put( L"expert.targetResponseAmplitudeTolerance", targetResponseAmplitudeTolerance );
         }
 
         inline uint16_t GetMinCyclesCaptured( void )
         {
-            return AppSettingsPropTree.get<uint16_t>( "expert.minCyclesCaptured" );
+            return AppSettingsPropTree.get<uint16_t>( L"expert.minCyclesCaptured" );
         }
         inline void SetMinCyclesCaptured( double minCyclesCaptured )
         {
-            AppSettingsPropTree.put( "expert.minCyclesCaptured", minCyclesCaptured );
+            AppSettingsPropTree.put( L"expert.minCyclesCaptured", minCyclesCaptured );
         }
 
         inline bool GetTimeDomainPlotsEnabled( void )
         {
-            return AppSettingsPropTree.get<bool>( "diagnostics.timeDomainPlots" );
+            return AppSettingsPropTree.get<bool>( L"diagnostics.timeDomainPlots" );
         }
         inline void SetTimeDomainPlotsEnabled( bool timeDomainPlotsEnabled )
         {
-            AppSettingsPropTree.put( "diagnostics.timeDomainPlots", timeDomainPlotsEnabled );
+            AppSettingsPropTree.put( L"diagnostics.timeDomainPlots", timeDomainPlotsEnabled );
         }
 
         // Accessors/Mutators for Scope Settings
@@ -450,13 +496,22 @@ class ApplicationSettings
             ScopeSettingsPropTree.put(L"picoScope.outputChannel.dcOffset", wstring(dcOffset));
         }
 
-        inline const wstring GetInputSignalVpp()
+        inline const wstring GetStimulusVpp()
         {
-            return ScopeSettingsPropTree.get<wstring>(L"picoScope.fraParam.signalVpp");
+            return ScopeSettingsPropTree.get<wstring>(L"picoScope.fraParam.stimulusVpp");
         }
-        inline void SetInputSignalVpp(const wchar_t* inputSignalVpp)
+        inline void SetStimulusVpp(const wchar_t* stimulusVpp)
         {
-            ScopeSettingsPropTree.put(L"picoScope.fraParam.signalVpp", wstring(inputSignalVpp));
+            ScopeSettingsPropTree.put(L"picoScope.fraParam.stimulusVpp", wstring(stimulusVpp));
+        }
+
+        inline const wstring GetMaxStimulusVpp()
+        {
+            return ScopeSettingsPropTree.get<wstring>(L"picoScope.fraParam.maxStimulusVpp");
+        }
+        inline void SetMaxStimulusVpp(const wchar_t* maxStimulusVpp)
+        {
+            ScopeSettingsPropTree.put(L"picoScope.fraParam.maxStimulusVpp", wstring(maxStimulusVpp));
         }
 
         inline const wstring GetStartFreq()
@@ -495,9 +550,13 @@ class ApplicationSettings
         {
             return ScopeSettingsPropTree.get<double>(L"picoScope.outputChannel.dcOffset");
         }
-        inline double GetInputSignalVppAsDouble()
+        inline double GetStimulusVppAsDouble()
         {
-            return ScopeSettingsPropTree.get<double>(L"picoScope.fraParam.signalVpp");
+            return ScopeSettingsPropTree.get<double>(L"picoScope.fraParam.stimulusVpp");
+        }
+        inline double GetMaxStimulusVppAsDouble()
+        {
+            return ScopeSettingsPropTree.get<double>(L"picoScope.fraParam.maxStimulusVpp");
         }
         inline double GetStartFreqAsDouble()
         {
@@ -522,8 +581,8 @@ class ApplicationSettings
         wstring appDataFilename;
         wstring scopeDataFilename;
 
-        ptree AppSettingsPropTree;
-        ptree AppSettingsPropTreeClean;
+        wptree AppSettingsPropTree;
+        wptree AppSettingsPropTreeClean;
         wptree ScopeSettingsPropTree;
         wptree ScopeSettingsPropTreeClean;
 
