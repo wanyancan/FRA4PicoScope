@@ -391,6 +391,13 @@ double CommonMethod(SCOPE_FAMILY_LT,GetMinFuncGenVpp)( void )
     return minFuncGenVpp;
 }
 
+double CommonMethod(SCOPE_FAMILY_LT,GetMinNonZeroFuncGenVpp)( void )
+{
+    // Current API for setting the signal generator has a resolution of 1 uV.
+    // So, to avoid rounding the value to 0, add epsilon
+    return max( minFuncGenVpp, 1e-6+std::numeric_limits<double>::epsilon() );
+}
+
 double CommonMethod(SCOPE_FAMILY_LT,GetMaxFuncGenVpp)( void )
 {
     return maxFuncGenVpp;
@@ -593,18 +600,22 @@ bool CommonMethod(SCOPE_FAMILY_LT, SetupChannel)( PS_CHANNEL channel, PS_COUPLIN
 #if defined(PS5000A)
     if (retVal && 0 != (status = ps5000aSetBandwidthFilter( handle, (PS5000A_CHANNEL)channel, PS5000A_BW_20MHZ )))
     {
+        fraStatusText.clear();
+        fraStatusText.str(L"");
         fraStatusText << L"Fatal error: Failed to setup input channel bandwidth limiter: " << status;
         LogMessage( fraStatusText.str() );
-        return false;
+        retVal = false;
     }
 #elif defined(PS4000)
     if (model == PS4262)
     {
         if (retVal && 0 != (status = ps4000SetBwFilter( handle, (PS4000_CHANNEL)channel, TRUE )))
         {
+            fraStatusText.clear();
+            fraStatusText.str(L"");
             fraStatusText << L"Fatal error: Failed to setup input channel bandwidth limiter: " << status;
             LogMessage( fraStatusText.str() );
-            return false;
+            retVal = false;
         }
     }
 #elif defined(PS3000A)
@@ -614,9 +625,11 @@ bool CommonMethod(SCOPE_FAMILY_LT, SetupChannel)( PS_CHANNEL channel, PS_COUPLIN
     {
         if (retVal && 0 != (status = ps3000aSetBandwidthFilter( handle, (PS3000A_CHANNEL)channel, PS3000A_BW_20MHZ )))
         {
+            fraStatusText.clear();
+            fraStatusText.str(L"");
             fraStatusText << L"Fatal error: Failed to setup input channel bandwidth limiter: " << status;
             LogMessage( fraStatusText.str() );
-            return false;
+            retVal = false;
         }
     }
 #endif
@@ -645,16 +658,24 @@ bool CommonMethod(SCOPE_FAMILY_LT, DisableAllDigitalChannels)(void)
 
     if (PICO_ERROR(CommonApi(SCOPE_FAMILY_LT, SetDigitalPort)( handle, CommonEnum(SCOPE_FAMILY_UT,DIGITAL_PORT0), 0, 0 )))
     {
-        fraStatusText << L"Error: Failed to disable digital channels 0-7: " << status;
-        LogMessage( fraStatusText.str() );
-        retVal = false;
+        if (PICO_NOT_USED != status) // PICO_NOT_USED is returned when the scope has no digital channels.
+        {
+            fraStatusText << L"Warning: Failed to disable digital channels 0-7: " << status;
+            LogMessage(fraStatusText.str());
+            retVal = false;
+        }
     }
 
     if (PICO_ERROR(CommonApi(SCOPE_FAMILY_LT, SetDigitalPort)( handle, CommonEnum(SCOPE_FAMILY_UT,DIGITAL_PORT1), 0, 0 )))
     {
-        fraStatusText << L"Error: Failed to disable digital channels 8-15: " << status;
-        LogMessage( fraStatusText.str() );
-        retVal = false;
+        if (PICO_NOT_USED != status) // PICO_NOT_USED is returned when the scope has no digital channels.
+        {
+            fraStatusText.clear();
+            fraStatusText.str(L"");
+            fraStatusText << L"Warning: Failed to disable digital channels 8-15: " << status;
+            LogMessage(fraStatusText.str());
+            retVal = false;
+        }
     }
 #endif
     return retVal;
@@ -744,6 +765,8 @@ bool CommonMethod(SCOPE_FAMILY_LT, SetSignalGenerator)( double vPP, double frequ
 #if defined(PS3000)
     if (status != intFreq)
     {
+        fraStatusText.clear();
+        fraStatusText.str(L"");
         fraStatusText << L"Fatal error: Intended and actual stimulus signal frequency don't match: Intended = " << intFreq << ", Actual = " << status;
         LogMessage( fraStatusText.str() );
         retVal = false;
@@ -874,6 +897,8 @@ bool CommonMethod(SCOPE_FAMILY_LT, DisableChannelTriggers)( void )
 
     if (PICO_ERROR(CommonApi(SCOPE_FAMILY_LT, SetTriggerChannelProperties)( handle, NULL, 0, 0, 0 )))
     {
+        fraStatusText.clear();
+        fraStatusText.str(L"");
         fraStatusText << L"Fatal error: Failed to setup channel trigger properties: " << status;
         LogMessage( fraStatusText.str() );
         retVal = false;
@@ -1135,6 +1160,8 @@ bool CommonMethod(SCOPE_FAMILY_LT, GetData)( uint32_t numSamples, uint32_t start
     if (PICO_ERROR(CommonApi(SCOPE_FAMILY_LT,SetDataBuffer)( handle, (CommonEnum(SCOPE_FAMILY_UT,CHANNEL))mInputChannel, mInputBuffer.data(),
                                                              numSamples SEGMENT_ARG RATIO_MODE_NONE_ARG )))
     {
+        fraStatusText.clear();
+        fraStatusText.str(L"");
         fraStatusText << L"Fatal error: Failed to set input data capture buffer: " << status;
         LogMessage( fraStatusText.str() );
         retVal = false;
@@ -1143,6 +1170,8 @@ bool CommonMethod(SCOPE_FAMILY_LT, GetData)( uint32_t numSamples, uint32_t start
     if (PICO_ERROR(CommonApi(SCOPE_FAMILY_LT,SetDataBuffer)( handle, (CommonEnum(SCOPE_FAMILY_UT,CHANNEL))mOutputChannel, mOutputBuffer.data(),
                                                                 numSamples SEGMENT_ARG RATIO_MODE_NONE_ARG )))
     {
+        fraStatusText.clear();
+        fraStatusText.str(L"");
         fraStatusText << L"Fatal error: Failed to set output data capture buffer: " << status;
         LogMessage( fraStatusText.str() );
         retVal = false;
@@ -1151,6 +1180,8 @@ bool CommonMethod(SCOPE_FAMILY_LT, GetData)( uint32_t numSamples, uint32_t start
     numSamplesInOut = numSamples;
     if (PICO_ERROR(CommonApi(SCOPE_FAMILY_LT, GetValues)( handle, startIndex, &numSamplesInOut, 1, CommonEnum(SCOPE_FAMILY_UT, RATIO_MODE_NONE), 0, &overflow )))
     {
+        fraStatusText.clear();
+        fraStatusText.str(L"");
         fraStatusText << L"Fatal error: Failed to retrieve data capture buffer(s): " << status;
         LogMessage( fraStatusText.str() );
         retVal = false;
@@ -1167,6 +1198,8 @@ bool CommonMethod(SCOPE_FAMILY_LT, GetData)( uint32_t numSamples, uint32_t start
 
         if (PICO_ERROR(CommonApi(SCOPE_FAMILY_LT, _get_values)( handle, buffer[PS_CHANNEL_A], buffer[PS_CHANNEL_B], buffer[PS_CHANNEL_C], buffer[PS_CHANNEL_D], &overflow, numSamples )))
         {
+            fraStatusText.clear();
+            fraStatusText.str(L"");
             fraStatusText << L"Fatal error: Failed to retrieve data capture buffer: " << status;
             LogMessage( fraStatusText.str() );
             retVal = false;
@@ -1246,6 +1279,8 @@ bool CommonMethod(SCOPE_FAMILY_LT, GetCompressedData)( uint32_t downsampleTo,
                                                                inputCompressedMaxBuffer.data(), inputCompressedMinBuffer.data(), 
                                                                compressedBufferSize SEGMENT_ARG RATIO_MODE_AGGREGATE_ARG )))
     {
+        fraStatusText.clear();
+        fraStatusText.str(L"");
         fraStatusText << L"Fatal error: Failed to set input data capture aggregation buffers: " << status;
         LogMessage( fraStatusText.str() );
         retVal = false;
@@ -1255,6 +1290,8 @@ bool CommonMethod(SCOPE_FAMILY_LT, GetCompressedData)( uint32_t downsampleTo,
                                                                outputCompressedMaxBuffer.data(), outputCompressedMinBuffer.data(), 
                                                                compressedBufferSize SEGMENT_ARG RATIO_MODE_AGGREGATE_ARG )))
     {
+        fraStatusText.clear();
+        fraStatusText.str(L"");
         fraStatusText << L"Fatal error: Failed to set output data capture aggregation buffers: " << status;
         LogMessage( fraStatusText.str() );
         retVal = false;
@@ -1263,6 +1300,8 @@ bool CommonMethod(SCOPE_FAMILY_LT, GetCompressedData)( uint32_t downsampleTo,
     numSamplesInOut = compressedBufferSize;
     if (PICO_ERROR(CommonApi(SCOPE_FAMILY_LT, GetValues)( handle, 0, &numSamplesInOut, initialAggregation, CommonEnum(SCOPE_FAMILY_UT, RATIO_MODE_AGGREGATE), 0, &overflow )))
     {
+        fraStatusText.clear();
+        fraStatusText.str(L"");
         fraStatusText << L"Fatal error: Failed to retrieve compressed data: " << status;
         LogMessage( fraStatusText.str() );
         retVal = false;
@@ -1346,6 +1385,8 @@ bool CommonMethod(SCOPE_FAMILY_LT, GetPeakValues)( uint16_t& inputPeak, uint16_t
     if (PICO_ERROR(CommonApi(SCOPE_FAMILY_LT, SetDataBuffers)( handle, (CommonEnum(SCOPE_FAMILY_UT,CHANNEL))mInputChannel,
                                                                &inputDataMax, &inputDataMin, 1 SEGMENT_ARG RATIO_MODE_AGGREGATE_ARG )))
     {
+        fraStatusText.clear();
+        fraStatusText.str(L"");
         fraStatusText << L"Fatal error: Failed to set input data capture aggregation buffers for peak/overvoltage detection: " << status;
         LogMessage( fraStatusText.str() );
         retVal = false;
@@ -1354,6 +1395,8 @@ bool CommonMethod(SCOPE_FAMILY_LT, GetPeakValues)( uint16_t& inputPeak, uint16_t
     if (PICO_ERROR(CommonApi(SCOPE_FAMILY_LT, SetDataBuffers)( handle, (CommonEnum(SCOPE_FAMILY_UT,CHANNEL))mOutputChannel,
                                                                &outputDataMax, &outputDataMin, 1 SEGMENT_ARG RATIO_MODE_AGGREGATE_ARG )))
     {
+        fraStatusText.clear();
+        fraStatusText.str(L"");
         fraStatusText << L"Fatal error: Failed to set output data capture aggregation buffers for peak/overvoltage detection: " << status;
         LogMessage( fraStatusText.str() );
         retVal = false;
@@ -1362,6 +1405,8 @@ bool CommonMethod(SCOPE_FAMILY_LT, GetPeakValues)( uint16_t& inputPeak, uint16_t
     numSamplesInOut = 1;
     if (PICO_ERROR(CommonApi(SCOPE_FAMILY_LT, GetValues)( handle, 0, &numSamplesInOut, mNumSamples, CommonEnum(SCOPE_FAMILY_UT, RATIO_MODE_AGGREGATE), 0, &overflow )))
     {
+        fraStatusText.clear();
+        fraStatusText.str(L"");
         fraStatusText << L"Fatal error: Failed to retrieve aggregated data for peak/overvoltage detection: " << status;
         LogMessage( fraStatusText.str() );
         retVal = false;
@@ -1381,6 +1426,8 @@ bool CommonMethod(SCOPE_FAMILY_LT, GetPeakValues)( uint16_t& inputPeak, uint16_t
 
     if (PICO_ERROR(CommonApi(SCOPE_FAMILY_LT, _get_values)( handle, buffer[PS_CHANNEL_A], buffer[PS_CHANNEL_B], buffer[PS_CHANNEL_C], buffer[PS_CHANNEL_D], &overflow, mNumSamples )))
     {
+        fraStatusText.clear();
+        fraStatusText.str(L"");
         fraStatusText << L"Fatal error: Failed to retrieve data capture buffer in peak/overvoltage detection: " << status;
         LogMessage( fraStatusText.str() );
         retVal = false;

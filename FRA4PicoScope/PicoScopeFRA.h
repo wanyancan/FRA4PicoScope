@@ -176,6 +176,8 @@ class PicoScopeFRA
         ATTEN_T mOutputChannelAttenuation;
         PS_RANGE currentInputChannelRange;
         PS_RANGE currentOutputChannelRange;
+        PS_RANGE autoStimulusInputChannelRange;
+        PS_RANGE autoStimulusOutputChannelRange;
         double mInputDcOffset;
         double mOutputDcOffset;
         int numSteps;

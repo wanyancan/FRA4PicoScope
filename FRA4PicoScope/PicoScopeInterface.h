@@ -236,6 +236,7 @@ class PicoScope
         virtual double GetMaxFuncGenFreq( void ) = 0;
         virtual double GetMinFuncGenVpp( void ) = 0;
         virtual double GetMaxFuncGenVpp( void ) = 0;
+        virtual double GetMinNonZeroFuncGenVpp( void ) = 0;
         virtual bool IsCompatible( void ) = 0;
         virtual bool GetModel( wstring &model ) = 0;
         virtual bool GetSerialNumber( wstring &sn ) = 0;

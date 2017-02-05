@@ -39,6 +39,7 @@ double GetMinFuncGenFreq( void );
 double GetMaxFuncGenFreq( void );
 double GetMinFuncGenVpp( void );
 double GetMaxFuncGenVpp( void );
+double GetMinNonZeroFuncGenVpp( void );
 bool IsCompatible( void );
 bool GetModel( wstring &model );
 bool GetSerialNumber( wstring &sn );
