@@ -180,3 +180,6 @@ FakesAssemblies/
 # Coverity Scan Files
 cov-int/
 *.tgz
+
+# Local libraries
+lib/
