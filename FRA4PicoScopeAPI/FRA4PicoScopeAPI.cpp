@@ -372,7 +372,6 @@ FRA_STATUS_T __stdcall GetFraStatus( void )
 //             [in] phaseWrappingThreshold - phase value to use as wrapping point (in degrees)
 //                                           absolute value should be less than 360
 //
-//
 // Notes: None
 //
 ///////////////////////////////////////////////////////////////////////////////////////////////////
@@ -536,8 +535,8 @@ void __stdcall GetResults( double* freqsLogHz, double* gainsDb, double* phasesDe
 //
 // Purpose: Turn on time domain diagnostic plot output
 //
-// Parameters: [in] _baseDataPath - where to put the "diag" directory, where the plot files will
-//                                  be stored
+// Parameters: [in] baseDataPath - where to put the "diag" directory, where the plot files will
+//                                 be stored
 //
 // Notes: None
 //
@@ -735,7 +734,7 @@ static bool LocalFraStatusCallback( FRA_STATUS_MESSAGE_T& fraStatus )
         }
         // Set interactive response parameters in a way to indicate that we should 
         // not proceed because there was no way to gather response from the application level.
-        if (FRA_STATUS_AUTORANGE_LIMIT == fraStatus.status ||
+        if (FRA_STATUS_RETRY_LIMIT == fraStatus.status ||
             FRA_STATUS_POWER_CHANGED == fraStatus.status)
         {
             fraStatus.responseData.proceed = false;

@@ -173,42 +173,17 @@ PicoScopeFRA::PicoScopeFRA(FRA_STATUS_CALLBACK statusCB)
 
 void PicoScopeFRA::SetInstrument( PicoScope* _ps )
 {
-    ps = _ps;
-    numAvailableChannels = ps->GetNumChannels();
-    rangeInfo = ps->GetRangeCaps();
-    signalGeneratorPrecision = ps->GetSignalGeneratorPrecision();
-    rangeCounts = ps->GetMaxValue();
+    if (NULL != (ps = _ps))
+    {
+        numAvailableChannels = ps->GetNumChannels();
+        rangeInfo = ps->GetRangeCaps();
+        signalGeneratorPrecision = ps->GetSignalGeneratorPrecision();
+        rangeCounts = ps->GetMaxValue();
 
-    // Setup arbitrary initial settings to force a calculation of maxScopeSamplesPerChannel
-    SetupChannels( PS_CHANNEL_A, PS_AC, ATTEN_1X, 0.0, PS_CHANNEL_B, PS_AC, ATTEN_1X, 0.0, 0.0, 0.0 );
-
+        // Setup arbitrary initial settings to force a calculation of maxScopeSamplesPerChannel
+        SetupChannels( PS_CHANNEL_A, PS_AC, ATTEN_1X, 0.0, PS_CHANNEL_B, PS_AC, ATTEN_1X, 0.0, 0.0, 0.0 );
+    }
 }
-
-////////////////////////////////////////////////////////////////////////////////////////////////////
-//
-// Name: PicoScopeFRA::SetFraSettings
-//
-// Purpose: Provides configuration parameters for the FRA
-//
-// Parameters: [in] samplingMode - Low or high noise sampling mode
-//             [in] purityLowerLimit - Lower limit on purity before we take action
-//             [in] extraSettlingTimeMs - additional settling time to insert between setting up 
-//                                        signal generator and sampling
-//             [in] autorangeTriesPerStep - Number of range tries allowed
-//             [in] autorangeTolerance - Hysterysis used to determine when the switch
-//             [in] smallSignalResolutionTolerance - Lower limit on signal amplitide before we 
-//                                                   take action
-//             [in] maxAutorangeAmplitude - Amplitude before we switch to next higher range.
-//             [in] minCyclesCaptured - Minimum cycles captured for stmulus signal
-//             [in] sweepDescending - if true, sweep from highest frequency to lowest
-//             [in] phaseWrappingThreshold - phase value to use as wrapping point (in degrees)
-//                                           absolute value should be less than 360
-//             [in] diagnosticsOn - Whether to output plots of time domain data
-//             [in] baseDataPath - Path providing location to store time domain plots
-//
-// Notes: 
-//
-///////////////////////////////////////////////////////////////////////////////////////////////////
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 //
@@ -223,7 +198,6 @@ void PicoScopeFRA::SetInstrument( PicoScope* _ps )
 //             [in] sweepDescending - if true, sweep from highest frequency to lowest
 //             [in] phaseWrappingThreshold - phase value to use as wrapping point (in degrees)
 //                                           absolute value should be less than 360
-//
 //
 // Notes: None
 //
@@ -277,11 +251,36 @@ void PicoScopeFRA::SetFraTuning( double purityLowerLimit, uint16_t extraSettling
     mMinCyclesCaptured = minCyclesCaptured;
 }
 
+////////////////////////////////////////////////////////////////////////////////////////////////////
+//
+// Name: PicoScopeFRA::EnableDiagnostics
+//
+// Purpose: Turn on time domain diagnostic plot output
+//
+// Parameters: [in] baseDataPath - where to put the "diag" directory, where the plot files will
+//                                 be stored
+//
+// Notes: In the future this could be used to output diagnostic info to the log
+//
+///////////////////////////////////////////////////////////////////////////////////////////////////
+
 void PicoScopeFRA::EnableDiagnostics(wstring baseDataPath)
 {
     mDiagnosticsOn = true;
     mBaseDataPath = baseDataPath;
 }
+
+////////////////////////////////////////////////////////////////////////////////////////////////////
+//
+// Name: PicoScopeFRA::DisableDiagnostics
+//
+// Purpose: Turn off time domain diagnostic plot output
+//
+// Parameters: N/A
+//
+// Notes: None
+//
+///////////////////////////////////////////////////////////////////////////////////////////////////
 
 void PicoScopeFRA::DisableDiagnostics(void)
 {
@@ -303,16 +302,22 @@ void PicoScopeFRA::DisableDiagnostics(void)
 
 double PicoScopeFRA::GetMinFrequency(void)
 {
-    if (mSamplingMode == LOW_NOISE)
+    if (ps)
     {
-        return (ps->GetSignalGeneratorPrecision());
+        if (mSamplingMode == LOW_NOISE)
+        {
+            return (ps->GetSignalGeneratorPrecision());
+        }
+        else
+        {
+            // Add in half the signal generator precision because the frequency could get rounded down
+            return (((ps->GetSignalGeneratorPrecision())/2.0) + ((double)mMinCyclesCaptured * ( ps->GetNoiseRejectModeSampleRate() / (double)maxScopeSamplesPerChannel )));
+        }
     }
     else
     {
-        // Add in half the signal generator precision because the frequency could get rounded down
-        return (((ps->GetSignalGeneratorPrecision())/2.0) + ((double)mMinCyclesCaptured * ( ps->GetNoiseRejectModeSampleRate() / (double)maxScopeSamplesPerChannel )));
+        return 0.0;
     }
-
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -335,7 +340,7 @@ double PicoScopeFRA::GetMinFrequency(void)
 //                                   in adaptive stimulus mode.
 //             [out] return - Whether the function was successful.
 //
-// Notes: 
+// Notes: None
 //
 ///////////////////////////////////////////////////////////////////////////////////////////////////
 
@@ -579,8 +584,8 @@ bool PicoScopeFRA::ExecuteFRA(double startFreqHz, double stopFreqHz, int stepsPe
                 adaptiveStimulusRetryCounter == maxAdaptiveStimulusRetries)
             {
                 // This is a temporary solution until we implement a fully interactive one.
-                // TODO - change to FRA_STATUS_RETRY_LIMIT_REACHED and parameterize so we can tell user about all ranging issues (measurement and stimulus) in one interaction
-                UpdateStatus( fraStatusMsg, FRA_STATUS_AUTORANGE_LIMIT, inputChannelAutorangeStatus, outputChannelAutorangeStatus );
+                // TODO - change to FRA_STATUS_RETRY_LIMIT and parameterize so we can tell user about all ranging issues (measurement and stimulus) in one interaction
+                UpdateStatus( fraStatusMsg, FRA_STATUS_RETRY_LIMIT, inputChannelAutorangeStatus, outputChannelAutorangeStatus );
                 if (true == fraStatusMsg.responseData.proceed)
                 {
                     gainsDb[freqStepIndex] = 0.0;
@@ -932,11 +937,14 @@ bool PicoScopeFRA::CheckSignalRanges(void)
 
 void PicoScopeFRA::GetResults( int* numSteps, double** freqsLogHz, double** gainsDb, double** phasesDeg, double** unwrappedPhasesDeg )
 {
-    *numSteps = latestCompletedNumSteps;
-    *freqsLogHz = latestCompletedFreqsLogHz.data();
-    *gainsDb = latestCompletedGainsDb.data();
-    *phasesDeg = latestCompletedPhasesDeg.data();
-    *unwrappedPhasesDeg = latestCompletedUnwrappedPhasesDeg.data();
+    if (numSteps && freqsLogHz && gainsDb && phasesDeg && unwrappedPhasesDeg )
+    {
+        *numSteps = latestCompletedNumSteps;
+        *freqsLogHz = latestCompletedFreqsLogHz.data();
+        *gainsDb = latestCompletedGainsDb.data();
+        *phasesDeg = latestCompletedPhasesDeg.data();
+        *unwrappedPhasesDeg = latestCompletedUnwrappedPhasesDeg.data();
+    }
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////

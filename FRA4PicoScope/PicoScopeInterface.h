@@ -154,16 +154,6 @@ typedef enum
     PS_NO_MODEL
 } ScopeModel_T;
 
-typedef uint8_t PS_RANGE;
-
-typedef struct
-{
-    double rangeVolts; // expressed as +/- X volts
-    double ratioUp; // multiplier for how the signal will scale when increasing the size of the range, 0.0 if NA
-    double ratioDown; // multiplier for how the signal will scale when decreasing the size of the range, 0.0 if NA
-    wchar_t* name;
-} RANGE_INFO_T;
-
 typedef void (__stdcall *psBlockReady)
 (
     int16_t      handle,

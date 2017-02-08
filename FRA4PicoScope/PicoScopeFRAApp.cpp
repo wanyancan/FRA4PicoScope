@@ -2063,9 +2063,9 @@ bool FraStatusCallback( FRA_STATUS_MESSAGE_T& fraStatusMsg )
         Edit_SetSel( hndCtrl, -1, -1 );
         Edit_ScrollCaret( hndCtrl );
     }
-    else if (fraStatusMsg.status == FRA_STATUS_AUTORANGE_LIMIT)
+    else if (fraStatusMsg.status == FRA_STATUS_RETRY_LIMIT)
     {
-        int response = MessageBoxEx( hMainWnd, L"Reached autorange limit.  Continue?", L"Autorange feedback", MB_OKCANCEL, 0 );
+        int response = MessageBoxEx( hMainWnd, L"Reached retry limit.  Continue?", L"Retry feedback", MB_OKCANCEL, 0 );
 
         if (IDCANCEL == response)
         {
@@ -2075,7 +2075,6 @@ bool FraStatusCallback( FRA_STATUS_MESSAGE_T& fraStatusMsg )
         {
             fraStatusMsg.responseData.proceed = true;
         }
-
     }
     else if (fraStatusMsg.status == FRA_STATUS_POWER_CHANGED)
     {

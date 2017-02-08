@@ -59,6 +59,16 @@ typedef enum
     ATTEN_1000X
 } ATTEN_T;
 
+typedef uint8_t PS_RANGE;
+
+typedef struct
+{
+    double rangeVolts; // expressed as +/- X volts
+    double ratioUp; // multiplier for how the signal will scale when increasing the size of the range, 0.0 if NA
+    double ratioDown; // multiplier for how the signal will scale when decreasing the size of the range, 0.0 if NA
+    wchar_t* name;
+} RANGE_INFO_T;
+
 typedef enum
 {
     LOW_NOISE,
@@ -81,7 +91,7 @@ typedef enum
     FRA_STATUS_IN_PROGRESS,
     FRA_STATUS_COMPLETE,
     FRA_STATUS_CANCELED,
-    FRA_STATUS_AUTORANGE_LIMIT,
+    FRA_STATUS_RETRY_LIMIT,
     FRA_STATUS_POWER_CHANGED,
     FRA_STATUS_FATAL_ERROR,
     FRA_STATUS_MESSAGE
@@ -104,9 +114,19 @@ typedef struct
         } cancelPoint;
         struct
         {
+            uint8_t triesAttempted;
+            uint8_t allowedTries;
             AUTORANGE_STATUS_T inputChannelStatus;
             AUTORANGE_STATUS_T outputChannelStatus;
+            PS_RANGE inputRange;
+            PS_RANGE outputRange;
         } autorangeLimit;
+        struct
+        {
+            uint8_t triesAttempted;
+            uint8_t allowedTries;
+            double stimulusVpp;
+        } adaptiveStimulusLimit;
         bool powerState; // false = No Aux DC power
     } statusData;
 
@@ -115,11 +135,12 @@ typedef struct
     struct
     {
         // Whether to proceed, or cancel the FRA execution.  Should only be
-        // used as a response to FRA_AUTORANGE_LIMIT or PICO_POWER_CHANGE so
+        // used as a response to FRA_RETRY_LIMIT or PICO_POWER_CHANGE so
         // that we don't create a race condition.  Cancel from the UI that's
         // asynchronous (not tied to a specific FRA operation like autorange)
         // is handled separately.
-        bool proceed;
+        bool proceed; // If true, continue the FRA execution, otherwise cancel
+        bool retry; // If true, try the failed step again, otherwise move on to next step
 
         union
         {
