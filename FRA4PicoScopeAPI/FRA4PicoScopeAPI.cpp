@@ -46,31 +46,28 @@ static DWORD WINAPI ExecuteFRA(LPVOID lpdwThreadParam);
 static bool LocalFraStatusCallback( FRA_STATUS_MESSAGE_T& fraStatus );
 void LogMessage(const wstring statusMessage);
 
-// Storage for passed FRA parameters
-static int inputChannel = 0;
-static int inputChannelCoupling = 0;
-static int inputChannelAttenuation = 0;
-static double inputDcOffset = 0.0;
-static int outputChannel = 0;
-static int outputChannelCoupling = 0;
-static int outputChannelAttenuation = 0;
-static double outputDcOffset = 0.0;
-static double signalVpp = 0.0;
+// Storage for default/initial FRA parameters
+// For basic settings
+static const SamplingMode_T samplingModeDefault = LOW_NOISE;
+static const bool adaptiveStimulusModeDefault = false;
+static const double targetResponseAmplitudeDefault = 0.0;
+static const bool sweepDescendingDefault = false;
+static const double phaseWrappingThresholdDefault = 180.0;
+// For tuning
+static const double purityLowerLimitDefault = 0.80;
+static const uint16_t extraSettlingTimeMsDefault = 0;
+static const uint8_t autorangeTriesPerStepDefault = 10;
+static const double autorangeToleranceDefault = 0.10;
+static const double smallSignalResolutionToleranceDefault = 0.0;
+static const double maxAutorangeAmplitudeDefault = 1.0;
+static const uint8_t adaptiveStimulusTriesPerStepDefault = 10;
+static const double targetResponseAmplitudeToleranceDefault = 0.1; // 10%
+static const uint16_t minCyclesCapturedDefault = 16;
+
+// Parameters used to communicate from API to execution thread
 static double startFreqHz = 0.0;
 static double stopFreqHz = 0.0;
 static int stepsPerDecade = 0;
-SamplingMode_T samplingMode = LOW_NOISE;
-bool sweepDescending = false;
-double phaseWrappingThreshold = 180.0;
-static double purityLowerLimit = 0.80; // Default
-static uint16_t extraSettlingTimeMs = 0; // Default
-static uint8_t autorangeTriesPerStep = 10; // Default
-static double autorangeTolerance = 0.10; // Default
-static double smallSignalResolutionTolerance = 0.0; // Default
-static double maxAutorangeAmplitude = 1.0; // Default
-static uint16_t minCyclesCaptured = 16; // Default
-static bool diagnosticsOn = false; // Default
-static wstring baseDataPath = L"";
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 //
@@ -110,10 +107,14 @@ bool __stdcall Initialize( void )
 
         if (pScopeSelector && pFRA)
         {
-            pFRA->SetFraSettings( samplingMode, purityLowerLimit, extraSettlingTimeMs,
-                                  autorangeTriesPerStep, autorangeTolerance, smallSignalResolutionTolerance,
-                                  maxAutorangeAmplitude, minCyclesCaptured, sweepDescending,
-                                  phaseWrappingThreshold, diagnosticsOn, baseDataPath );
+            pFRA->SetFraSettings( samplingModeDefault, adaptiveStimulusModeDefault, targetResponseAmplitudeDefault,
+                                  sweepDescendingDefault, phaseWrappingThresholdDefault );
+
+            pFRA->SetFraTuning( purityLowerLimitDefault, extraSettlingTimeMsDefault, autorangeTriesPerStepDefault, autorangeToleranceDefault,
+                                smallSignalResolutionToleranceDefault, maxAutorangeAmplitudeDefault, adaptiveStimulusTriesPerStepDefault,
+                                targetResponseAmplitudeToleranceDefault, minCyclesCapturedDefault );
+
+            pFRA->DisableDiagnostics();
 
             // Create execution thread and event
             hExecuteFraEvent = CreateEventW(NULL, true, false, L"ExecuteFRA");
@@ -363,28 +364,26 @@ FRA_STATUS_T __stdcall GetFraStatus( void )
 //
 // Purpose: Set basic setting that are optional to set, but may need to be set occassionally
 //
-// Parameters: [in] _samplingMode - Low or high noise sampling mode
-//             [in] _sweepDescending - if true, sweep from highest frequency to lowest
-//             [in] _phaseWrappingThreshold - phase value to use as wrapping point (in degrees)
-//                                            absolute value should be less than 360
+// Parameters: [in] samplingMode - Low or high noise sampling mode
+//             [in] adaptiveStimulusMode - if true, run in adaptive stimulus mode
+//             [in] targetResponseAmplitude - target for amplitude of the response signals; don't
+//                                            allow either of input or output be less than this.
+//             [in] sweepDescending - if true, sweep from highest frequency to lowest
+//             [in] phaseWrappingThreshold - phase value to use as wrapping point (in degrees)
+//                                           absolute value should be less than 360
 //
 //
 // Notes: None
 //
 ///////////////////////////////////////////////////////////////////////////////////////////////////
 
-void __stdcall SetFraSettings( SamplingMode_T _samplingMode, bool _sweepDescending, double _phaseWrappingThreshold )
+void __stdcall SetFraSettings( SamplingMode_T samplingMode, bool adaptiveStimulusMode, double targetResponseAmplitude,
+                               bool sweepDescending, double phaseWrappingThreshold )
 {
-    samplingMode = _samplingMode;
-    sweepDescending = _sweepDescending;
-    phaseWrappingThreshold = _phaseWrappingThreshold;
-
     if (pFRA)
     {
-        pFRA->SetFraSettings( samplingMode, purityLowerLimit, extraSettlingTimeMs,
-                              autorangeTriesPerStep, autorangeTolerance, smallSignalResolutionTolerance,
-                              maxAutorangeAmplitude, minCyclesCaptured, sweepDescending,
-                              phaseWrappingThreshold, diagnosticsOn, baseDataPath );
+        pFRA->SetFraSettings( samplingMode, adaptiveStimulusMode, targetResponseAmplitude,
+                              sweepDescending, phaseWrappingThreshold );
     }
 }
 
@@ -394,37 +393,32 @@ void __stdcall SetFraSettings( SamplingMode_T _samplingMode, bool _sweepDescendi
 //
 // Purpose: Set more advanced settings that are optional to set, but may need to be set rarely
 //
-// Parameters: [in] _purityLowerLimit - Lower limit on purity before we take action
-//             [in] _extraSettlingTimeMs - additional settling time to insert between setting up
+// Parameters: [in] purityLowerLimit - Lower limit on purity before we take action
+//             [in] extraSettlingTimeMs - additional settling time to insert between setting up
 //                                         signal generator and sampling
-//             [in] _autorangeTriesPerStep - Number of range tries allowed
-//             [in] _autorangeTolerance - Hysterysis used to determine when the switch
-//             [in] _smallSignalResolutionTolerance - Lower limit on signal amplitide before we
+//             [in] autorangeTriesPerStep - Number of range tries allowed
+//             [in] autorangeTolerance - Hysterysis used to determine when the switch
+//             [in] smallSignalResolutionTolerance - Lower limit on signal amplitide before we
 //                                                    take action
-//             [in] _maxAutorangeAmplitude - Amplitude before we switch to next higher range
-//             [in] _minCyclesCaptured - Minimum cycles captured for stmulus signal
+//             [in] maxAutorangeAmplitude - Amplitude before we switch to next higher range
+//             [in] adaptiveStimulusTriesPerStep - Number of adaptive stimulus tries allowed
+//             [in] targetResponseAmplitudeTolerance - Percent tolerance above target allowed for
+//                                                     the smallest stimulus (input or output)
+//             [in] minCyclesCaptured - Minimum cycles captured for stmulus signal
 //
 // Notes: None
 //
 ///////////////////////////////////////////////////////////////////////////////////////////////////
 
-void __stdcall SetFraTuning( double _purityLowerLimit, uint16_t _extraSettlingTimeMs, uint8_t _autorangeTriesPerStep,
-                             double _autorangeTolerance, double _smallSignalResolutionTolerance, double _maxAutorangeAmplitude, uint16_t _minCyclesCaptured )
+void __stdcall SetFraTuning( double purityLowerLimit, uint16_t extraSettlingTimeMs, uint8_t autorangeTriesPerStep,
+                             double autorangeTolerance, double smallSignalResolutionTolerance, double maxAutorangeAmplitude,
+                             uint8_t adaptiveStimulusTriesPerStep, double targetResponseAmplitudeTolerance, uint16_t minCyclesCaptured )
 {
-    purityLowerLimit = _purityLowerLimit;
-    extraSettlingTimeMs = _extraSettlingTimeMs;
-    autorangeTriesPerStep = _autorangeTriesPerStep;
-    autorangeTolerance = _autorangeTolerance;
-    smallSignalResolutionTolerance = _smallSignalResolutionTolerance;
-    maxAutorangeAmplitude = _maxAutorangeAmplitude;
-    minCyclesCaptured = _minCyclesCaptured;
-    
     if (pFRA)
     {
-        pFRA->SetFraSettings( samplingMode, purityLowerLimit, extraSettlingTimeMs,
-                              autorangeTriesPerStep, autorangeTolerance, smallSignalResolutionTolerance,
-                              maxAutorangeAmplitude, minCyclesCaptured, sweepDescending,
-                              phaseWrappingThreshold, diagnosticsOn, baseDataPath );
+        pFRA->SetFraTuning( purityLowerLimit, extraSettlingTimeMs, autorangeTriesPerStep, autorangeTolerance,
+                            smallSignalResolutionTolerance, maxAutorangeAmplitude, adaptiveStimulusTriesPerStep,
+                            targetResponseAmplitudeTolerance, minCyclesCaptured );
     }
 }
 
@@ -442,28 +436,28 @@ void __stdcall SetFraTuning( double _purityLowerLimit, uint16_t _extraSettlingTi
 //             [in] outputChannelCoupling - AC/DC coupling for output channel
 //             [in] outputChannelAttenuation - Attenuation setting for output channel
 //             [in] outputDcOffset - DC Offset for output channel
-//             [in] signalVpp - Volts peak to peak of the stimulus signal
+//             [in] initialStimulusVpp - Volts peak to peak of the stimulus signal
+//             [in] maxStimulusVpp - Maximum volts peak to peak of the stimulus signal
 //             [out] return - Whether the function was successful.
 //
 // Notes: None
 //
 ///////////////////////////////////////////////////////////////////////////////////////////////////
 
-bool __stdcall SetupChannels( int _inputChannel, int _inputChannelCoupling, int _inputChannelAttenuation, double _inputDcOffset,
-                              int _outputChannel, int _outputChannelCoupling, int _outputChannelAttenuation, double _outputDcOffset,
-                              double _signalVpp)
+bool __stdcall SetupChannels( int inputChannel, int inputChannelCoupling, int inputChannelAttenuation, double inputDcOffset,
+                              int outputChannel, int outputChannelCoupling, int outputChannelAttenuation, double outputDcOffset,
+                              double initialStimulusVpp, double maxStimulusVpp )
 {
-    inputChannel = _inputChannel;
-    inputChannelCoupling = _inputChannelCoupling;
-    inputChannelAttenuation = _inputChannelAttenuation;
-    inputDcOffset = _inputDcOffset;
-    outputChannel = _outputChannel;
-    outputChannelCoupling = _outputChannelCoupling;
-    outputChannelAttenuation = _outputChannelAttenuation;
-    outputDcOffset = _outputDcOffset;
-    signalVpp = _signalVpp;
-
-    return true;
+    if (pFRA)
+    {
+        return (pFRA->SetupChannels( inputChannel, inputChannelCoupling, inputChannelAttenuation, inputDcOffset,
+                                     outputChannel, outputChannelCoupling, outputChannelAttenuation, outputDcOffset,
+                                     initialStimulusVpp, maxStimulusVpp ));
+    }
+    else
+    {
+        return false;
+    }
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -549,10 +543,12 @@ void __stdcall GetResults( double* freqsLogHz, double* gainsDb, double* phasesDe
 //
 ///////////////////////////////////////////////////////////////////////////////////////////////////
 
-void __stdcall EnableDiagnostics( wchar_t* _baseDataPath )
+void __stdcall EnableDiagnostics( wchar_t* baseDataPath )
 {
-    baseDataPath = _baseDataPath;
-    diagnosticsOn = true;
+    if (pFRA)
+    {
+        pFRA -> EnableDiagnostics( baseDataPath );
+    }
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -569,7 +565,10 @@ void __stdcall EnableDiagnostics( wchar_t* _baseDataPath )
 
 void __stdcall DisableDiagnostics( void )
 {
-    diagnosticsOn = false;
+    if (pFRA)
+    {
+        pFRA -> DisableDiagnostics();
+    }
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -686,19 +685,6 @@ static DWORD WINAPI ExecuteFRA( LPVOID lpdwThreadParam )
                 LogMessage(L"Error: Selected scope is not compatible.");
                 status = FRA_STATUS_FATAL_ERROR;
                 continue;
-            }
-
-            pFRA->SetFraSettings( samplingMode, purityLowerLimit, extraSettlingTimeMs,
-                                  autorangeTriesPerStep, autorangeTolerance, smallSignalResolutionTolerance,
-                                  maxAutorangeAmplitude, minCyclesCaptured, sweepDescending,
-                                  phaseWrappingThreshold, diagnosticsOn, baseDataPath );
-
-            if (false == pFRA->SetupChannels(inputChannel, inputChannelCoupling, inputChannelAttenuation, inputDcOffset,
-                                             outputChannel, outputChannelCoupling, outputChannelAttenuation, outputDcOffset,
-                                             signalVpp))
-            {
-                continue;
-                status = FRA_STATUS_FATAL_ERROR;
             }
 
             if (false == pFRA->ExecuteFRA(startFreqHz, stopFreqHz, stepsPerDecade))

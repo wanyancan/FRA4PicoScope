@@ -50,12 +50,14 @@ FRA4PICOSCOPE_API double __stdcall GetMinFrequency( void );
 FRA4PICOSCOPE_API bool __stdcall StartFRA( double startFreqHz, double stopFreqHz, int stepsPerDecade );
 FRA4PICOSCOPE_API bool __stdcall CancelFRA( void );
 FRA4PICOSCOPE_API FRA_STATUS_T __stdcall GetFraStatus( void );
-FRA4PICOSCOPE_API void __stdcall SetFraSettings( SamplingMode_T samplingMode, bool sweepDescending, double phaseWrappingThreshold );
+FRA4PICOSCOPE_API void __stdcall SetFraSettings( SamplingMode_T samplingMode, bool adaptiveStimulusMode, double targetResponseAmplitude,
+                                                 bool sweepDescending, double phaseWrappingThreshold );
 FRA4PICOSCOPE_API void __stdcall SetFraTuning( double purityLowerLimit, uint16_t extraSettlingTimeMs, uint8_t autorangeTriesPerStep,
-                                               double autorangeTolerance, double smallSignalResolutionTolerance, double maxAutorangeAmplitude, uint16_t minCyclesCaptured );
+                                               double autorangeTolerance, double smallSignalResolutionTolerance, double maxAutorangeAmplitude,
+                                               uint8_t adaptiveStimulusTriesPerStep, double targetResponseAmplitudeTolerance, uint16_t minCyclesCaptured );
 FRA4PICOSCOPE_API bool __stdcall SetupChannels( int inputChannel, int inputChannelCoupling, int inputChannelAttenuation, double inputDcOffset,
                                                 int outputChannel, int outputChannelCoupling, int outputChannelAttenuation, double outputDcOffset,
-                                                double signalVpp );
+                                                double initialStimulusVpp, double maxStimulusVpp );
 FRA4PICOSCOPE_API int __stdcall GetNumSteps( void );
 FRA4PICOSCOPE_API void __stdcall GetResults( double* freqsLogHz, double* gainsDb, double* phasesDeg, double* unwrappedPhasesDeg );
 FRA4PICOSCOPE_API void __stdcall EnableDiagnostics( wchar_t* baseDataPath );

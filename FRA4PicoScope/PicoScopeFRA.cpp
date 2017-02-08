@@ -210,19 +210,61 @@ void PicoScopeFRA::SetInstrument( PicoScope* _ps )
 //
 ///////////////////////////////////////////////////////////////////////////////////////////////////
 
-void PicoScopeFRA::SetFraSettings( SamplingMode_T samplingMode, bool adaptiveStimulusMode, double targetSignalAmplitude,
+////////////////////////////////////////////////////////////////////////////////////////////////////
+//
+// Name: PicoScopeFRA::SetFraSettings
+//
+// Purpose: Set basic setting that are optional to set, but may need to be set occassionally
+//
+// Parameters: [in] samplingMode - Low or high noise sampling mode
+//             [in] adaptiveStimulusMode - if true, run in adaptive stimulus mode
+//             [in] targetResponseAmplitude - target for amplitude of the response signals; don't
+//                                            allow either of input or output be less than this.
+//             [in] sweepDescending - if true, sweep from highest frequency to lowest
+//             [in] phaseWrappingThreshold - phase value to use as wrapping point (in degrees)
+//                                           absolute value should be less than 360
+//
+//
+// Notes: None
+//
+///////////////////////////////////////////////////////////////////////////////////////////////////
+
+void PicoScopeFRA::SetFraSettings( SamplingMode_T samplingMode, bool adaptiveStimulusMode, double targetResponseAmplitude,
                                    bool sweepDescending, double phaseWrappingThreshold )
 {
     mSamplingMode = samplingMode;
     mAdaptiveStimulus = adaptiveStimulusMode;
-    mTargetResponseAmplitude = targetSignalAmplitude;
+    mTargetResponseAmplitude = targetResponseAmplitude;
     mSweepDescending = sweepDescending;
     mPhaseWrappingThreshold = phaseWrappingThreshold;
 }
 
+////////////////////////////////////////////////////////////////////////////////////////////////////
+//
+// Name: PicoScopeFRA::SetFraTuning
+//
+// Purpose: Set more advanced settings that are optional to set, but may need to be set rarely
+//
+// Parameters: [in] purityLowerLimit - Lower limit on purity before we take action
+//             [in] extraSettlingTimeMs - additional settling time to insert between setting up
+//                                         signal generator and sampling
+//             [in] autorangeTriesPerStep - Number of range tries allowed
+//             [in] autorangeTolerance - Hysterysis used to determine when the switch
+//             [in] smallSignalResolutionTolerance - Lower limit on signal amplitide before we
+//                                                    take action
+//             [in] maxAutorangeAmplitude - Amplitude before we switch to next higher range
+//             [in] adaptiveStimulusTriesPerStep - Number of adaptive stimulus tries allowed
+//             [in] targetResponseAmplitudeTolerance - Percent tolerance above target allowed for
+//                                                     the smallest stimulus (input or output)
+//             [in] minCyclesCaptured - Minimum cycles captured for stmulus signal
+//
+// Notes: None
+//
+///////////////////////////////////////////////////////////////////////////////////////////////////
+
 void PicoScopeFRA::SetFraTuning( double purityLowerLimit, uint16_t extraSettlingTimeMs, uint8_t autorangeTriesPerStep,
                                  double autorangeTolerance, double smallSignalResolutionTolerance, double maxAutorangeAmplitude,
-                                 uint8_t adaptiveStimulusTriesPerStep, double targetSignalAmplitudeTolerance, uint16_t minCyclesCaptured )
+                                 uint8_t adaptiveStimulusTriesPerStep, double targetResponseAmplitudeTolerance, uint16_t minCyclesCaptured )
 {
     mPurityLowerLimit = purityLowerLimit;
     mExtraSettlingTimeMs = extraSettlingTimeMs;
@@ -231,7 +273,7 @@ void PicoScopeFRA::SetFraTuning( double purityLowerLimit, uint16_t extraSettling
     minAllowedAmplitudeRatio = smallSignalResolutionTolerance;
     maxAmplitudeRatio = maxAutorangeAmplitude;
     maxAdaptiveStimulusRetries = adaptiveStimulusTriesPerStep;
-    mTargetResponseAmplitudeTolerance = targetSignalAmplitudeTolerance;
+    mTargetResponseAmplitudeTolerance = targetResponseAmplitudeTolerance;
     mMinCyclesCaptured = minCyclesCaptured;
 }
 
@@ -303,6 +345,11 @@ bool PicoScopeFRA::SetupChannels( int inputChannel, int inputChannelCoupling, in
 {
     FRA_STATUS_MESSAGE_T fraStatusMsg;
     PS_RANGE inputRange;
+
+    if (!ps)
+    {
+        return false;
+    }
 
     mInputChannelCoupling = (PS_COUPLING)inputChannelCoupling;
     mOutputChannelCoupling = (PS_COUPLING)outputChannelCoupling;

@@ -74,13 +74,14 @@ Declare Function GetMinFrequency Lib "FRA4PicoScope.dll" () As Double
 Declare Function StartFRA Lib "FRA4PicoScope.dll" (ByVal startFreqHz As Double, ByVal stopFreqHz As Double, ByVal stepsPerDecade As Long) As Byte
 Declare Function CancelFRA Lib "FRA4PicoScope.dll" () As Byte
 Declare Function GetFraStatus Lib "FRA4PicoScope.dll" () As FRA_STATUS_T
-Declare Sub SetFraSettings Lib "FRA4PicoScope.dll" (ByVal samplingMode As SamplingMode_T, ByVal sweepDescending As Byte, ByVal phaseWrappingThreshold As Double)
+Declare Sub SetFraSettings Lib "FRA4PicoScope.dll" (ByVal samplingMode As SamplingMode_T, ByVal adaptiveStimulusMode As Byte, ByVal targetResponseAmplitude As Double, _
+                                                    ByVal sweepDescending As Byte, ByVal phaseWrappingThreshold As Double)
 Declare Sub SetFraTuning Lib "FRA4PicoScope.dll" (ByVal purityLowerLimit As Double, ByVal extraSettlingTimeMs As Integer, ByVal autorangeTriesPerStep As Byte, _
-                                                  ByVal autorangeTolerance As Double, ByVal smallSignalResolutionTolerance As Double, _
-                                                  ByVal maxAutorangeAmplitude As Double, ByVal minCyclesCaptured As Integer)
+                                                  ByVal autorangeTolerance As Double, ByVal smallSignalResolutionTolerance As Double, ByVal maxAutorangeAmplitude As Double, _
+                                                  ByVal adaptiveStimulusTriesPerStep As Byte, ByVal targetResponseAmplitudeTolerance As Double, ByVal minCyclesCaptured As Integer)
 Declare Function SetupChannels Lib "FRA4PicoScope.dll" (ByVal inputChannel As PS_CHANNEL, ByVal inputChannelCoupling As PS_COUPLING, ByVal inputChannelAttenuation As ATTEN_T, ByVal inputDcOffset As Double, _
                                                         ByVal outputChannel As PS_CHANNEL, ByVal outputChannelCoupling As PS_COUPLING, ByVal outputChannelAttenuation As ATTEN_T, ByVal outputDcOffset As Double, _
-                                                        ByVal signalVpp As Double) As Byte
+                                                        ByVal initialStimulusVpp As Double, ByVal maxStimulusVpp as Double) As Byte
 Declare Function GetNumSteps Lib "FRA4PicoScope.dll" () As Long
 Declare Sub GetResults Lib "FRA4PicoScope.dll" (ByRef freqsLogHz As Double, ByRef gainsDb As Double, ByRef phasesDeg As Double, ByRef unwrappedPhasesDeg As Double)
 Declare Sub EnableDiagnostics Lib "FRA4PicoScope.dll" (ByVal baseDataPath As String)
