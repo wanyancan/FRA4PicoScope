@@ -4,6 +4,7 @@
 //
 #define IDS_APP_TITLE                   100
 #define IDD_SETTINGS                    102
+#define IDD_INTERACTIVE_RETRY           104
 #define IDD_MAIN                        200
 #define IDD_ABOUTBOX                    201
 #define IDD_SCOPESELECTORBOX            202
@@ -141,15 +142,16 @@
 #define IDC_COMBO4                      1026
 #define IDC_EDIT13                      1027
 #define IDC_EDIT14                      1028
+#define IDC_BUTTON3                     1028
 #define IDC_STATIC                      -1
 
 // Next default values for new objects
 // 
 #ifdef APSTUDIO_INVOKED
 #ifndef APSTUDIO_READONLY_SYMBOLS
-#define _APS_NEXT_RESOURCE_VALUE        104
+#define _APS_NEXT_RESOURCE_VALUE        106
 #define _APS_NEXT_COMMAND_VALUE         40002
-#define _APS_NEXT_CONTROL_VALUE         1026
+#define _APS_NEXT_CONTROL_VALUE         1029
 #define _APS_NEXT_SYMED_VALUE           101
 #endif
 #endif

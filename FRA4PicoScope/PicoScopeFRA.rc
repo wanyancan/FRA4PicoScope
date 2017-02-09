@@ -326,6 +326,30 @@ BEGIN
     LTEXT           "Response target\ntolerance (%)",IDC_STATIC,43,153,88,18
 END
 
+IDD_INTERACTIVE_RETRY DIALOGEX 0, 0, 309, 242
+STYLE DS_SETFONT | DS_MODALFRAME | DS_FIXEDSYS | WS_POPUP | WS_CAPTION | WS_SYSMENU
+CAPTION "Retry Limit Reached"
+FONT 8, "MS Shell Dlg", 400, 0, 0x1
+BEGIN
+    DEFPUSHBUTTON   "Continue",IDOK,198,221,50,14
+    PUSHBUTTON      "Abort",IDABORT,252,221,50,14
+    PUSHBUTTON      "Retry",IDC_BUTTON1,144,221,50,14
+    GROUPBOX        "Autorange Retries",IDC_STATIC,6,7,296,56
+    GROUPBOX        "Adaptive Stimulus Retries",IDC_STATIC,6,67,296,68
+    LTEXT           "N of M attempts",IDC_STATIC,13,20,52,8
+    LTEXT           "N of M attempts",IDC_STATIC,13,80,52,8
+    PUSHBUTTON      "Adjust Setup",IDC_BUTTON2,7,140,50,14
+    LTEXT           "Input channel range: ",IDC_STATIC,14,33,101,8
+    LTEXT           "Input channel status: ",IDC_STATIC,134,33,145,8
+    LTEXT           "Output channel range: ",IDC_STATIC,14,47,101,8
+    LTEXT           "Output channel status: ",IDC_STATIC,134,47,145,8
+    LTEXT           "Stimulus Vpp: ",IDC_STATIC,14,93,83,8
+    PUSHBUTTON      "Step History",IDC_BUTTON3,252,140,50,14
+    LTEXT           "Input Response Amplitude:",IDC_STATIC,14,106,139,8
+    LTEXT           "Output Response Amplitude:",IDC_STATIC,14,119,139,8
+    LTEXT           "TBD, What can be adjusted: channel attenuation, \nchannel amplitude, response target, response tolerance",IDC_STATIC,7,186,239,20
+END
+
 
 /////////////////////////////////////////////////////////////////////////////
 //
@@ -342,6 +366,14 @@ BEGIN
         TOPMARGIN, 7
         BOTTOMMARGIN, 264
     END
+
+    IDD_INTERACTIVE_RETRY, DIALOG
+    BEGIN
+        LEFTMARGIN, 7
+        RIGHTMARGIN, 302
+        TOPMARGIN, 7
+        BOTTOMMARGIN, 235
+    END
 END
 #endif    // APSTUDIO_INVOKED
 
@@ -354,6 +386,28 @@ END
 IDD_SETTINGS AFX_DIALOG_LAYOUT
 BEGIN
     0
+END
+
+IDD_INTERACTIVE_RETRY AFX_DIALOG_LAYOUT
+BEGIN
+    0,
+    0, 100, 0, 0,
+    0, 100, 0, 0,
+    0, 100, 0, 0,
+    0, 0, 0, 0,
+    0, 0, 0, 0,
+    0, 0, 0, 0,
+    0, 0, 0, 0,
+    0, 0, 0, 0,
+    0, 0, 0, 0,
+    0, 0, 0, 0,
+    0, 0, 0, 0,
+    0, 0, 0, 0,
+    0, 0, 0, 0,
+    0, 0, 0, 0,
+    0, 0, 0, 0,
+    0, 0, 0, 0,
+    0, 0, 0, 0
 END
 
 

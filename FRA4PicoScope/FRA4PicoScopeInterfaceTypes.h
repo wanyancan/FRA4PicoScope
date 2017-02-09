@@ -114,19 +114,25 @@ typedef struct
         } cancelPoint;
         struct
         {
-            uint8_t triesAttempted;
-            uint8_t allowedTries;
-            AUTORANGE_STATUS_T inputChannelStatus;
-            AUTORANGE_STATUS_T outputChannelStatus;
-            PS_RANGE inputRange;
-            PS_RANGE outputRange;
-        } autorangeLimit;
-        struct
-        {
-            uint8_t triesAttempted;
-            uint8_t allowedTries;
-            double stimulusVpp;
-        } adaptiveStimulusLimit;
+            struct
+            {
+                uint8_t triesAttempted;
+                uint8_t allowedTries;
+                AUTORANGE_STATUS_T inputChannelStatus;
+                AUTORANGE_STATUS_T outputChannelStatus;
+                PS_RANGE inputRange;
+                PS_RANGE outputRange;
+            } autorangeLimit;
+            struct
+            {
+                uint8_t triesAttempted;
+                uint8_t allowedTries;
+                double stimulusVpp;
+                double inputResponseAmplitudeV;
+                double outputResponseAmplitudeV;
+            } adaptiveStimulusLimit;
+            // TODO history array
+        } retryLimit;
         bool powerState; // false = No Aux DC power
     } statusData;
 
