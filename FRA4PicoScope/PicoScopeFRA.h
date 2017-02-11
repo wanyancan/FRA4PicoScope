@@ -77,6 +77,7 @@ class PicoScopeFRA
 
         double currentFreqHz;
         double currentStimulusVpp;
+        double stepStimuluVpp;
 
         double mStartFreqHz;
         double mStopFreqHz;
@@ -90,8 +91,8 @@ class PicoScopeFRA
         ATTEN_T mOutputChannelAttenuation;
         PS_RANGE currentInputChannelRange;
         PS_RANGE currentOutputChannelRange;
-        PS_RANGE autoStimulusInputChannelRange;
-        PS_RANGE autoStimulusOutputChannelRange;
+        PS_RANGE adaptiveStimulusInputChannelRange;
+        PS_RANGE adaptiveStimulusOutputChannelRange;
         double mInputDcOffset;
         double mOutputDcOffset;
         int numSteps;
@@ -169,6 +170,7 @@ class PicoScopeFRA
         vector<uint32_t> diagNumStimulusCyclesCaptured;
         vector<uint32_t> diagNumSamplesCaptured;
         vector<int> autoRangeTries;
+        vector<int> adaptiveStimulusTries;
         vector<double> sampleInterval;
         vector<vector<double>> inputPurity;
         vector<vector<double>> outputPurity;
@@ -246,8 +248,21 @@ class PicoScopeFRA
         inline bool UpdateStatus( FRA_STATUS_MESSAGE_T &msg, FRA_STATUS_T status, AUTORANGE_STATUS_T inputChannelStatus, AUTORANGE_STATUS_T outputChannelStatus )
         {
             msg.status = status;
+
+            msg.statusData.retryLimit.autorangeLimit.allowedTries = maxAutorangeRetries;
+            msg.statusData.retryLimit.autorangeLimit.triesAttempted = autoRangeTries[freqStepIndex];
+            // Use the ranges recorded at the beginning of the attempt because they may have been recomputed
+            msg.statusData.retryLimit.autorangeLimit.inputRange = adaptiveStimulusInputChannelRange;
+            msg.statusData.retryLimit.autorangeLimit.outputRange = adaptiveStimulusOutputChannelRange;
             msg.statusData.retryLimit.autorangeLimit.inputChannelStatus = inputChannelStatus;
             msg.statusData.retryLimit.autorangeLimit.outputChannelStatus = outputChannelStatus;
+            msg.statusData.retryLimit.autorangeLimit.pRangeInfo = ps->GetRangeCaps();
+            msg.statusData.retryLimit.adaptiveStimulusLimit.allowedTries = maxAdaptiveStimulusRetries;
+            msg.statusData.retryLimit.adaptiveStimulusLimit.triesAttempted = adaptiveStimulusTries[freqStepIndex];
+            // Use the stimulus recorded at the beginning of the attempt because it may have been recomputed
+            msg.statusData.retryLimit.adaptiveStimulusLimit.stimulusVpp = stepStimuluVpp;
+            msg.statusData.retryLimit.adaptiveStimulusLimit.inputResponseAmplitudeV = currentInputAmplitudeVolts;
+            msg.statusData.retryLimit.adaptiveStimulusLimit.outputResponseAmplitudeV = currentOutputAmplitudeVolts;
             return StatusCallback( msg );
         }
         inline bool UpdateStatus( FRA_STATUS_MESSAGE_T &msg, FRA_STATUS_T status, const wchar_t* statusMessage )

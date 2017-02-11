@@ -82,8 +82,8 @@ PicoScopeFRA::PicoScopeFRA(FRA_STATUS_CALLBACK statusCB)
 
     currentInputChannelRange = (PS_RANGE)0;
     currentOutputChannelRange = (PS_RANGE)0;
-    autoStimulusInputChannelRange = (PS_RANGE)0;
-    autoStimulusOutputChannelRange = (PS_RANGE)0;
+    adaptiveStimulusInputChannelRange = (PS_RANGE)0;
+    adaptiveStimulusOutputChannelRange = (PS_RANGE)0;
 
     mSamplingMode = LOW_NOISE;
 
@@ -143,6 +143,7 @@ PicoScopeFRA::PicoScopeFRA(FRA_STATUS_CALLBACK statusCB)
     maxScopeSamplesPerChannel = 0;
     currentFreqHz = 0.0;
     currentStimulusVpp = 0.0;
+    stepStimuluVpp = 0.0;
     mMaxStimulusVpp = 0.0;
     currentOutputAmplitudeVolts = 0.0;
     currentInputAmplitudeVolts = 0.0;
@@ -577,14 +578,12 @@ bool PicoScopeFRA::ExecuteFRA(double startFreqHz, double stopFreqHz, int stepsPe
                 }
                 diagNumSamplesToPlot[freqStepIndex] = inputMinData[freqStepIndex][0].size();
                 diagNumSamplesCaptured[freqStepIndex] = numSamples;
-                autoRangeTries[freqStepIndex] = autorangeRetryCounter+1;
             }
 
             if (autorangeRetryCounter == maxAutorangeRetries ||
                 adaptiveStimulusRetryCounter == maxAdaptiveStimulusRetries)
             {
                 // This is a temporary solution until we implement a fully interactive one.
-                // TODO - change to FRA_STATUS_RETRY_LIMIT and parameterize so we can tell user about all ranging issues (measurement and stimulus) in one interaction
                 UpdateStatus( fraStatusMsg, FRA_STATUS_RETRY_LIMIT, inputChannelAutorangeStatus, outputChannelAutorangeStatus );
                 if (true == fraStatusMsg.responseData.proceed)
                 {
@@ -1128,6 +1127,7 @@ void PicoScopeFRA::AllocateFraData(void)
     diagNumStimulusCyclesCaptured.resize(numSteps);
     diagNumSamplesCaptured.resize(numSteps);
     autoRangeTries.resize(numSteps);
+    adaptiveStimulusTries.resize(numSteps);
     sampleInterval.resize(numSteps);
 }
 
@@ -1365,6 +1365,11 @@ bool PicoScopeFRA::StartCapture( double measFreqHz )
     FRA_STATUS_MESSAGE_T fraStatusMsg;
     wchar_t fraStatusText[128];
 
+    // Record these here as a means to keep track of the actual tries attempted
+    // Because of the way the retry counters are managed, it's not possible to do it later
+    autoRangeTries[freqStepIndex] = autorangeRetryCounter+1;
+    adaptiveStimulusTries[freqStepIndex] = adaptiveStimulusRetryCounter+1;
+
     if (autorangeRetryCounter == 0)
     {
         swprintf( fraStatusText, 128, L"Status: Setting input frequency to %0.3lf Hz", measFreqHz );
@@ -1383,7 +1388,7 @@ bool PicoScopeFRA::StartCapture( double measFreqHz )
         UpdateStatus( fraStatusMsg, FRA_STATUS_MESSAGE, fraStatusText );
     }
 
-    if (autorangeRetryCounter == 0 || stimulusChanged)
+    if (autorangeRetryCounter == 0 || (mAdaptiveStimulus && stimulusChanged))
     {
         if (!(ps->SetSignalGenerator((float)currentStimulusVpp, (float)measFreqHz)))
         {
@@ -1410,8 +1415,9 @@ bool PicoScopeFRA::StartCapture( double measFreqHz )
         return false;
     }
 
-    autoStimulusInputChannelRange = currentInputChannelRange;
-    autoStimulusOutputChannelRange = currentOutputChannelRange;
+    adaptiveStimulusInputChannelRange = currentInputChannelRange;
+    adaptiveStimulusOutputChannelRange = currentOutputChannelRange;
+    stepStimuluVpp = currentStimulusVpp;
 
     // Set no triggers
     if (!(ps->DisableChannelTriggers()))
@@ -1565,10 +1571,10 @@ bool PicoScopeFRA::ProcessData(void)
         {
             // Using the range indices recorded before auto-ranging, because auto-ranging could have changed the current index
             currentInputAmplitudeVolts = (inputAmplitude / (double)(ps->GetMaxValue())) *
-                                         rangeInfo[autoStimulusInputChannelRange].rangeVolts *
+                                         rangeInfo[adaptiveStimulusInputChannelRange].rangeVolts *
                                          attenInfo[mInputChannelAttenuation];
             currentOutputAmplitudeVolts = (outputAmplitude / (double)(ps->GetMaxValue())) *
-                                          rangeInfo[autoStimulusOutputChannelRange].rangeVolts *
+                                          rangeInfo[adaptiveStimulusOutputChannelRange].rangeVolts *
                                           attenInfo[mOutputChannelAttenuation];
 
             swprintf( fraStatusText, 128, L"Status: Input amplitude: %0.3lf V", currentInputAmplitudeVolts );
@@ -1670,14 +1676,19 @@ bool PicoScopeFRA::CheckStimulusTarget(bool forceAdjust)
 
     if (((inputRelation == 0 && outputRelation != -1) || (outputRelation == 0 && inputRelation != -1)) && !forceAdjust)
     {
+        stimulusChanged = false;
         return true;
     }
     else
     {
         adaptiveStimulusRetryCounter += forceAdjust ? 0 : 1;
         // Bound the result.  Can't be higher than function generator maximum.  Need to avoid 0.0 or else future
-        // adjustment will be bound to 0.0.
-        currentStimulusVpp = max(ps->GetMinNonZeroFuncGenVpp(), min(mMaxStimulusVpp, max(newStimulusFromInput, newStimulusFromOutput)));
+        // adjustment will be bound to 0.0.  Don't update if it's our last allowed attempt.
+        if (adaptiveStimulusRetryCounter < maxAdaptiveStimulusRetries)
+        {
+            currentStimulusVpp = max(ps->GetMinNonZeroFuncGenVpp(), min(mMaxStimulusVpp, max(newStimulusFromInput, newStimulusFromOutput)));
+            stimulusChanged = true;
+        }
         return forceAdjust;
     }
 }
