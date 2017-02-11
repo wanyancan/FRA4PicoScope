@@ -587,10 +587,18 @@ bool PicoScopeFRA::ExecuteFRA(double startFreqHz, double stopFreqHz, int stepsPe
                 UpdateStatus( fraStatusMsg, FRA_STATUS_RETRY_LIMIT, inputChannelAutorangeStatus, outputChannelAutorangeStatus );
                 if (true == fraStatusMsg.responseData.proceed)
                 {
-                    gainsDb[freqStepIndex] = 0.0;
-                    phasesDeg[freqStepIndex] = 0.0;
-                    // Notify progress
-                    UpdateStatus( fraStatusMsg, FRA_STATUS_IN_PROGRESS, freqStepCounter, numSteps );
+                    if (fraStatusMsg.responseData.retry)
+                    {
+                        continue; // bypasses step index and counter updates
+                    }
+                    else // continue to next step
+                    {
+                        gainsDb[freqStepIndex] = 0.0;
+                        phasesDeg[freqStepIndex] = 0.0;
+                        // TODO - mark as invalid;
+                        // Notify progress
+                        UpdateStatus( fraStatusMsg, FRA_STATUS_IN_PROGRESS, freqStepCounter, numSteps );
+                    }
                 }
                 else
                 {
