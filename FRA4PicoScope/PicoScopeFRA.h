@@ -77,7 +77,7 @@ class PicoScopeFRA
 
         double currentFreqHz;
         double currentStimulusVpp;
-        double stepStimuluVpp;
+        double stepStimulusVpp;
 
         double mStartFreqHz;
         double mStopFreqHz;
@@ -260,7 +260,7 @@ class PicoScopeFRA
             msg.statusData.retryLimit.adaptiveStimulusLimit.allowedTries = maxAdaptiveStimulusRetries;
             msg.statusData.retryLimit.adaptiveStimulusLimit.triesAttempted = adaptiveStimulusTries[freqStepIndex];
             // Use the stimulus recorded at the beginning of the attempt because it may have been recomputed
-            msg.statusData.retryLimit.adaptiveStimulusLimit.stimulusVpp = stepStimuluVpp;
+            msg.statusData.retryLimit.adaptiveStimulusLimit.stimulusVpp = stepStimulusVpp;
             msg.statusData.retryLimit.adaptiveStimulusLimit.inputResponseAmplitudeV = currentInputAmplitudeVolts;
             msg.statusData.retryLimit.adaptiveStimulusLimit.outputResponseAmplitudeV = currentOutputAmplitudeVolts;
             return StatusCallback( msg );

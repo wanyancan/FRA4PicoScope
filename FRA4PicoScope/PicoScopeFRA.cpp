@@ -143,7 +143,7 @@ PicoScopeFRA::PicoScopeFRA(FRA_STATUS_CALLBACK statusCB)
     maxScopeSamplesPerChannel = 0;
     currentFreqHz = 0.0;
     currentStimulusVpp = 0.0;
-    stepStimuluVpp = 0.0;
+    stepStimulusVpp = 0.0;
     mMaxStimulusVpp = 0.0;
     currentOutputAmplitudeVolts = 0.0;
     currentInputAmplitudeVolts = 0.0;
@@ -554,7 +554,7 @@ bool PicoScopeFRA::ExecuteFRA(double startFreqHz, double stopFreqHz, int stepsPe
                     ps->ChangePower(ex.GetState());
                     if (true == fraStatusMsg.responseData.proceed)
                     {
-                        autorangeRetryCounter = -1;
+                        autorangeRetryCounter = 0;
                         continue;
                     }
                     else
@@ -1415,9 +1415,11 @@ bool PicoScopeFRA::StartCapture( double measFreqHz )
         return false;
     }
 
+    // Record these pre-adjustment versions here.  There is code later in step execution that needs
+    // cannot use post-adjusted values.
     adaptiveStimulusInputChannelRange = currentInputChannelRange;
     adaptiveStimulusOutputChannelRange = currentOutputChannelRange;
-    stepStimuluVpp = currentStimulusVpp;
+    stepStimulusVpp = currentStimulusVpp;
 
     // Set no triggers
     if (!(ps->DisableChannelTriggers()))
