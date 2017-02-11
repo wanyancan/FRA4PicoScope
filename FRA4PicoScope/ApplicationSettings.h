@@ -27,7 +27,9 @@
 
 // Suppress an unnecessary C4996 warning about use of checked
 // iterators invoked from a ptree compare operation
+#if !defined(_SCL_SECURE_NO_WARNINGS)
 #define _SCL_SECURE_NO_WARNINGS
+#endif
 
 #include <string>
 #include <codecvt>

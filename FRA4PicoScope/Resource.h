@@ -154,6 +154,7 @@
 #define IDC_RL_INPUT_RESPONSE_AMPLITUDE 1036
 #define IDC_RL_OUTPUT_RESPONSE_AMPLITUDE 1037
 #define IDC_RL_ADJUST_SETUP_BUTTON      1038
+#define IDC_RL_AS_GRP                   1040
 #define IDC_STATIC                      -1
 
 // Next default values for new objects
@@ -162,7 +163,7 @@
 #ifndef APSTUDIO_READONLY_SYMBOLS
 #define _APS_NEXT_RESOURCE_VALUE        106
 #define _APS_NEXT_COMMAND_VALUE         40002
-#define _APS_NEXT_CONTROL_VALUE         1040
+#define _APS_NEXT_CONTROL_VALUE         1041
 #define _APS_NEXT_SYMED_VALUE           101
 #endif
 #endif

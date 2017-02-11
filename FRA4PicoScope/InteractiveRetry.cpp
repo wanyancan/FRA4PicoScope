@@ -26,8 +26,16 @@
 //////////////////////////////////////////////////////////////////////////////////////////////////
 
 #include "stdafx.h"
+
+// Suppress an unnecessary C4996 warning about use of checked
+// iterators invoked from Boost
+#if !defined(_SCL_SECURE_NO_WARNINGS)
+#define _SCL_SECURE_NO_WARNINGS
+#endif
+
 #include <Windows.h>
 #include <Windowsx.h>
+#include <boost/algorithm/string.hpp>
 #include "FRA4PicoScopeInterfaceTypes.h"
 #include "PicoScopeFraApp.h"
 #include "Resource.h"
@@ -43,7 +51,7 @@ void AdjustDialogHeight( HWND hDlg )
     if (!bAdjustSetupOpen)
     {
         dlgNewRect.bottom = 204;
-        dlgNewRect.top = -116;
+        dlgNewRect.top = 116;
     }
     else
     {
@@ -51,6 +59,11 @@ void AdjustDialogHeight( HWND hDlg )
         dlgNewRect.top = 116;
     }
     MapDialogRect( hDlg, &dlgNewRect );
+
+    if (!bAdjustSetupOpen)
+    {
+        dlgNewRect.top = -dlgNewRect.top;
+    }
 
     // Resize Window
     GetWindowRect( hDlg, &dlgExistingRect );
@@ -81,8 +94,8 @@ static const wchar_t autorangeStatusStrings[NUM_AUTORANGE_STATUS_VALUES+1][128] 
     L"Highest range limit reached",
     L"Lowest range limit reached",
     L"Over-range",
-    L"Amplitude too high, changing range",
-    L"Amplitude too low, changing range",
+    L"Amplitude too high, adjusting",
+    L"Amplitude too low, adjusting",
     L"Unknown"
 };
 
@@ -99,6 +112,37 @@ const wchar_t* GetAutorangeStatusString(AUTORANGE_STATUS_T status)
     }
 }
 
+void PrintVolts(double value, std::wstring& valueStr)
+{
+    std::wstringstream valueSS;
+    // Output using fixed precision
+    valueSS.precision(6);
+    valueSS << fixed << value;
+    valueStr = valueSS.str();
+
+    // Smash trailing zeros right of a decimal point
+    if (string::npos != valueStr.find(L"."))
+    {
+        boost::algorithm::trim_right_if( valueStr, boost::algorithm::is_any_of(L"0") );
+        // If there's a decimal point remaining on the end, it needs to be stripped too
+        boost::algorithm::trim_right_if( valueStr, boost::algorithm::is_any_of(L".") );
+    }
+    // Finally, correct for possibility of "-0"
+    if (0 == valueStr.compare(L"-0"))
+    {
+        valueStr = L"0";
+    }
+
+    if (0 == valueStr.compare(L"0"))
+    {
+        valueStr = L"less than 1 uV";
+    }
+    else
+    {
+        valueStr += L" V";
+    }
+}
+
 INT_PTR CALLBACK InteractiveRetryHandler(HWND hDlg, UINT message, WPARAM wParam, LPARAM lParam)
 {
     switch (message)
@@ -106,6 +150,7 @@ INT_PTR CALLBACK InteractiveRetryHandler(HWND hDlg, UINT message, WPARAM wParam,
         case WM_INITDIALOG:
         {
             wchar_t statusText[128];
+            std::wstring valueStr;
             FRA_STATUS_MESSAGE_T* pStatus = (FRA_STATUS_MESSAGE_T*)lParam;
             HWND hndTxtCtrl;
 
@@ -116,46 +161,51 @@ INT_PTR CALLBACK InteractiveRetryHandler(HWND hDlg, UINT message, WPARAM wParam,
 
             // For now, auto-ranging is always on, so display its parameters
             hndTxtCtrl = GetDlgItem( hDlg, IDC_RL_AUTORANGE_N_OF_M );
-            std::swprintf( statusText, L"%hhu of %hhu attempts", pStatus->statusData.retryLimit.autorangeLimit.triesAttempted, pStatus->statusData.retryLimit.autorangeLimit.allowedTries );
+            std::swprintf( statusText, 128, L"%hhu of %hhu attempts", pStatus->statusData.retryLimit.autorangeLimit.triesAttempted, pStatus->statusData.retryLimit.autorangeLimit.allowedTries );
             Static_SetText( hndTxtCtrl, statusText );
 
             hndTxtCtrl = GetDlgItem( hDlg, IDC_RL_INPUT_CHANNEL_RANGE );
-            std::swprintf( statusText, L"Input channel range: +/- %s", pStatus->statusData.retryLimit.autorangeLimit.pRangeInfo[pStatus->statusData.retryLimit.autorangeLimit.inputRange].name );
+            std::swprintf( statusText, 128, L"Input channel range: ± %s", pStatus->statusData.retryLimit.autorangeLimit.pRangeInfo[pStatus->statusData.retryLimit.autorangeLimit.inputRange].name );
             Static_SetText( hndTxtCtrl, statusText );
 
             hndTxtCtrl = GetDlgItem( hDlg, IDC_RL_OUTPUT_CHANNEL_RANGE );
-            std::swprintf( statusText, L"Output channel range: +/- %s", pStatus->statusData.retryLimit.autorangeLimit.pRangeInfo[pStatus->statusData.retryLimit.autorangeLimit.outputRange].name );
+            std::swprintf( statusText, 128, L"Output channel range: ± %s", pStatus->statusData.retryLimit.autorangeLimit.pRangeInfo[pStatus->statusData.retryLimit.autorangeLimit.outputRange].name );
             Static_SetText( hndTxtCtrl, statusText );
 
             hndTxtCtrl = GetDlgItem( hDlg, IDC_RL_INPUT_CHANNEL_STATUS );
-            std::swprintf( statusText, L"Input channel status: %s", GetAutorangeStatusString( pStatus->statusData.retryLimit.autorangeLimit.inputChannelStatus ) );
+            std::swprintf( statusText, 128, L"Input channel status: %s", GetAutorangeStatusString( pStatus->statusData.retryLimit.autorangeLimit.inputChannelStatus ) );
             Static_SetText( hndTxtCtrl, statusText );
 
             hndTxtCtrl = GetDlgItem( hDlg, IDC_RL_OUTPUT_CHANNEL_STATUS );
-            std::swprintf( statusText, L"Output channel status: %s", GetAutorangeStatusString( pStatus->statusData.retryLimit.autorangeLimit.outputChannelStatus ) );
+            std::swprintf( statusText, 128, L"Output channel status: %s", GetAutorangeStatusString( pStatus->statusData.retryLimit.autorangeLimit.outputChannelStatus ) );
             Static_SetText( hndTxtCtrl, statusText );
 
             if (pSettings->GetAdaptiveStimulusMode())
             {
                 hndTxtCtrl = GetDlgItem( hDlg, IDC_RL_ADAPTIVE_STIMULUS_N_OF_M );
-                std::swprintf( statusText, L"%hhu of %hhu attempts", pStatus->statusData.retryLimit.adaptiveStimulusLimit.triesAttempted, pStatus->statusData.retryLimit.adaptiveStimulusLimit.allowedTries );
+                std::swprintf( statusText, 128, L"%hhu of %hhu attempts", pStatus->statusData.retryLimit.adaptiveStimulusLimit.triesAttempted, pStatus->statusData.retryLimit.adaptiveStimulusLimit.allowedTries );
                 Static_SetText( hndTxtCtrl, statusText );
 
                 hndTxtCtrl = GetDlgItem( hDlg, IDC_RL_STIMULUS_VPP );
-                std::swprintf( statusText, L"Stimulus Vpp: %0.6lf V", pStatus->statusData.retryLimit.adaptiveStimulusLimit.stimulusVpp );
+                PrintVolts( pStatus->statusData.retryLimit.adaptiveStimulusLimit.stimulusVpp, valueStr );
+                std::swprintf( statusText, 128, L"Stimulus Vpp: %s", valueStr.c_str() );
                 Static_SetText( hndTxtCtrl, statusText );
 
                 hndTxtCtrl = GetDlgItem( hDlg, IDC_RL_INPUT_RESPONSE_AMPLITUDE );
-                std::swprintf( statusText, L"Input response amplitude: %0.6lf V", pStatus->statusData.retryLimit.adaptiveStimulusLimit.inputResponseAmplitudeV );
+                PrintVolts( pStatus->statusData.retryLimit.adaptiveStimulusLimit.inputResponseAmplitudeV, valueStr );
+                std::swprintf( statusText, 128, L"Input response amplitude: %s", valueStr.c_str() );
                 Static_SetText( hndTxtCtrl, statusText );
 
                 hndTxtCtrl = GetDlgItem( hDlg, IDC_RL_OUTPUT_RESPONSE_AMPLITUDE );
-                std::swprintf( statusText, L"Output response amplitude: %0.6lf V", pStatus->statusData.retryLimit.adaptiveStimulusLimit.outputResponseAmplitudeV );
+                PrintVolts( pStatus->statusData.retryLimit.adaptiveStimulusLimit.outputResponseAmplitudeV, valueStr );
+                std::swprintf( statusText, 128, L"Output response amplitude: %s", valueStr.c_str() );
                 Static_SetText( hndTxtCtrl, statusText );
             }
             else
             {
                 // Disable the controls
+                hndTxtCtrl = GetDlgItem( hDlg, IDC_RL_AS_GRP );
+                EnableWindow( hndTxtCtrl, FALSE );
                 hndTxtCtrl = GetDlgItem( hDlg, IDC_RL_ADAPTIVE_STIMULUS_N_OF_M );
                 EnableWindow( hndTxtCtrl, FALSE );
                 hndTxtCtrl = GetDlgItem( hDlg, IDC_RL_STIMULUS_VPP );
@@ -182,6 +232,8 @@ INT_PTR CALLBACK InteractiveRetryHandler(HWND hDlg, UINT message, WPARAM wParam,
                 AdjustDialogHeight(hDlg);
                 return (INT_PTR)TRUE;
             }
+
+            return (INT_PTR)FALSE;
         }
         break;
         default:

@@ -805,14 +805,14 @@ BOOL CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
                     fraStatusMsg.statusData.retryLimit.autorangeLimit.allowedTries = 10;
                     fraStatusMsg.statusData.retryLimit.autorangeLimit.triesAttempted = 10;
                     fraStatusMsg.statusData.retryLimit.autorangeLimit.inputRange = 0;
-                    fraStatusMsg.statusData.retryLimit.autorangeLimit.outputRange = 0;
+                    fraStatusMsg.statusData.retryLimit.autorangeLimit.outputRange = 5;
                     fraStatusMsg.statusData.retryLimit.autorangeLimit.inputChannelStatus = LOWEST_RANGE_LIMIT_REACHED;
-                    fraStatusMsg.statusData.retryLimit.autorangeLimit.outputChannelStatus = LOWEST_RANGE_LIMIT_REACHED;
+                    fraStatusMsg.statusData.retryLimit.autorangeLimit.outputChannelStatus = AMPLITUDE_TOO_HIGH;
                     fraStatusMsg.statusData.retryLimit.autorangeLimit.pRangeInfo = myRangeInfo;
                     fraStatusMsg.statusData.retryLimit.adaptiveStimulusLimit.allowedTries = 10;
                     fraStatusMsg.statusData.retryLimit.adaptiveStimulusLimit.triesAttempted = 10;
                     fraStatusMsg.statusData.retryLimit.adaptiveStimulusLimit.stimulusVpp = 1.5;
-                    fraStatusMsg.statusData.retryLimit.adaptiveStimulusLimit.inputResponseAmplitudeV = 0.102;
+                    fraStatusMsg.statusData.retryLimit.adaptiveStimulusLimit.inputResponseAmplitudeV = 0.000000102;
                     fraStatusMsg.statusData.retryLimit.adaptiveStimulusLimit.outputResponseAmplitudeV = 1.325;
 
                     DWORD dwDlgResp;
