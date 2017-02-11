@@ -44,6 +44,7 @@
 #include "FRAPlotter.h"
 #include "PlotAxesDialog.h"
 #include "SettingsDialog.h"
+#include "InteractiveRetry.h"
 
 //#define TEST_PLOTTING
 
@@ -785,6 +786,37 @@ BOOL CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
                     {
                         // Propagate and save settings changes
                     }
+#else // DEBUG
+                    const RANGE_INFO_T myRangeInfo[] =
+                    {
+                        {0.010, 0.5, 0.0, L"10 mV"},
+                        {0.020, 0.4, 2.0, L"20 mV"},
+                        {0.050, 0.5, 2.5, L"50 mV"},
+                        {0.100, 0.5, 2.0, L"100 mV"},
+                        {0.200, 0.4, 2.0, L"200 mV"},
+                        {0.500, 0.5, 2.5, L"500 mV"},
+                        {1.0, 0.5, 2.0, L"1 V"},
+                        {2.0, 0.4, 2.0, L"2 V"},
+                        {5.0, 0.5, 2.5, L"5 V"},
+                        {10.0, 0.5, 2.0, L"10 V"},
+                        {20.0, 0.0, 2.0, L"20 V"}
+                    };
+                    FRA_STATUS_MESSAGE_T fraStatusMsg;
+                    fraStatusMsg.statusData.retryLimit.autorangeLimit.allowedTries = 10;
+                    fraStatusMsg.statusData.retryLimit.autorangeLimit.triesAttempted = 10;
+                    fraStatusMsg.statusData.retryLimit.autorangeLimit.inputRange = 0;
+                    fraStatusMsg.statusData.retryLimit.autorangeLimit.outputRange = 0;
+                    fraStatusMsg.statusData.retryLimit.autorangeLimit.inputChannelStatus = LOWEST_RANGE_LIMIT_REACHED;
+                    fraStatusMsg.statusData.retryLimit.autorangeLimit.outputChannelStatus = LOWEST_RANGE_LIMIT_REACHED;
+                    fraStatusMsg.statusData.retryLimit.autorangeLimit.pRangeInfo = myRangeInfo;
+                    fraStatusMsg.statusData.retryLimit.adaptiveStimulusLimit.allowedTries = 10;
+                    fraStatusMsg.statusData.retryLimit.adaptiveStimulusLimit.triesAttempted = 10;
+                    fraStatusMsg.statusData.retryLimit.adaptiveStimulusLimit.stimulusVpp = 1.5;
+                    fraStatusMsg.statusData.retryLimit.adaptiveStimulusLimit.inputResponseAmplitudeV = 0.102;
+                    fraStatusMsg.statusData.retryLimit.adaptiveStimulusLimit.outputResponseAmplitudeV = 1.325;
+
+                    DWORD dwDlgResp;
+                    dwDlgResp = DialogBoxParam( hInst, MAKEINTRESOURCE(IDD_INTERACTIVE_RETRY), hWnd, InteractiveRetryHandler, (LPARAM)&fraStatusMsg );
 #endif
                     return TRUE;
                 }
@@ -2065,15 +2097,26 @@ bool FraStatusCallback( FRA_STATUS_MESSAGE_T& fraStatusMsg )
     }
     else if (fraStatusMsg.status == FRA_STATUS_RETRY_LIMIT)
     {
-        int response = MessageBoxEx( hMainWnd, L"Reached retry limit.  Continue?", L"Retry feedback", MB_OKCANCEL, 0 );
+        DWORD dwDlgResp;
+        dwDlgResp = DialogBoxParam( hInst, MAKEINTRESOURCE(IDD_INTERACTIVE_RETRY), hMainWnd, InteractiveRetryHandler, (LPARAM)&fraStatusMsg );
 
-        if (IDCANCEL == response)
+        if (IDABORT == dwDlgResp)
         {
             fraStatusMsg.responseData.proceed = false;
         }
-        else if (IDOK == response)
+        else if (IDCONTINUE == dwDlgResp)
         {
             fraStatusMsg.responseData.proceed = true;
+            fraStatusMsg.responseData.retry = false;
+        }
+        else if (IDRETRY == dwDlgResp)
+        {
+            fraStatusMsg.responseData.proceed = true;
+            fraStatusMsg.responseData.retry = true;
+        }
+        else
+        {
+            fraStatusMsg.responseData.proceed = false;
         }
     }
     else if (fraStatusMsg.status == FRA_STATUS_POWER_CHANGED)

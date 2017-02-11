@@ -246,8 +246,8 @@ class PicoScopeFRA
         inline bool UpdateStatus( FRA_STATUS_MESSAGE_T &msg, FRA_STATUS_T status, AUTORANGE_STATUS_T inputChannelStatus, AUTORANGE_STATUS_T outputChannelStatus )
         {
             msg.status = status;
-            msg.statusData.autorangeLimit.inputChannelStatus = inputChannelStatus;
-            msg.statusData.autorangeLimit.outputChannelStatus = outputChannelStatus;
+            msg.statusData.retryLimit.autorangeLimit.inputChannelStatus = inputChannelStatus;
+            msg.statusData.retryLimit.autorangeLimit.outputChannelStatus = outputChannelStatus;
             return StatusCallback( msg );
         }
         inline bool UpdateStatus( FRA_STATUS_MESSAGE_T &msg, FRA_STATUS_T status, const wchar_t* statusMessage )

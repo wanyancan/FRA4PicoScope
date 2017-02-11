@@ -82,7 +82,8 @@ typedef enum
     LOWEST_RANGE_LIMIT_REACHED, // Amplitude too low for good measurement precision and already on lowest range
     CHANNEL_OVERFLOW, // Overflow flag set
     AMPLITUDE_TOO_HIGH, // Amplitude is close enough to full scale that it would be best to increase the range
-    AMPLITUDE_TOO_LOW // Amplitude is low enough that range can be decreased to increase the measurement precision.
+    AMPLITUDE_TOO_LOW, // Amplitude is low enough that range can be decreased to increase the measurement precision.
+    NUM_AUTORANGE_STATUS_VALUES
 } AUTORANGE_STATUS_T;
 
 typedef enum
@@ -122,6 +123,7 @@ typedef struct
                 AUTORANGE_STATUS_T outputChannelStatus;
                 PS_RANGE inputRange;
                 PS_RANGE outputRange;
+                const RANGE_INFO_T* pRangeInfo;
             } autorangeLimit;
             struct
             {

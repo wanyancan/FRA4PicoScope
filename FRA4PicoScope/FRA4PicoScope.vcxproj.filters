@@ -59,6 +59,9 @@
     <ClInclude Include="FRA4PicoScopeInterfaceTypes.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="InteractiveRetry.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="stdafx.cpp">
@@ -113,6 +116,9 @@
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="DependencyChecker.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="InteractiveRetry.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>

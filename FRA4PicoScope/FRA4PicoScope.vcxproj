@@ -109,6 +109,7 @@
     <ClInclude Include="DependencyChecker.h" />
     <ClInclude Include="FRA4PicoScopeInterfaceTypes.h" />
     <ClInclude Include="FRAPlotter.h" />
+    <ClInclude Include="InteractiveRetry.h" />
     <ClInclude Include="PicoScopeFRA.h" />
     <ClInclude Include="PicoScopeFraApp.h" />
     <ClInclude Include="PlotAxesDialog.h" />
@@ -122,6 +123,7 @@
     <ClCompile Include="ApplicationSettings.cpp" />
     <ClCompile Include="DependencyChecker.cpp" />
     <ClCompile Include="FRAPlotter.cpp" />
+    <ClCompile Include="InteractiveRetry.cpp" />
     <ClCompile Include="PicoScopeFRA.cpp" />
     <ClCompile Include="PicoScopeFraApp.cpp" />
     <ClCompile Include="PlotAxesDialog.cpp" />

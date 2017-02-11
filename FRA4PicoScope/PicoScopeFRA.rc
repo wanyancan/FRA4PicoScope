@@ -326,28 +326,28 @@ BEGIN
     LTEXT           "Response target\ntolerance (%)",IDC_STATIC,43,153,88,18
 END
 
-IDD_INTERACTIVE_RETRY DIALOGEX 0, 0, 309, 242
-STYLE DS_SETFONT | DS_MODALFRAME | DS_FIXEDSYS | WS_POPUP | WS_CAPTION | WS_SYSMENU
+IDD_INTERACTIVE_RETRY DIALOGEX 0, 0, 309, 304
+STYLE DS_SETFONT | DS_MODALFRAME | DS_FIXEDSYS | DS_CENTER | WS_POPUP | WS_CAPTION | WS_SYSMENU
 CAPTION "Retry Limit Reached"
 FONT 8, "MS Shell Dlg", 400, 0, 0x1
 BEGIN
-    DEFPUSHBUTTON   "Continue",IDOK,198,221,50,14
-    PUSHBUTTON      "Abort",IDABORT,252,221,50,14
-    PUSHBUTTON      "Retry",IDC_BUTTON1,144,221,50,14
+    DEFPUSHBUTTON   "Retry\nFailed Step", IDRETRY, 144, 276, 50, 21, BS_MULTILINE
+    PUSHBUTTON      "Continue to\nNext Step",IDCONTINUE,198,276,50,21,BS_MULTILINE
+    PUSHBUTTON      "Abort FRA",IDABORT,252,276,50,21
     GROUPBOX        "Autorange Retries",IDC_STATIC,6,7,296,56
     GROUPBOX        "Adaptive Stimulus Retries",IDC_STATIC,6,67,296,68
-    LTEXT           "N of M attempts",IDC_STATIC,13,20,52,8
-    LTEXT           "N of M attempts",IDC_STATIC,13,80,52,8
-    PUSHBUTTON      "Adjust Setup",IDC_BUTTON2,7,140,50,14
-    LTEXT           "Input channel range: ",IDC_STATIC,14,33,101,8
-    LTEXT           "Input channel status: ",IDC_STATIC,134,33,145,8
-    LTEXT           "Output channel range: ",IDC_STATIC,14,47,101,8
-    LTEXT           "Output channel status: ",IDC_STATIC,134,47,145,8
-    LTEXT           "Stimulus Vpp: ",IDC_STATIC,14,93,83,8
-    PUSHBUTTON      "Step History",IDC_BUTTON3,252,140,50,14
-    LTEXT           "Input Response Amplitude:",IDC_STATIC,14,106,139,8
-    LTEXT           "Output Response Amplitude:",IDC_STATIC,14,119,139,8
-    LTEXT           "TBD, What can be adjusted: channel attenuation, \nchannel amplitude, response target, response tolerance",IDC_STATIC,7,186,239,20
+    LTEXT           "N of M attempts",IDC_RL_AUTORANGE_N_OF_M,13,20,52,8
+    LTEXT           "N of M attempts",IDC_RL_ADAPTIVE_STIMULUS_N_OF_M,13,80,52,8
+    PUSHBUTTON      "Adjust Setup",IDC_RL_ADJUST_SETUP_BUTTON,7,140,50,14
+    LTEXT           "Input channel range: ",IDC_RL_INPUT_CHANNEL_RANGE,13,33,101,8
+    LTEXT           "Input channel status: ",IDC_RL_INPUT_CHANNEL_STATUS,134,33,145,8
+    LTEXT           "Output channel range: ",IDC_RL_OUTPUT_CHANNEL_RANGE,13,47,101,8
+    LTEXT           "Output channel status: ",IDC_RL_OUTPUT_CHANNEL_STATUS,134,47,145,8
+    LTEXT           "Stimulus Vpp: ",IDC_RL_STIMULUS_VPP,13,93,83,8
+    PUSHBUTTON      "Step History",IDC_RL_STEP_HISTORY_BUTTON,252,140,50,14
+    LTEXT           "Input response amplitude:",IDC_RL_INPUT_RESPONSE_AMPLITUDE,13,106,139,8
+    LTEXT           "Output response amplitude:",IDC_RL_OUTPUT_RESPONSE_AMPLITUDE,13,119,139,8
+    LTEXT           "The adjustment feature is not yet implemented.\nPlans for what can be adjusted: channel attenuation, \nchannel range, response target, response tolerance",IDC_STATIC,7,201,239,29
 END
 
 
@@ -372,7 +372,7 @@ BEGIN
         LEFTMARGIN, 7
         RIGHTMARGIN, 302
         TOPMARGIN, 7
-        BOTTOMMARGIN, 235
+        BOTTOMMARGIN, 297
     END
 END
 #endif    // APSTUDIO_INVOKED
