@@ -484,15 +484,23 @@ bool PicoScopeFRA::ExecuteFRA(double startFreqHz, double stopFreqHz, int stepsPe
 
         freqStepCounter = 1;
         freqStepIndex = mSweepDescending ? numSteps-1 : 0;
+        fill( totalRetryCounter.begin(), totalRetryCounter.end(), 0 );
         while ((mSweepDescending && freqStepIndex >= 0) || (!mSweepDescending && freqStepIndex < numSteps))
         {
             currentFreqHz = freqsHz[freqStepIndex];
             for (autorangeRetryCounter = 0, adaptiveStimulusRetryCounter = 0;
-                 autorangeRetryCounter < maxAutorangeRetries && adaptiveStimulusRetryCounter < maxAdaptiveStimulusRetries; )
+                 autorangeRetryCounter < maxAutorangeRetries && adaptiveStimulusRetryCounter < maxAdaptiveStimulusRetries;)
             {
                 try
                 {
-                    wsprintf(fraStatusText, L"Status: Starting frequency step %d, range try %d", freqStepCounter, autorangeRetryCounter + 1);
+                    if (mAdaptiveStimulus)
+                    {
+                        wsprintf(fraStatusText, L"Status: Starting frequency step %d, range try %d, adaptive stimulus try %d", freqStepCounter, autorangeRetryCounter + 1, adaptiveStimulusRetryCounter + 1);
+                    }
+                    else
+                    {
+                        wsprintf(fraStatusText, L"Status: Starting frequency step %d, range try %d", freqStepCounter, autorangeRetryCounter + 1);
+                    }
                     UpdateStatus(fraStatusMsg, FRA_STATUS_MESSAGE, fraStatusText);
                     if (true != StartCapture(currentFreqHz))
                     {
@@ -516,6 +524,7 @@ bool PicoScopeFRA::ExecuteFRA(double startFreqHz, double stopFreqHz, int stepsPe
                             if (false == ProcessData())
                             {
                                 // At least one of the channels needs adjustment
+                                totalRetryCounter[freqStepIndex]++; // record the attempt;
                                 continue; // Try again on a different range
                             }
                             else // Data is good, calculate and move on to next frequency
@@ -525,6 +534,8 @@ bool PicoScopeFRA::ExecuteFRA(double startFreqHz, double stopFreqHz, int stepsPe
 
                                 // Notify progress
                                 UpdateStatus(fraStatusMsg, FRA_STATUS_IN_PROGRESS, freqStepCounter, numSteps);
+
+                                totalRetryCounter[freqStepIndex]++; // record the attempt;
                                 break;
                             }
                         }
@@ -554,7 +565,10 @@ bool PicoScopeFRA::ExecuteFRA(double startFreqHz, double stopFreqHz, int stepsPe
                     ps->ChangePower(ex.GetState());
                     if (true == fraStatusMsg.responseData.proceed)
                     {
+                        // Start the step over again
                         autorangeRetryCounter = 0;
+                        adaptiveStimulusRetryCounter = 0;
+                        totalRetryCounter[freqStepIndex] = 0;
                         continue;
                     }
                     else
@@ -738,10 +752,10 @@ bool PicoScopeFRA::CheckSignalOverflows(void)
     outputChannelAutorangeStatus = OK;
 
     // Make records for diagnostics
-    inOV[freqStepIndex][autorangeRetryCounter] = ovIn;
-    outOV[freqStepIndex][autorangeRetryCounter] = ovOut;
-    inRange[freqStepIndex][autorangeRetryCounter] = currentInputChannelRange;
-    outRange[freqStepIndex][autorangeRetryCounter] = currentOutputChannelRange;
+    inOV[freqStepIndex][totalRetryCounter[freqStepIndex]] = ovIn;
+    outOV[freqStepIndex][totalRetryCounter[freqStepIndex]] = ovOut;
+    inRange[freqStepIndex][totalRetryCounter[freqStepIndex]] = currentInputChannelRange;
+    outRange[freqStepIndex][totalRetryCounter[freqStepIndex]] = currentOutputChannelRange;
 
     if (ovIn)
     {
@@ -780,8 +794,8 @@ bool PicoScopeFRA::CheckSignalOverflows(void)
     {
         retVal = false;
         // Initialize the diagnostic record since CheckSignalRanges will not run
-        inAmps[freqStepIndex][autorangeRetryCounter] = 0.0;
-        outAmps[freqStepIndex][autorangeRetryCounter] = 0.0;
+        inAmps[freqStepIndex][totalRetryCounter[freqStepIndex]] = 0.0;
+        outAmps[freqStepIndex][totalRetryCounter[freqStepIndex]] = 0.0;
     }
 
     // Clear overflow
@@ -818,7 +832,7 @@ bool PicoScopeFRA::CheckSignalRanges(void)
     // Check Input
     if (inputChannelAutorangeStatus == OK)
     {
-        if (((double)inputAbsMax[freqStepIndex][autorangeRetryCounter]/rangeCounts) > maxAmplitudeRatio)
+        if (((double)inputAbsMax[freqStepIndex][totalRetryCounter[freqStepIndex]]/rangeCounts) > maxAmplitudeRatio)
         {
             if (currentInputChannelRange < inputMaxRange)
             {
@@ -831,7 +845,7 @@ bool PicoScopeFRA::CheckSignalRanges(void)
             }
             retVal = false;
         }
-        else if (((double)inputAbsMax[freqStepIndex][autorangeRetryCounter]/rangeCounts) <
+        else if (((double)inputAbsMax[freqStepIndex][totalRetryCounter[freqStepIndex]]/rangeCounts) <
                  (maxAmplitudeRatio/rangeInfo[currentInputChannelRange].ratioDown - minAmplitudeRatioTolerance))
         {
             if (currentInputChannelRange > inputMinRange)
@@ -842,7 +856,7 @@ bool PicoScopeFRA::CheckSignalRanges(void)
             }
             else
             {
-                if (((double)inputAbsMax[freqStepIndex][autorangeRetryCounter]/rangeCounts) < minAllowedAmplitudeRatio)
+                if (((double)inputAbsMax[freqStepIndex][totalRetryCounter[freqStepIndex]]/rangeCounts) < minAllowedAmplitudeRatio)
                 {
                     inputChannelAutorangeStatus = LOWEST_RANGE_LIMIT_REACHED;
                     retVal = false;
@@ -858,7 +872,7 @@ bool PicoScopeFRA::CheckSignalRanges(void)
             // Do nothing
         }
 #if 0 // Determine when to log this once we have a log verbosity configuration
-        swprintf( fraStatusText, 128, L"Status: Input absolute peak: %hu counts", inputAbsMax[freqStepIndex][autorangeRetryCounter] );
+        swprintf( fraStatusText, 128, L"Status: Input absolute peak: %hu counts", inputAbsMax[freqStepIndex][totalRetryCounter[freqStepIndex]] );
         UpdateStatus( fraStatusMsg, FRA_STATUS_MESSAGE, fraStatusText );
 #endif
     }
@@ -870,7 +884,7 @@ bool PicoScopeFRA::CheckSignalRanges(void)
     // Check Output
     if (outputChannelAutorangeStatus == OK)
     {
-        if (((double)outputAbsMax[freqStepIndex][autorangeRetryCounter]/rangeCounts) > maxAmplitudeRatio)
+        if (((double)outputAbsMax[freqStepIndex][totalRetryCounter[freqStepIndex]]/rangeCounts) > maxAmplitudeRatio)
         {
             if (currentOutputChannelRange < outputMaxRange)
             {
@@ -883,7 +897,7 @@ bool PicoScopeFRA::CheckSignalRanges(void)
             }
             retVal = false;
         }
-        else if (((double)outputAbsMax[freqStepIndex][autorangeRetryCounter]/rangeCounts) <
+        else if (((double)outputAbsMax[freqStepIndex][totalRetryCounter[freqStepIndex]]/rangeCounts) <
                  (maxAmplitudeRatio/rangeInfo[currentOutputChannelRange].ratioDown - minAmplitudeRatioTolerance))
         {
             if (currentOutputChannelRange > outputMinRange)
@@ -894,7 +908,7 @@ bool PicoScopeFRA::CheckSignalRanges(void)
             }
             else
             {
-                if (((double)outputAbsMax[freqStepIndex][autorangeRetryCounter]/rangeCounts) < minAllowedAmplitudeRatio)
+                if (((double)outputAbsMax[freqStepIndex][totalRetryCounter[freqStepIndex]]/rangeCounts) < minAllowedAmplitudeRatio)
                 {
                     outputChannelAutorangeStatus = LOWEST_RANGE_LIMIT_REACHED;
                     retVal = false;
@@ -910,7 +924,7 @@ bool PicoScopeFRA::CheckSignalRanges(void)
             // Do nothing
         }
 #if 0 // Determine when to log this once we have a log verbosity configuration
-        swprintf( fraStatusText, 128, L"Status: Output absolute peak: %hu counts", outputAbsMax[freqStepIndex][autorangeRetryCounter] );
+        swprintf( fraStatusText, 128, L"Status: Output absolute peak: %hu counts", outputAbsMax[freqStepIndex][totalRetryCounter[freqStepIndex]] );
         UpdateStatus( fraStatusMsg, FRA_STATUS_MESSAGE, fraStatusText );
 #endif
     }
@@ -1044,91 +1058,92 @@ void PicoScopeFRA::GenerateFrequencyPoints(void)
 void PicoScopeFRA::AllocateFraData(void)
 {
     int i;
+    int maxTotalStepTries = maxAutorangeRetries + (mAdaptiveStimulus ? maxAdaptiveStimulusRetries : 0);
 
     idealStimulusVpp.resize(numSteps);
 
     inAmps.resize(numSteps);
     for (i = 0; i < numSteps; i++)
     {
-        inAmps[i].resize(maxAutorangeRetries);
+        inAmps[i].resize(maxTotalStepTries);
     }
 
     outAmps.resize(numSteps);
     for (i = 0; i < numSteps; i++)
     {
-        outAmps[i].resize(maxAutorangeRetries);
+        outAmps[i].resize(maxTotalStepTries);
     }
 
     inOV.resize(numSteps);
     for (i = 0; i < numSteps; i++)
     {
-        inOV[i].resize(maxAutorangeRetries);
+        inOV[i].resize(maxTotalStepTries);
     }
 
     outOV.resize(numSteps);
     for (i = 0; i < numSteps; i++)
     {
-        outOV[i].resize(maxAutorangeRetries);
+        outOV[i].resize(maxTotalStepTries);
     }
 
     inRange.resize(numSteps);
     for (i = 0; i < numSteps; i++)
     {
-        inRange[i].resize(maxAutorangeRetries);
+        inRange[i].resize(maxTotalStepTries);
     }
 
     outRange.resize(numSteps);
     for (i = 0; i < numSteps; i++)
     {
-        outRange[i].resize(maxAutorangeRetries);
+        outRange[i].resize(maxTotalStepTries);
     }
 
     inputMinData.resize(numSteps);
     for (i = 0; i < numSteps; i++)
     {
-        inputMinData[i].resize(maxAutorangeRetries);
+        inputMinData[i].resize(maxTotalStepTries);
     }
 
     outputMinData.resize(numSteps);
     for (i = 0; i < numSteps; i++)
     {
-        outputMinData[i].resize(maxAutorangeRetries);
+        outputMinData[i].resize(maxTotalStepTries);
     }
 
     inputMaxData.resize(numSteps);
     for (i = 0; i < numSteps; i++)
     {
-        inputMaxData[i].resize(maxAutorangeRetries);
+        inputMaxData[i].resize(maxTotalStepTries);
     }
 
     outputMaxData.resize(numSteps);
     for (i = 0; i < numSteps; i++)
     {
-        outputMaxData[i].resize(maxAutorangeRetries);
+        outputMaxData[i].resize(maxTotalStepTries);
     }
 
     inputAbsMax.resize(numSteps);
     for (i = 0; i < numSteps; i++)
     {
-        inputAbsMax[i].resize(maxAutorangeRetries);
+        inputAbsMax[i].resize(maxTotalStepTries);
     }
 
     outputAbsMax.resize(numSteps);
     for (i = 0; i < numSteps; i++)
     {
-        outputAbsMax[i].resize(maxAutorangeRetries);
+        outputAbsMax[i].resize(maxTotalStepTries);
     }
 
     inputPurity.resize(numSteps);
     for (i = 0; i < numSteps; i++)
     {
-        inputPurity[i].resize(maxAutorangeRetries);
+        inputPurity[i].resize(maxTotalStepTries);
     }
 
     outputPurity.resize(numSteps);
     for (i = 0; i < numSteps; i++)
     {
-        outputPurity[i].resize(maxAutorangeRetries);
+        outputPurity[i].resize(maxTotalStepTries);
     }
 
     diagNumSamplesToPlot.resize(numSteps);
@@ -1136,6 +1151,7 @@ void PicoScopeFRA::AllocateFraData(void)
     diagNumSamplesCaptured.resize(numSteps);
     autoRangeTries.resize(numSteps);
     adaptiveStimulusTries.resize(numSteps);
+    totalRetryCounter.resize(numSteps);
     sampleInterval.resize(numSteps);
 }
 
@@ -1166,7 +1182,7 @@ void PicoScopeFRA::GenerateDiagnosticOutput(void)
     vector<double> inputMaxVoltages;
     vector<double> outputMaxVoltages;
     double inputAmplitude, outputAmplitude;
-    FRA_STATUS_MESSAGE_T fraStatusMsg;    
+    FRA_STATUS_MESSAGE_T fraStatusMsg;
     double maxValue;
 
     UpdateStatus( fraStatusMsg, FRA_STATUS_MESSAGE, L"Status: Generating diagnostic time domain plots." );
@@ -1197,7 +1213,7 @@ void PicoScopeFRA::GenerateDiagnosticOutput(void)
 
     for( int il = 0; il < numSteps; il++)
     {
-        for (int jl = 0; jl < autoRangeTries[il]; jl++ )
+        for (int jl = 0; jl < totalRetryCounter[il]; jl++ )
         {
             fileName.clear();
             fileName.str("");
@@ -1517,7 +1533,7 @@ bool PicoScopeFRA::ProcessData(void)
     wsprintf( fraStatusText, L"Status: Transferring and processing %d samples", numSamples );
     UpdateStatus( fraStatusMsg, FRA_STATUS_MESSAGE, fraStatusText );
 
-    if (!(ps->GetPeakValues( inputAbsMax[freqStepIndex][autorangeRetryCounter], outputAbsMax[freqStepIndex][autorangeRetryCounter], ovIn, ovOut )))
+    if (!(ps->GetPeakValues( inputAbsMax[freqStepIndex][totalRetryCounter[freqStepIndex]], outputAbsMax[freqStepIndex][totalRetryCounter[freqStepIndex]], ovIn, ovOut )))
     {
         throw FraFault();
     }
@@ -1571,10 +1587,10 @@ bool PicoScopeFRA::ProcessData(void)
         if (mDiagnosticsOn)
         {
             // Make records for diagnostics
-            inAmps[freqStepIndex][autorangeRetryCounter] = inputAmplitude;
-            outAmps[freqStepIndex][autorangeRetryCounter] = outputAmplitude;
-            inputPurity[freqStepIndex][autorangeRetryCounter] = currentInputPurity;
-            outputPurity[freqStepIndex][autorangeRetryCounter] = currentOutputPurity;
+            inAmps[freqStepIndex][totalRetryCounter[freqStepIndex]] = inputAmplitude;
+            outAmps[freqStepIndex][totalRetryCounter[freqStepIndex]] = outputAmplitude;
+            inputPurity[freqStepIndex][totalRetryCounter[freqStepIndex]] = currentInputPurity;
+            outputPurity[freqStepIndex][totalRetryCounter[freqStepIndex]] = currentOutputPurity;
         }
 
         if (mAdaptiveStimulus)
@@ -1606,10 +1622,10 @@ bool PicoScopeFRA::ProcessData(void)
     if (mDiagnosticsOn)
     {
         uint32_t compressedSize = mSamplingMode == LOW_NOISE ? 0 : timeDomainDiagnosticDataLengthLimit;
-        ps->GetCompressedData( compressedSize, inputMinData[freqStepIndex][autorangeRetryCounter],
-                                               outputMinData[freqStepIndex][autorangeRetryCounter],
-                                               inputMaxData[freqStepIndex][autorangeRetryCounter],
-                                               outputMaxData[freqStepIndex][autorangeRetryCounter] );
+        ps->GetCompressedData( compressedSize, inputMinData[freqStepIndex][totalRetryCounter[freqStepIndex]],
+                                               outputMinData[freqStepIndex][totalRetryCounter[freqStepIndex]],
+                                               inputMaxData[freqStepIndex][totalRetryCounter[freqStepIndex]],
+                                               outputMaxData[freqStepIndex][totalRetryCounter[freqStepIndex]] );
     }
 
     return retVal;

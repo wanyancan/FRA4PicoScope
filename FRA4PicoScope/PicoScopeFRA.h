@@ -171,6 +171,7 @@ class PicoScopeFRA
         vector<uint32_t> diagNumSamplesCaptured;
         vector<int> autoRangeTries;
         vector<int> adaptiveStimulusTries;
+        vector<int> totalRetryCounter;
         vector<double> sampleInterval;
         vector<vector<double>> inputPurity;
         vector<vector<double>> outputPurity;
