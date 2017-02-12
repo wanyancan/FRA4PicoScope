@@ -484,9 +484,9 @@ bool PicoScopeFRA::ExecuteFRA(double startFreqHz, double stopFreqHz, int stepsPe
 
         freqStepCounter = 1;
         freqStepIndex = mSweepDescending ? numSteps-1 : 0;
-        fill( totalRetryCounter.begin(), totalRetryCounter.end(), 0 );
         while ((mSweepDescending && freqStepIndex >= 0) || (!mSweepDescending && freqStepIndex < numSteps))
         {
+            totalRetryCounter[freqStepIndex] = 0;
             currentFreqHz = freqsHz[freqStepIndex];
             for (autorangeRetryCounter = 0, adaptiveStimulusRetryCounter = 0;
                  autorangeRetryCounter < maxAutorangeRetries && adaptiveStimulusRetryCounter < maxAdaptiveStimulusRetries;)
@@ -524,7 +524,7 @@ bool PicoScopeFRA::ExecuteFRA(double startFreqHz, double stopFreqHz, int stepsPe
                             if (false == ProcessData())
                             {
                                 // At least one of the channels needs adjustment
-                                totalRetryCounter[freqStepIndex]++; // record the attempt;
+                                totalRetryCounter[freqStepIndex]++; // record the attempt
                                 continue; // Try again on a different range
                             }
                             else // Data is good, calculate and move on to next frequency
@@ -535,7 +535,7 @@ bool PicoScopeFRA::ExecuteFRA(double startFreqHz, double stopFreqHz, int stepsPe
                                 // Notify progress
                                 UpdateStatus(fraStatusMsg, FRA_STATUS_IN_PROGRESS, freqStepCounter, numSteps);
 
-                                totalRetryCounter[freqStepIndex]++; // record the attempt;
+                                totalRetryCounter[freqStepIndex]++; // record the attempt
                                 break;
                             }
                         }
@@ -603,6 +603,7 @@ bool PicoScopeFRA::ExecuteFRA(double startFreqHz, double stopFreqHz, int stepsPe
                 {
                     if (fraStatusMsg.responseData.retry)
                     {
+                        // Start the step over again
                         continue; // bypasses step index and counter updates
                     }
                     else // continue to next step
@@ -622,6 +623,7 @@ bool PicoScopeFRA::ExecuteFRA(double startFreqHz, double stopFreqHz, int stepsPe
                 }
             }
 
+            // Step index and counter updates
             if (mSweepDescending)
             {
                 freqStepIndex--;
@@ -1098,6 +1100,12 @@ void PicoScopeFRA::AllocateFraData(void)
         outRange[i].resize(maxTotalStepTries);
     }
 
+    stimVpp.resize(numSteps);
+    for (i = 0; i < numSteps; i++)
+    {
+        stimVpp[i].resize(maxTotalStepTries);
+    }
+
     inputMinData.resize(numSteps);
     for (i = 0; i < numSteps; i++)
     {
@@ -1294,10 +1302,10 @@ void PicoScopeFRA::GenerateDiagnosticOutput(void)
             pllab( "Time (s)", "Volts", inputTitle.str().c_str() );
 
             // Add an overall title, making its position relative to the top plot
-            overallTitle.precision(3); // To record frequency the same as the status logs
             overallTitle << fixed;
-            overallTitle << "Step " << (il+1) << ", Try " << (jl+1) << "; Frequency: " << freqsHz[il]
-                         << ", Stimulus Cycles: " << diagNumStimulusCyclesCaptured[il]
+            overallTitle << "Step " << (il+1) << ", Try " << (jl+1) << "; Frequency: " << setprecision(3) << freqsHz[il]
+                         << " Hz, Stimulus Vpp: " << setprecision(6) << stimVpp[il][jl]
+                         << " V, Stimulus Cycles: " << diagNumStimulusCyclesCaptured[il]
                          << ", Samples Captured: " << diagNumSamplesCaptured[il];
 
             plmtex("t", 4.0, 0.5, 0.5, overallTitle.str().c_str());
@@ -1424,6 +1432,8 @@ bool PicoScopeFRA::StartCapture( double measFreqHz )
             Sleep( mExtraSettlingTimeMs );
         }
     }
+
+    stimVpp[freqStepIndex][totalRetryCounter[freqStepIndex]] = currentStimulusVpp;
 
     wsprintf( fraStatusText, L"Status: Setting input channel range to %s", rangeInfo[currentInputChannelRange].name );
     UpdateStatus( fraStatusMsg, FRA_STATUS_MESSAGE, fraStatusText );

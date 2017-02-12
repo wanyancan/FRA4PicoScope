@@ -160,6 +160,7 @@ class PicoScopeFRA
         vector<vector<bool>> outOV;
         vector<vector<PS_RANGE>> inRange;
         vector<vector<PS_RANGE>> outRange;
+        vector<vector<double>> stimVpp;
         vector<vector<vector<int16_t>>> inputMinData;
         vector<vector<vector<int16_t>>> outputMinData;
         vector<vector<vector<int16_t>>> inputMaxData;
