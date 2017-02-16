@@ -47,11 +47,52 @@
 
 INT_PTR CALLBACK SettingsDialogHandler(HWND hDlg, UINT message, WPARAM wParam, LPARAM lParam)
 {
-
     switch (message)
     {
         case WM_INITDIALOG:
         {
+            HWND hndCtrl;
+
+            if (HIGH_NOISE == pSettings->GetSamplingMode())
+            {
+                hndCtrl = GetDlgItem( hDlg, IDC_RADIO_NOISE_REJECT_MODE );
+                Button_SetCheck( hndCtrl, BST_CHECKED );
+            }
+            else
+            {
+                hndCtrl = GetDlgItem( hDlg, IDC_RADIO_LOW_NOISE_MODE );
+                Button_SetCheck( hndCtrl, BST_CHECKED );
+            }
+
+            if (pSettings->GetSweepDescending())
+            {
+                hndCtrl = GetDlgItem( hDlg, IDC_RADIO_SWEEP_DESCENDING );
+                Button_SetCheck( hndCtrl, BST_CHECKED );
+            }
+            else
+            {
+                hndCtrl = GetDlgItem( hDlg, IDC_RADIO_SWEEP_ASCENDING );
+                Button_SetCheck( hndCtrl, BST_CHECKED );
+            }
+
+            hndCtrl = GetDlgItem( hDlg, IDC_EDIT_EXTRA_SETTLING_TIME );
+            Edit_SetText( hndCtrl, pSettings->GetExtraSettlingTimeAsString().c_str() );
+
+            hndCtrl = GetDlgItem( hDlg, IDC_ADAPTIVE_STIMULUS_ENABLE );
+            Button_SetCheck( hndCtrl, pSettings->GetAdaptiveStimulusMode() ? BST_CHECKED : BST_UNCHECKED );
+
+            hndCtrl = GetDlgItem( hDlg, IDC_EDIT_ADAPTIVE_STIMULUS_TRIES_PER_STEP );
+            Edit_SetText( hndCtrl, pSettings->GetAdaptiveStimulusTriesPerStepAsString().c_str() );
+
+            hndCtrl = GetDlgItem( hDlg, IDC_EDIT_ADAPTIVE_STIMULUS_RESPONSE_TARGET_TOLERANCE );
+            Edit_SetText( hndCtrl, pSettings->GetTargetResponseAmplitudeToleranceAsString().c_str() );
+
+            hndCtrl = GetDlgItem( hDlg, IDC_EDIT_AUTORANGE_TRIES_PER_STEP );
+            Edit_SetText( hndCtrl, pSettings->GetAutorangeTriesPerStepAsString().c_str() );
+
+            hndCtrl = GetDlgItem( hDlg, IDC_EDIT_AUTORANGE_TOLERANCE );
+            Edit_SetText( hndCtrl, pSettings->GetAutorangeToleranceAsString().c_str() );
+
             return (INT_PTR)TRUE;
             break;
         }

@@ -25,4 +25,10 @@
 
 #include <Windows.h>
 
+typedef struct
+{
+    bool plotSettings;
+    bool fraSettings;
+} SettingsChange_T;
+
 INT_PTR CALLBACK SettingsDialogHandler(HWND hDlg, UINT message, WPARAM wParam, LPARAM lParam);

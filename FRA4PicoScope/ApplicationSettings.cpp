@@ -210,15 +210,15 @@ bool ApplicationSettings::InitializeApplicationSettingsFile( void )
         AppSettingsPropTree.put( L"diagnostics.logVerbosityLevel", 0 );
         AppSettingsPropTree.put( L"diagnostics.timeDomainPlots", false );
 
-        AppSettingsPropTree.put( L"expert.purityLowerLimit", 0.80 ); // 80%
-        AppSettingsPropTree.put( L"expert.extraSettlingTimeMs", 0 );
-        AppSettingsPropTree.put( L"expert.autorangeTriesPerStep", 10 );
-        AppSettingsPropTree.put( L"expert.autorangeTolerance", 0.10 );
-        AppSettingsPropTree.put( L"expert.smallSignalResolutionLimit", 0.0 );
-        AppSettingsPropTree.put( L"expert.maxAutorangeAmplitude", 1.0 );
-        AppSettingsPropTree.put( L"expert.adaptiveStimulusTriesPerStep", 10 );
-        AppSettingsPropTree.put( L"expert.targetResponseAmplitudeTolerance", 0.10 ); // 10%
-        AppSettingsPropTree.put( L"expert.minCyclesCaptured", 16 ); // Bin width 6.25% of stimulus frequency
+        AppSettingsPropTree.put( L"expert.purityLowerLimit", L"0.80" ); // 80%
+        AppSettingsPropTree.put( L"expert.extraSettlingTimeMs", L"0" );
+        AppSettingsPropTree.put( L"expert.autorangeTriesPerStep", L"10" );
+        AppSettingsPropTree.put( L"expert.autorangeTolerance", L"10.0" );
+        AppSettingsPropTree.put( L"expert.smallSignalResolutionLimit", L"0.0" );
+        AppSettingsPropTree.put( L"expert.maxAutorangeAmplitude", L"1.0" );
+        AppSettingsPropTree.put( L"expert.adaptiveStimulusTriesPerStep", L"10" );
+        AppSettingsPropTree.put( L"expert.targetResponseAmplitudeTolerance", L"10.0" ); // 10%
+        AppSettingsPropTree.put( L"expert.minCyclesCaptured", L"16" ); // Bin width 6.25% of stimulus frequency
 
         settingsFileOutputStream.open( appDataFilename.c_str(), ios::out );
 

@@ -336,6 +336,10 @@ class ApplicationSettings
         {
             return AppSettingsPropTree.get<uint16_t>( L"expert.extraSettlingTimeMs" );
         }
+        inline const wstring GetExtraSettlingTimeAsString( void )
+        {
+            return AppSettingsPropTree.get<wstring>( L"expert.extraSettlingTimeMs" );
+        }
         inline void SetExtraSettlingTimeMs( uint16_t extraSettlingTimeMs )
         {
             AppSettingsPropTree.put( L"expert.extraSettlingTimeMs", extraSettlingTimeMs );
@@ -345,6 +349,10 @@ class ApplicationSettings
         {
             return AppSettingsPropTree.get<uint8_t>( L"expert.autorangeTriesPerStep" );
         }
+        inline const wstring GetAutorangeTriesPerStepAsString( void )
+        {
+            return AppSettingsPropTree.get<wstring>( L"expert.autorangeTriesPerStep" );
+        }
         inline void SetAutorangeTriesPerStep( uint8_t autorangeTriesPerStep )
         {
             AppSettingsPropTree.put( L"expert.autorangeTriesPerStep", autorangeTriesPerStep );
@@ -352,7 +360,11 @@ class ApplicationSettings
 
         inline double GetAutorangeTolerance( void )
         {
-            return AppSettingsPropTree.get<double>( L"expert.autorangeTolerance" );
+            return (AppSettingsPropTree.get<double>( L"expert.autorangeTolerance" )) / 100.0;
+        }
+        inline const wstring GetAutorangeToleranceAsString( void )
+        {
+            return AppSettingsPropTree.get<wstring>( L"expert.autorangeTolerance" );
         }
         inline void SetAutorangeTolerance( double autorangeTolerance )
         {
@@ -381,6 +393,10 @@ class ApplicationSettings
         {
             return AppSettingsPropTree.get<uint8_t>( L"expert.adaptiveStimulusTriesPerStep" );
         }
+        inline const wstring GetAdaptiveStimulusTriesPerStepAsString( void )
+        {
+            return AppSettingsPropTree.get<wstring>( L"expert.adaptiveStimulusTriesPerStep" );
+        }
         inline void SetAdaptiveStimulusTriesPerStep( uint8_t adaptiveStimulusTriesPerStep )
         {
             AppSettingsPropTree.put( L"expert.adaptiveStimulusTriesPerStep", adaptiveStimulusTriesPerStep );
@@ -388,7 +404,11 @@ class ApplicationSettings
 
         inline double GetTargetResponseAmplitudeTolerance( void )
         {
-            return AppSettingsPropTree.get<double>( L"expert.targetResponseAmplitudeTolerance" );
+            return (AppSettingsPropTree.get<double>( L"expert.targetResponseAmplitudeTolerance" )) / 100.0;
+        }
+        inline const wstring GetTargetResponseAmplitudeToleranceAsString( void )
+        {
+            return AppSettingsPropTree.get<wstring>( L"expert.targetResponseAmplitudeTolerance" );
         }
         inline void SetTargetResponseAmplitudeTolerance( double targetResponseAmplitudeTolerance )
         {
