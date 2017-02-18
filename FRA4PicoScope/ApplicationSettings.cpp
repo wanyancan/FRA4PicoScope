@@ -179,8 +179,8 @@ bool ApplicationSettings::InitializeApplicationSettingsFile( void )
         AppSettingsPropTree.put( L"plot.plotGainMargin", false );
         AppSettingsPropTree.put( L"plot.plotPhaseMargin", false );
         AppSettingsPropTree.put( L"plot.plotUnwrappedPhase", false );
-        AppSettingsPropTree.put( L"plot.phaseWrappingThreshold", 180.0 );
-        AppSettingsPropTree.put( L"plot.gainMarginPhaseCrossover", 0.0 );
+        AppSettingsPropTree.put( L"plot.phaseWrappingThreshold", L"180.0" );
+        AppSettingsPropTree.put( L"plot.gainMarginPhaseCrossover", L"0.0" );
 
         AppSettingsPropTree.put( L"plot.screenColor.background.red", 0 );
         AppSettingsPropTree.put( L"plot.screenColor.background.green", 0 );
@@ -207,7 +207,7 @@ bool ApplicationSettings::InitializeApplicationSettingsFile( void )
         AppSettingsPropTree.put( L"plot.savedImageFileColor.phasePlot.green", 0 );
         AppSettingsPropTree.put( L"plot.savedImageFileColor.phasePlot.blue", 0 );
 
-        AppSettingsPropTree.put( L"diagnostics.logVerbosityLevel", 0 );
+        AppSettingsPropTree.put( L"diagnostics.logVerbosityFlags", 0 );
         AppSettingsPropTree.put( L"diagnostics.timeDomainPlots", false );
 
         AppSettingsPropTree.put( L"expert.purityLowerLimit", L"0.80" ); // 80%
@@ -219,6 +219,14 @@ bool ApplicationSettings::InitializeApplicationSettingsFile( void )
         AppSettingsPropTree.put( L"expert.adaptiveStimulusTriesPerStep", L"10" );
         AppSettingsPropTree.put( L"expert.targetResponseAmplitudeTolerance", L"10.0" ); // 10%
         AppSettingsPropTree.put( L"expert.minCyclesCaptured", L"16" ); // Bin width 6.25% of stimulus frequency
+        AppSettingsPropTree.put( L"expert.maxCyclesCaptured", L"100" ); // Bin width 1% of stimulus frequency
+        AppSettingsPropTree.put( L"expert.noiseRejectBandwidth", L"100.0" ); // 100 Hz
+        AppSettingsPropTree.put( L"expert.lowNoiseOversampling", L"64" ); // 64x
+
+        AppSettingsPropTree.put( L"qualityLimits.enable", L"false" ); // Quality limits off
+        AppSettingsPropTree.put( L"qualityLimits.amplitudeLowerLimit", L"0.0" );
+        AppSettingsPropTree.put( L"qualityLimits.purityLowerLimit", L"80" ); // 80%
+        AppSettingsPropTree.put( L"qualityLimits.excludeDcFromNoise", L"false" );
 
         settingsFileOutputStream.open( appDataFilename.c_str(), ios::out );
 

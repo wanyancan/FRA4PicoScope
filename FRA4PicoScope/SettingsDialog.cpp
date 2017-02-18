@@ -53,6 +53,7 @@ INT_PTR CALLBACK SettingsDialogHandler(HWND hDlg, UINT message, WPARAM wParam, L
         {
             HWND hndCtrl;
 
+            // FRA Execution Options
             if (HIGH_NOISE == pSettings->GetSamplingMode())
             {
                 hndCtrl = GetDlgItem( hDlg, IDC_RADIO_NOISE_REJECT_MODE );
@@ -78,6 +79,7 @@ INT_PTR CALLBACK SettingsDialogHandler(HWND hDlg, UINT message, WPARAM wParam, L
             hndCtrl = GetDlgItem( hDlg, IDC_EDIT_EXTRA_SETTLING_TIME );
             Edit_SetText( hndCtrl, pSettings->GetExtraSettlingTimeAsString().c_str() );
 
+            // Adaptive Stimulus
             hndCtrl = GetDlgItem( hDlg, IDC_ADAPTIVE_STIMULUS_ENABLE );
             Button_SetCheck( hndCtrl, pSettings->GetAdaptiveStimulusMode() ? BST_CHECKED : BST_UNCHECKED );
 
@@ -87,11 +89,67 @@ INT_PTR CALLBACK SettingsDialogHandler(HWND hDlg, UINT message, WPARAM wParam, L
             hndCtrl = GetDlgItem( hDlg, IDC_EDIT_ADAPTIVE_STIMULUS_RESPONSE_TARGET_TOLERANCE );
             Edit_SetText( hndCtrl, pSettings->GetTargetResponseAmplitudeToleranceAsString().c_str() );
 
+            // Autorange Settings
             hndCtrl = GetDlgItem( hDlg, IDC_EDIT_AUTORANGE_TRIES_PER_STEP );
             Edit_SetText( hndCtrl, pSettings->GetAutorangeTriesPerStepAsString().c_str() );
 
             hndCtrl = GetDlgItem( hDlg, IDC_EDIT_AUTORANGE_TOLERANCE );
             Edit_SetText( hndCtrl, pSettings->GetAutorangeToleranceAsString().c_str() );
+
+            // FRA Sample Settings
+            // Until issue 63 is implemented, we'll use min/max cycles and not bandwidth
+            hndCtrl = GetDlgItem( hDlg, IDC_EDIT_FRA_MINIMUM_CYCLES_CAPTURED );
+            Edit_SetText( hndCtrl, pSettings->GetMinCyclesCapturedAsString().c_str() );
+
+            hndCtrl = GetDlgItem( hDlg, IDC_EDIT_FRA_MAXIMUM_CYCLES_CAPTURED );
+            Edit_SetText( hndCtrl, pSettings->GetMaxCyclesCapturedAsString().c_str() );
+
+            hndCtrl = GetDlgItem( hDlg, IDC_EDIT_FRA_LOW_NOISE_OVERSAMPLING );
+            Edit_SetText( hndCtrl, pSettings->GetLowNoiseOversamplingAsString().c_str() );
+
+            hndCtrl = GetDlgItem( hDlg, IDC_EDIT_FRA_NOISE_REJECT_BW );
+            Edit_SetText( hndCtrl, pSettings->GetNoiseRejectBandwidthAsString().c_str() );
+            EnableWindow( hndCtrl, FALSE );
+
+            hndCtrl = GetDlgItem( hDlg, IDC_STATIC_FRA_NOISE_REJECT_BW );
+            EnableWindow( hndCtrl, FALSE );
+
+            // Scope Specific Settings (base on currently selected scope)
+
+            // Quality Limits
+            hndCtrl = GetDlgItem( hDlg, IDC_QUALITY_LIMITS_ENABLE );
+            Button_SetCheck( hndCtrl, pSettings->GetQualityLimitsState() ? BST_CHECKED : BST_UNCHECKED );
+            EnableWindow( hndCtrl, FALSE );
+
+            hndCtrl = GetDlgItem( hDlg, IDC_EDIT_AMPLITUDE_LOWER_QUALITY_LIMIT );
+            Edit_SetText( hndCtrl, pSettings->GetAmplitudeLowerLimitAsString().c_str() );
+            EnableWindow( hndCtrl, FALSE );
+
+            hndCtrl = GetDlgItem( hDlg, IDC_STATIC_AMPLITUDE_LOWER_QUALITY_LIMIT );
+            EnableWindow( hndCtrl, FALSE );
+
+            hndCtrl = GetDlgItem( hDlg, IDC_EDIT_PURITY_LOWER_QUALITY_LIMIT );
+            Edit_SetText( hndCtrl, pSettings->GetPurityLowerLimitAsString().c_str() );
+            EnableWindow( hndCtrl, FALSE );
+
+            hndCtrl = GetDlgItem( hDlg, IDC_STATIC_PURITY_LOWER_QUALITY_LIMIT );
+            EnableWindow( hndCtrl, FALSE );
+
+            hndCtrl = GetDlgItem( hDlg, IDC_EXCLUDE_DC_FROM_NOISE );
+            Button_SetCheck( hndCtrl, pSettings->GetDcExcludedFromNoiseState() ? BST_CHECKED : BST_UNCHECKED );
+            EnableWindow( hndCtrl, FALSE );
+
+            // FRA Bode Plot Options
+
+            hndCtrl = GetDlgItem( hDlg, IDC_EDIT_PHASE_WRAPPING_THRESHOLD );
+            Edit_SetText( hndCtrl, pSettings->GetPhaseWrappingThresholdAsString().c_str() );
+
+            hndCtrl = GetDlgItem( hDlg, IDC_EDIT_GAIN_MARGIN_PHASE_CROSSOVER );
+            Edit_SetText( hndCtrl, pSettings->GetGainMarginPhaseCrossoverAsString().c_str() );
+
+            // Diagnostic settings
+            hndCtrl = GetDlgItem( hDlg, IDC_TIME_DOMAIN_DIAGNOSTIC_PLOTS_ENABLE );
+            Button_SetCheck( hndCtrl, pSettings->GetTimeDomainPlotsEnabled() ? BST_CHECKED : BST_UNCHECKED );
 
             return (INT_PTR)TRUE;
             break;

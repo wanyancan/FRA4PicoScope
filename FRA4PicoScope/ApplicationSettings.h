@@ -307,6 +307,10 @@ class ApplicationSettings
         {
             return AppSettingsPropTree.get<double>( L"plot.phaseWrappingThreshold" );
         }
+        inline const wstring GetPhaseWrappingThresholdAsString(void)
+        {
+            return AppSettingsPropTree.get<wstring>( L"plot.phaseWrappingThreshold" );
+        }
         inline void SetPhaseWrappingThreshold( double phaseWrappingThreshold )
         {
             AppSettingsPropTree.put( L"plot.phaseWrappingThreshold", phaseWrappingThreshold );
@@ -316,21 +320,16 @@ class ApplicationSettings
         {
             return AppSettingsPropTree.get<double>( L"plot.gainMarginPhaseCrossover" );
         }
+        inline const wstring GetGainMarginPhaseCrossoverAsString(void)
+        {
+            return AppSettingsPropTree.get<wstring>( L"plot.gainMarginPhaseCrossover" );
+        }
         inline void SetGainMarginPhaseCrossover( double gainMarginPhaseCrossover )
         {
             AppSettingsPropTree.put( L"plot.gainMarginPhaseCrossover", gainMarginPhaseCrossover );
         }
 
         // Expert settings
-
-        inline double GetPurityLowerLimit( void )
-        {
-            return AppSettingsPropTree.get<double>( L"expert.purityLowerLimit" );
-        }
-        inline void SetPurityLowerLimit( double purityLowerLimit )
-        {
-            AppSettingsPropTree.put( L"expert.purityLowerLimit", purityLowerLimit );
-        }
 
         inline uint16_t GetExtraSettlingTimeMs( void )
         {
@@ -369,15 +368,6 @@ class ApplicationSettings
         inline void SetAutorangeTolerance( double autorangeTolerance )
         {
             AppSettingsPropTree.put( L"expert.autorangeTolerance", autorangeTolerance );
-        }
-
-        inline double GetSmallSignalResolutionLimit( void )
-        {
-            return AppSettingsPropTree.get<double>( L"expert.smallSignalResolutionLimit" );
-        }
-        inline void SetSmallSignalResolutionLimit( double smallSignalResolutionLimit )
-        {
-            AppSettingsPropTree.put( L"expert.smallSignalResolutionLimit", smallSignalResolutionLimit );
         }
 
         inline double GetMaxAutorangeAmplitude( void )
@@ -419,9 +409,97 @@ class ApplicationSettings
         {
             return AppSettingsPropTree.get<uint16_t>( L"expert.minCyclesCaptured" );
         }
+        inline const wstring GetMinCyclesCapturedAsString( void )
+        {
+            return AppSettingsPropTree.get<wstring>( L"expert.minCyclesCaptured" );
+        }
         inline void SetMinCyclesCaptured( double minCyclesCaptured )
         {
             AppSettingsPropTree.put( L"expert.minCyclesCaptured", minCyclesCaptured );
+        }
+
+        inline uint16_t GetMaxCyclesCaptured( void )
+        {
+            return AppSettingsPropTree.get<uint16_t>( L"expert.maxCyclesCaptured" );
+        }
+        inline const wstring GetMaxCyclesCapturedAsString( void )
+        {
+            return AppSettingsPropTree.get<wstring>( L"expert.maxCyclesCaptured" );
+        }
+        inline void SetMaxCyclesCaptured( double maxCyclesCaptured )
+        {
+            AppSettingsPropTree.put( L"expert.maxCyclesCaptured", maxCyclesCaptured );
+        }
+
+        inline uint16_t GetLowNoiseOversamplingAsNumber( void )
+        {
+            return AppSettingsPropTree.get<uint16_t>( L"expert.lowNoiseOversampling" );
+        }
+        inline const wstring GetLowNoiseOversamplingAsString( void )
+        {
+            return AppSettingsPropTree.get<wstring>( L"expert.lowNoiseOversampling" );
+        }
+        inline void SetLowNoiseOversampling( double minCyclesCaptured )
+        {
+            AppSettingsPropTree.put( L"expert.lowNoiseOversampling", minCyclesCaptured );
+        }
+
+        inline double GetNoiseRejectBandwidth(void)
+        {
+            return AppSettingsPropTree.get<double>( L"expert.noiseRejectBandwidth" );
+        }
+        inline const wstring GetNoiseRejectBandwidthAsString(void)
+        {
+            return AppSettingsPropTree.get<wstring>( L"expert.noiseRejectBandwidth" );
+        }
+        inline void SetNoiseRejectBandwidth( double noiseRejectBandwidth )
+        {
+            AppSettingsPropTree.put( L"expert.noiseRejectBandwidth", noiseRejectBandwidth );
+        }
+
+        ////
+        inline bool GetQualityLimitsState(void)
+        {
+            return AppSettingsPropTree.get<bool>( L"qualityLimits.enable" );
+        }
+        inline void SetQualityLimitsState( bool enable )
+        {
+            AppSettingsPropTree.put( L"qualityLimits.enable", enable );
+        }
+
+        inline double GetAmplitudeLowerLimitAsFraction( void )
+        {
+            return (AppSettingsPropTree.get<double>( L"qualityLimits.amplitudeLowerLimit" )) / 100.0;
+        }
+        inline const wstring GetAmplitudeLowerLimitAsString( void )
+        {
+            return AppSettingsPropTree.get<wstring>( L"qualityLimits.amplitudeLowerLimit" );
+        }
+        inline void SetAmplitudeLowerLimit( double amplitudeLowerLimit )
+        {
+            AppSettingsPropTree.put( L"qualityLimits.amplitudeLowerLimit", amplitudeLowerLimit );
+        }
+
+        inline double GetPurityLowerLimitAsFraction( void )
+        {
+            return (AppSettingsPropTree.get<double>( L"qualityLimits.purityLowerLimit" )) / 100.0;
+        }
+        inline const wstring GetPurityLowerLimitAsString( void )
+        {
+            return AppSettingsPropTree.get<wstring>( L"qualityLimits.purityLowerLimit" );
+        }
+        inline void SetPurityLowerLimit( double purityLowerLimit )
+        {
+            AppSettingsPropTree.put( L"qualityLimits.purityLowerLimit", purityLowerLimit );
+        }
+
+        inline bool GetDcExcludedFromNoiseState(void)
+        {
+            return AppSettingsPropTree.get<bool>( L"qualityLimits.excludeDcFromNoise" );
+        }
+        inline void SetDcExcludedFromNoiseState( bool enable )
+        {
+            AppSettingsPropTree.put( L"qualityLimits.excludeDcFromNoise", enable );
         }
 
         inline bool GetTimeDomainPlotsEnabled( void )

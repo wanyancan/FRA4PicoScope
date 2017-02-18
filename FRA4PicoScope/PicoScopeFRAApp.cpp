@@ -632,9 +632,9 @@ BOOL CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
             psFRA->SetFraSettings( pSettings->GetSamplingMode(), pSettings->GetAdaptiveStimulusMode(), pSettings->GetTargetResponseAmplitudeAsDouble(),
                                    pSettings->GetSweepDescending(), pSettings->GetPhaseWrappingThreshold() );
 
-            psFRA->SetFraTuning( pSettings->GetPurityLowerLimit(), pSettings->GetExtraSettlingTimeMs(),
+            psFRA->SetFraTuning( pSettings->GetPurityLowerLimitAsFraction(), pSettings->GetExtraSettlingTimeMs(),
                                  pSettings->GetAutorangeTriesPerStep(), pSettings->GetAutorangeTolerance(),
-                                 pSettings->GetSmallSignalResolutionLimit(), pSettings->GetMaxAutorangeAmplitude(),
+                                 pSettings->GetAmplitudeLowerLimitAsFraction(), pSettings->GetMaxAutorangeAmplitude(),
                                  pSettings->GetAdaptiveStimulusTriesPerStep(), pSettings->GetTargetResponseAmplitudeTolerance(),
                                  pSettings->GetMinCyclesCaptured() );
 
