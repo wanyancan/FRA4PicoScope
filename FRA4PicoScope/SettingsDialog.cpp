@@ -140,7 +140,6 @@ INT_PTR CALLBACK SettingsDialogHandler(HWND hDlg, UINT message, WPARAM wParam, L
             EnableWindow( hndCtrl, FALSE );
 
             // FRA Bode Plot Options
-
             hndCtrl = GetDlgItem( hDlg, IDC_EDIT_PHASE_WRAPPING_THRESHOLD );
             Edit_SetText( hndCtrl, pSettings->GetPhaseWrappingThresholdAsString().c_str() );
 
