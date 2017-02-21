@@ -158,6 +158,8 @@
 #define IDC_STATIC_FRA_NOISE_REJECT_BW  1042
 #define IDC_STATIC_PURITY_LOWER_QUALITY_LIMIT 1043
 #define IDC_STATIC_AMPLITUDE_LOWER_QUALITY_LIMIT 1044
+#define IDC_LIST_LOG_VERBOSITY          1046
+#define IDC_BUTTON_LOG_VERBOSITY        1048
 #define IDC_STATIC                      -1
 
 // Next default values for new objects
@@ -166,7 +168,7 @@
 #ifndef APSTUDIO_READONLY_SYMBOLS
 #define _APS_NEXT_RESOURCE_VALUE        106
 #define _APS_NEXT_COMMAND_VALUE         40002
-#define _APS_NEXT_CONTROL_VALUE         1045
+#define _APS_NEXT_CONTROL_VALUE         1051
 #define _APS_NEXT_SYMED_VALUE           101
 #endif
 #endif

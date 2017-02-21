@@ -25,6 +25,7 @@
 
 #include "stdafx.h"
 #include <Windowsx.h>
+#include <CommCtrl.h>
 #include <string>
 #include <sstream>
 #include "utility.h"
@@ -32,6 +33,19 @@
 #include "PicoScopeFraApp.h"
 #include "Resource.h"
 
+const uint8_t numLogVerbosityFlags = 6;
+
+const wchar_t logVerbosityString[numLogVerbosityFlags][128] =
+{
+    L"FRA Progress",
+    L"Step Trial Progress",
+    L"Autorange Diagnostics",
+    L"Adaptive Stimulus Diagnostics",
+    L"Sample Processing Diagnostics",
+    L"DFT Diagnostics"
+};
+
+bool logVerbositySelectorOpen;
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 //
@@ -47,11 +61,13 @@
 
 INT_PTR CALLBACK SettingsDialogHandler(HWND hDlg, UINT message, WPARAM wParam, LPARAM lParam)
 {
+    HWND hndCtrl;
     switch (message)
     {
         case WM_INITDIALOG:
         {
-            HWND hndCtrl;
+            LVCOLUMN listViewCol;
+            LVITEM listViewItem;
 
             // FRA Execution Options
             if (HIGH_NOISE == pSettings->GetSamplingMode())
@@ -150,7 +166,43 @@ INT_PTR CALLBACK SettingsDialogHandler(HWND hDlg, UINT message, WPARAM wParam, L
             hndCtrl = GetDlgItem( hDlg, IDC_TIME_DOMAIN_DIAGNOSTIC_PLOTS_ENABLE );
             Button_SetCheck( hndCtrl, pSettings->GetTimeDomainPlotsEnabled() ? BST_CHECKED : BST_UNCHECKED );
 
+            hndCtrl = GetDlgItem( hDlg, IDC_LIST_LOG_VERBOSITY );
+            ListView_SetExtendedListViewStyleEx( hndCtrl, LVS_EX_CHECKBOXES, LVS_EX_CHECKBOXES );
+
+            listViewCol.mask = LVCF_TEXT | LVCF_FMT | LVCF_WIDTH | LVCF_SUBITEM;
+            listViewCol.pszText = L"";
+            listViewCol.fmt = LVCFMT_LEFT;
+            listViewCol.cx = 100; // Initial value does not matter because we're going to auto-size
+            listViewCol.iSubItem = 0;
+            ListView_InsertColumn( hndCtrl, 0, &listViewCol );
+
+            listViewItem.mask = LVIF_TEXT;
+            listViewItem.iSubItem = 0;
+            for (int i = 0; i < numLogVerbosityFlags; i++)
+            {
+                listViewItem.iItem = i;
+                listViewItem.pszText = (LPWSTR)logVerbosityString[i];
+                ListView_InsertItem( hndCtrl, &listViewItem );
+            }
+
+            ListView_SetColumnWidth( hndCtrl, 0, LVSCW_AUTOSIZE );
+
+            // Set initial state to closed
+            SetWindowPos( hndCtrl, 0, 0, 0, LOWORD(ListView_ApproximateViewRect( hndCtrl, -1, -1, numLogVerbosityFlags )), 0, SWP_NOZORDER | SWP_NOMOVE);
+            logVerbositySelectorOpen = false;
+
             return (INT_PTR)TRUE;
+            break;
+        }
+        case WM_NOTIFY:
+        {
+            // Don't let items be selected in the log verbosity list
+            NMHDR* pNMHDR = ((NMHDR*)lParam);
+            if (IDC_LIST_LOG_VERBOSITY == pNMHDR->idFrom &&
+                LVN_ITEMCHANGED == pNMHDR->code)
+            {
+                ListView_SetItemState(pNMHDR->hwndFrom, -1, 0, LVIS_SELECTED);
+            }
             break;
         }
         case WM_COMMAND:
@@ -164,6 +216,29 @@ INT_PTR CALLBACK SettingsDialogHandler(HWND hDlg, UINT message, WPARAM wParam, L
                 case IDCANCEL:
                 {
                     EndDialog(hDlg, IDCANCEL);
+                }
+                case IDC_BUTTON_LOG_VERBOSITY:
+                {
+                    if (!logVerbositySelectorOpen)
+                    {
+                        RECT rect;
+                        rect.left = 7;
+                        MapDialogRect(hDlg, &rect);
+                        hndCtrl = GetDlgItem( hDlg, IDC_LIST_LOG_VERBOSITY );
+                        DWORD lvDims = ListView_ApproximateViewRect( hndCtrl, -1, -1, numLogVerbosityFlags );
+                        SetWindowPos( hndCtrl, 0, 0, 0, LOWORD(lvDims)+rect.left, HIWORD(lvDims), SWP_NOZORDER | SWP_NOMOVE );
+                        logVerbositySelectorOpen = true;
+                        break;
+                    }
+                    else
+                    {
+                        hndCtrl = GetDlgItem( hDlg, IDC_LIST_LOG_VERBOSITY );
+                        SetWindowPos( hndCtrl, 0, 0, 0, LOWORD(ListView_ApproximateViewRect( hndCtrl, -1, -1, numLogVerbosityFlags )), 0, SWP_NOZORDER | SWP_NOMOVE);
+                        logVerbositySelectorOpen = false;
+                        break;
+                    }
+                    default:
+                        break;
                 }
             }
             return (INT_PTR)TRUE;
