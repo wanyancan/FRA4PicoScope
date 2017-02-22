@@ -112,15 +112,17 @@ INT_PTR CALLBACK SettingsDialogHandler(HWND hDlg, UINT message, WPARAM wParam, L
             // Autorange Settings
             if (pCurrentScope)
             {
-                int minRange, maxRange;
+                int inputMinRange, inputMaxRange, outputMinRange, outputMaxRange;
                 const RANGE_INFO_T* rangeInfo = pCurrentScope->GetRangeCaps();
-                minRange = pCurrentScope->GetMinRange(PS_AC);
-                maxRange = pCurrentScope->GetMaxRange(PS_AC);
+                inputMinRange = pCurrentScope->GetMinRange((PS_COUPLING)(pSettings->GetInputCoupling()));
+                inputMaxRange = pCurrentScope->GetMaxRange((PS_COUPLING)(pSettings->GetInputCoupling()));
+                outputMinRange = pCurrentScope->GetMinRange((PS_COUPLING)(pSettings->GetOutputCoupling()));
+                outputMaxRange = pCurrentScope->GetMaxRange((PS_COUPLING)(pSettings->GetOutputCoupling()));
 
                 hndCtrl = GetDlgItem( hDlg, IDC_COMBO_INPUT_START_RANGE );
                 ComboBox_AddString( hndCtrl, L"Stimulus" );
                 ComboBox_AddItemData( hndCtrl, -1 );
-                for (int idx = minRange; idx <= maxRange; idx++)
+                for (int idx = inputMinRange; idx <= inputMaxRange; idx++)
                 {
                     ComboBox_AddString( hndCtrl, rangeInfo[idx].name );
                     ComboBox_AddItemData( hndCtrl, idx );
@@ -130,7 +132,7 @@ INT_PTR CALLBACK SettingsDialogHandler(HWND hDlg, UINT message, WPARAM wParam, L
                 hndCtrl = GetDlgItem( hDlg, IDC_COMBO_OUTPUT_START_RANGE );
                 ComboBox_AddString( hndCtrl, L"Stimulus" );
                 ComboBox_AddItemData( hndCtrl, -1 );
-                for (int idx = minRange; idx <= maxRange; idx++)
+                for (int idx = outputMinRange; idx <= outputMaxRange; idx++)
                 {
                     ComboBox_AddString( hndCtrl, rangeInfo[idx].name );
                     ComboBox_AddItemData( hndCtrl, idx );
@@ -262,6 +264,7 @@ INT_PTR CALLBACK SettingsDialogHandler(HWND hDlg, UINT message, WPARAM wParam, L
             {
                 ListView_SetItemState(pNMHDR->hwndFrom, -1, 0, LVIS_SELECTED);
             }
+            return (INT_PTR)TRUE;
             break;
         }
         case WM_COMMAND:
