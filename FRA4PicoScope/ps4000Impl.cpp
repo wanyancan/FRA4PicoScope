@@ -114,6 +114,11 @@ bool ps4000Impl::GetTimebase( double desiredFrequency, double* actualFrequency, 
 
 }
 
+bool ps4000Impl::GetFrequencyFromTimebase(uint32_t timebase, double &frequency)
+{
+    return true;
+}
+
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 //
 // Name: ps4000Impl::InitializeScope

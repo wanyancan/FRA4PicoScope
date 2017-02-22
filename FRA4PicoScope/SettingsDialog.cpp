@@ -31,6 +31,7 @@
 #include "utility.h"
 #include "SettingsDialog.h"
 #include "PicoScopeFraApp.h"
+#include "PicoScopeInterface.h"
 #include "Resource.h"
 
 const uint8_t numLogVerbosityFlags = 6;
@@ -45,7 +46,8 @@ const wchar_t logVerbosityString[numLogVerbosityFlags][128] =
     L"DFT Diagnostics"
 };
 
-bool logVerbositySelectorOpen;
+bool logVerbositySelectorOpen = false;
+PicoScope* pCurrentScope = NULL;
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 //
@@ -68,6 +70,8 @@ INT_PTR CALLBACK SettingsDialogHandler(HWND hDlg, UINT message, WPARAM wParam, L
         {
             LVCOLUMN listViewCol;
             LVITEM listViewItem;
+
+            pCurrentScope = (PicoScope*)lParam;
 
             // FRA Execution Options
             if (HIGH_NOISE == pSettings->GetSamplingMode())
@@ -106,6 +110,29 @@ INT_PTR CALLBACK SettingsDialogHandler(HWND hDlg, UINT message, WPARAM wParam, L
             Edit_SetText( hndCtrl, pSettings->GetTargetResponseAmplitudeToleranceAsString().c_str() );
 
             // Autorange Settings
+            if (pCurrentScope)
+            {
+                hndCtrl = GetDlgItem( hDlg, IDC_COMBO_INPUT_START_RANGE );
+                ComboBox_SetCurSel( hndCtrl, pSettings->GetInputStartingRange() );
+
+                hndCtrl = GetDlgItem( hDlg, IDC_COMBO_OUTPUT_START_RANGE );
+                ComboBox_SetCurSel( hndCtrl, pSettings->GetOutputStartingRange() );
+            }
+            else
+            {
+                hndCtrl = GetDlgItem( hDlg, IDC_COMBO_INPUT_START_RANGE );
+                EnableWindow( hndCtrl, FALSE );
+
+                hndCtrl = GetDlgItem( hDlg, IDC_STATIC_INPUT_START_RANGE );
+                EnableWindow( hndCtrl, FALSE );
+
+                hndCtrl = GetDlgItem( hDlg, IDC_COMBO_OUTPUT_START_RANGE );
+                EnableWindow( hndCtrl, FALSE );
+
+                hndCtrl = GetDlgItem( hDlg, IDC_STATIC_OUTPUT_START_RANGE );
+                EnableWindow( hndCtrl, FALSE );
+            }
+
             hndCtrl = GetDlgItem( hDlg, IDC_EDIT_AUTORANGE_TRIES_PER_STEP );
             Edit_SetText( hndCtrl, pSettings->GetAutorangeTriesPerStepAsString().c_str() );
 
@@ -129,6 +156,19 @@ INT_PTR CALLBACK SettingsDialogHandler(HWND hDlg, UINT message, WPARAM wParam, L
 
             hndCtrl = GetDlgItem( hDlg, IDC_STATIC_FRA_NOISE_REJECT_BW );
             EnableWindow( hndCtrl, FALSE );
+
+            if (pCurrentScope)
+            {
+                hndCtrl = GetDlgItem( hDlg, IDC_EDIT_NOISE_REJECT_TIMEBASE );
+                Edit_SetText( hndCtrl, pSettings->GetNoiseRejectModeTimebaseAsString().c_str() );
+            }
+            else
+            {
+                hndCtrl = GetDlgItem( hDlg, IDC_EDIT_NOISE_REJECT_TIMEBASE );
+                EnableWindow( hndCtrl, FALSE );
+                hndCtrl = GetDlgItem( hDlg, IDC_STATIC_NOISE_REJECT_TIMEBASE );
+                EnableWindow( hndCtrl, FALSE );
+            }
 
             // Scope Specific Settings (base on currently selected scope)
 

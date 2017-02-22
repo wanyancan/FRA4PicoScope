@@ -120,6 +120,11 @@ bool ps3000aImpl::GetTimebase( double desiredFrequency, double* actualFrequency,
     return retVal;
 }
 
+bool ps3000aImpl::GetFrequencyFromTimebase(uint32_t timebase, double &frequency)
+{
+    return true;
+}
+
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 //
 // Name: ps3000aImpl::InitializeScope

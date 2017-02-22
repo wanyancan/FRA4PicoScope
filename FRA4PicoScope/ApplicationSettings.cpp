@@ -443,10 +443,12 @@ bool ApplicationSettings::InitializeScopeSettingsFile(PicoScope* pScope)
     ScopeSettingsPropTree.put( L"picoScope.inputChannel.attenuation", ATTEN_1X );
     ScopeSettingsPropTree.put( L"picoScope.inputChannel.coupling",PS_AC );
     ScopeSettingsPropTree.put( L"picoScope.inputChannel.dcOffset", L"0.0" );
+    ScopeSettingsPropTree.put( L"picoScope.inputChannel.startingRange", -1 ); // Base on stimulus
     ScopeSettingsPropTree.put( L"picoScope.outputChannel.name", L"B" );
     ScopeSettingsPropTree.put( L"picoScope.outputChannel.attenuation", ATTEN_1X );
     ScopeSettingsPropTree.put( L"picoScope.outputChannel.coupling", PS_AC );
     ScopeSettingsPropTree.put( L"picoScope.outputChannel.dcOffset", L"0.0" );
+    ScopeSettingsPropTree.put( L"picoScope.outputChannel.startingRange", pScope->GetMinRange(PS_AC) );
 
     midSigGenVpp = floor((pScope->GetMinFuncGenVpp() + pScope->GetMaxFuncGenVpp()) / 2.0);
 
@@ -460,6 +462,8 @@ bool ApplicationSettings::InitializeScopeSettingsFile(PicoScope* pScope)
     ScopeSettingsPropTree.put( L"picoScope.fraParam.startFrequency", startFreqSS.str().c_str() );
     ScopeSettingsPropTree.put( L"picoScope.fraParam.stopFrequency", stopFreqSS.str().c_str() );
     ScopeSettingsPropTree.put( L"picoScope.fraParam.stepsPerDecade", 10 );
+
+    ScopeSettingsPropTree.put( L"picoScope.sampleParam.noiseRejectModeTimebase", pScope->GetDefaultNoiseRejectModeTimebase() );
 
     settingsFileOutputStream.open( scopeDataFilename.c_str(), ios::out );
     if (!settingsFileOutputStream)

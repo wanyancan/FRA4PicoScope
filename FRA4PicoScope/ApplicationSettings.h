@@ -558,6 +558,15 @@ class ApplicationSettings
             ScopeSettingsPropTree.put(L"picoScope.inputChannel.dcOffset", wstring(dcOffset));
         }
 
+        inline int GetInputStartingRange()
+        {
+            return ScopeSettingsPropTree.get<int>(L"picoScope.inputChannel.startingRange");
+        }
+        inline void SetInputStartingRange(int range)
+        {
+            ScopeSettingsPropTree.put(L"picoScope.inputChannel.startingRange", range);
+        }
+
         inline int GetOutputChannel()
         {
             return ScopeSettingsPropTree.get<wstring>(L"picoScope.outputChannel.name").c_str()[0] - wchar_t('A');
@@ -594,6 +603,15 @@ class ApplicationSettings
         inline void SetOutputDcOffset(const wchar_t* dcOffset)
         {
             ScopeSettingsPropTree.put(L"picoScope.outputChannel.dcOffset", wstring(dcOffset));
+        }
+
+        inline int GetOutputStartingRange()
+        {
+            return ScopeSettingsPropTree.get<int>(L"picoScope.outputChannel.startingRange");
+        }
+        inline void SetOutputStartingRange(int range)
+        {
+            ScopeSettingsPropTree.put(L"picoScope.outputChannel.startingRange", range);
         }
 
         inline const wstring GetStimulusVpp()
@@ -639,6 +657,19 @@ class ApplicationSettings
         inline void SetStepsPerDecade(const wchar_t* stepsPerDecade)
         {
             ScopeSettingsPropTree.put(L"picoScope.fraParam.stepsPerDecade", wstring(stepsPerDecade));
+        }
+
+        inline int GetNoiseRejectModeTimebase()
+        {
+            return ScopeSettingsPropTree.get<int>(L"picoScope.sampleParam.noiseRejectModeTimebase");
+        }
+        inline const wstring GetNoiseRejectModeTimebaseAsString()
+        {
+            return ScopeSettingsPropTree.get<wstring>(L"picoScope.sampleParam.noiseRejectModeTimebase");
+        }
+        inline void SetNoiseRejectModeTimebase(int timebase)
+        {
+            ScopeSettingsPropTree.put(L"picoScope.sampleParam.noiseRejectModeTimebase", timebase);
         }
 
         // Versions which convert the string to a number

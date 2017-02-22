@@ -131,6 +131,11 @@ bool ps2000aImpl::GetTimebase( double desiredFrequency, double* actualFrequency,
     return retVal;
 }
 
+bool ps2000aImpl::GetFrequencyFromTimebase(uint32_t timebase, double &frequency)
+{
+    return true;
+}
+
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 //
 // Name: ps2000aImpl::InitializeScope

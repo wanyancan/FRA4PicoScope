@@ -93,6 +93,11 @@ bool ps5000Impl::GetTimebase( double desiredFrequency, double* actualFrequency, 
     return retVal;
 }
 
+bool ps5000Impl::GetFrequencyFromTimebase(uint32_t timebase, double &frequency)
+{
+    return true;
+}
+
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 //
 // Name: ps5000aImpl::InitializeScope
