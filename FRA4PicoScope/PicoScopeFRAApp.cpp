@@ -355,6 +355,8 @@ void SelectNewScope( AvailableScopeDescription_T scope, bool mruScope = false )
             exit(-1);
         }
 
+        pScope->SetDesiredNoiseRejectModeTimebase(pSettings->GetNoiseRejectModeTimebase());
+
         if (!mruScope) // Don't unnecessarily dirty the settings file
         {
             pSettings->SetMostRecentScope(scope.driverFamily, scope.serialNumber);

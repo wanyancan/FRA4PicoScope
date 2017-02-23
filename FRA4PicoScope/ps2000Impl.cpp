@@ -87,17 +87,8 @@ bool ps2000Impl::GetTimebase( double desiredFrequency, double* actualFrequency, 
             // Bound to 1, because none of these scopes can do the maximum frequency with both channels enabled
             *timebase = max(*timebase, 1);
 
-            *actualFrequency = maxFrequency / (double)(1 << *timebase);
-            retVal = true;
+            retVal = GetFrequencyFromTimebase(*timebase, *actualFrequency);
         }
-        else
-        {
-            retVal = false;
-        }
-    }
-    else
-    {
-        retVal = false;
     }
 
     return retVal;
@@ -105,7 +96,35 @@ bool ps2000Impl::GetTimebase( double desiredFrequency, double* actualFrequency, 
 
 bool ps2000Impl::GetFrequencyFromTimebase(uint32_t timebase, double &frequency)
 {
-    return true;
+    bool retVal = false;
+    double maxFrequency;
+
+    if (model == PS2203 || model == PS2204 || model == PS2205 || model == PS2204A || model == PS2205A)
+    {
+        switch (model)
+        {
+        case PS2203:
+            maxFrequency = 40e6;
+            break;
+        case PS2204:
+        case PS2204A:
+            maxFrequency = 100e6;
+            break;
+        case PS2205: 
+        case PS2205A:
+            maxFrequency = 200e6;
+            break;
+        }
+
+        frequency = maxFrequency / (double)(1 << timebase);
+        retVal = true;
+    }
+    else
+    {
+        retVal = false;
+    }
+
+    return retVal;
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -123,29 +142,8 @@ bool ps2000Impl::InitializeScope(void)
 {
     bool retVal = true;
 
-    timebaseNoiseRejectMode = 1; // Because two channels are used, the maximum available frequency 
-                                 // is half the scope's absolute maximum frequency => timebase=1
-
-    switch (model)
-    {
-        case PS2202:
-        // Let the 2202 initialize, but it is incompatible because it has no signal generator.
-        break;
-        case PS2203:
-            fSampNoiseRejectMode = 20e6;
-            break;
-        case PS2204: 
-        case PS2204A:
-            fSampNoiseRejectMode = 50e6;
-            break;
-        case PS2205: 
-        case PS2205A:
-            fSampNoiseRejectMode = 100e6;
-            break;
-        default:
-            retVal = false;
-            break;
-    }
+    defaultTimebaseNoiseRejectMode = 1; // Because two channels are used, the maximum available frequency 
+                                        // is half the scope's absolute maximum frequency => timebase=1
 
     signalGeneratorPrecision = 48.0e6 / (double)UINT32_MAX;
 

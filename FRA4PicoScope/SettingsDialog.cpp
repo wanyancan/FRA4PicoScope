@@ -112,8 +112,8 @@ INT_PTR CALLBACK SettingsDialogHandler(HWND hDlg, UINT message, WPARAM wParam, L
             // Autorange Settings
             if (pCurrentScope)
             {
-                int rangeIndex, cbIndex;
                 int inputMinRange, inputMaxRange, outputMinRange, outputMaxRange;
+                int currentStartingRange;
                 const RANGE_INFO_T* rangeInfo = pCurrentScope->GetRangeCaps();
                 inputMinRange = pCurrentScope->GetMinRange((PS_COUPLING)(pSettings->GetInputCoupling()));
                 inputMaxRange = pCurrentScope->GetMaxRange((PS_COUPLING)(pSettings->GetInputCoupling()));
@@ -123,32 +123,38 @@ INT_PTR CALLBACK SettingsDialogHandler(HWND hDlg, UINT message, WPARAM wParam, L
                 hndCtrl = GetDlgItem( hDlg, IDC_COMBO_INPUT_START_RANGE );
                 ComboBox_AddString( hndCtrl, L"Stimulus" );
                 ComboBox_SetItemData( hndCtrl, 0, -1 );
-
-                for (rangeIndex = inputMinRange, cbIndex = 1; rangeIndex <= inputMaxRange; rangeIndex++, cbIndex++)
+                for (int rangeIndex = inputMinRange; rangeIndex <= inputMaxRange; rangeIndex++)
                 {
-                    ComboBox_AddString( hndCtrl, rangeInfo[rangeIndex].name );
-                    ComboBox_SetItemData( hndCtrl, cbIndex, rangeIndex );
+                    ComboBox_SetItemData( hndCtrl, ComboBox_AddString( hndCtrl, rangeInfo[rangeIndex].name ), rangeIndex );
                 }
-                int sr = pSettings->GetInputStartingRange();
-                int fi = ComboBox_FindItemData( hndCtrl, -1, &sr );
-                ComboBox_SetCurSel( hndCtrl, fi );
 
-                //ComboBox_SetCurSel( hndCtrl, ComboBox_FindItemData( hndCtrl, -1, pSettings->GetInputStartingRange() ) );
+                currentStartingRange = pSettings->GetInputStartingRange();
+                if (-1 == currentStartingRange)
+                {
+                    ComboBox_SetCurSel(hndCtrl, 0);
+                }
+                else
+                {
+                    ComboBox_SetCurSel(hndCtrl, currentStartingRange - inputMinRange + 1);
+                }
 
                 hndCtrl = GetDlgItem( hDlg, IDC_COMBO_OUTPUT_START_RANGE );
                 ComboBox_AddString( hndCtrl, L"Stimulus" );
                 ComboBox_SetItemData( hndCtrl, 0, -1 );
-
-                for (rangeIndex = inputMinRange, cbIndex = 1; rangeIndex <= inputMaxRange; rangeIndex++, cbIndex++)
+                for (int rangeIndex = inputMinRange; rangeIndex <= inputMaxRange; rangeIndex++)
                 {
-                    ComboBox_AddString( hndCtrl, rangeInfo[rangeIndex].name );
-                    ComboBox_SetItemData( hndCtrl, cbIndex, rangeIndex );
+                    ComboBox_SetItemData( hndCtrl, ComboBox_AddString( hndCtrl, rangeInfo[rangeIndex].name ), rangeIndex );
                 }
-                sr = pSettings->GetOutputStartingRange();
-                fi = ComboBox_FindItemData( hndCtrl, -1, &sr );
-                ComboBox_SetCurSel( hndCtrl, fi );
 
-                //ComboBox_SetCurSel( hndCtrl, ComboBox_FindItemData( hndCtrl, -1, pSettings->GetOutputStartingRange() ) );
+                currentStartingRange = pSettings->GetOutputStartingRange();
+                if (-1 == currentStartingRange)
+                {
+                    ComboBox_SetCurSel(hndCtrl, 0);
+                }
+                else
+                {
+                    ComboBox_SetCurSel(hndCtrl, currentStartingRange - outputMinRange + 1);
+                }
             }
             else
             {

@@ -50,17 +50,13 @@
 
 bool ps5000aImpl::GetTimebase( double desiredFrequency, double* actualFrequency, uint32_t* timebase )
 {
-    bool retVal = true;
+    bool retVal = false;
 
     if (desiredFrequency != 0.0 && actualFrequency && timebase)
     {
         *timebase = saturation_cast<uint32_t,double>((125.0e6/desiredFrequency) + 2.0); // ps5000abpg.en r1: p18
         *timebase = max( *timebase, 3 ); // make sure it's at least 3
-        *actualFrequency = 125.0e6 / ((double)(*timebase - 2)); // ps5000abpg.en r1: p18
-    }
-    else
-    {
-        retVal = false;
+        retVal = GetFrequencyFromTimebase(*timebase, *actualFrequency);
     }
 
     return retVal;
@@ -68,6 +64,7 @@ bool ps5000aImpl::GetTimebase( double desiredFrequency, double* actualFrequency,
 
 bool ps5000aImpl::GetFrequencyFromTimebase(uint32_t timebase, double &frequency)
 {
+    frequency = 125.0e6 / ((double)(timebase - 2)); // ps5000abpg.en r1: p18
     return true;
 }
 
@@ -85,8 +82,7 @@ bool ps5000aImpl::GetFrequencyFromTimebase(uint32_t timebase, double &frequency)
 
 bool ps5000aImpl::InitializeScope(void)
 {
-    timebaseNoiseRejectMode = 4; // for PS5000A => 62.5 MHz approximately 3x HW BW limiter
-    fSampNoiseRejectMode = 62500000.0; // for PS5000A - approximately 3x HW BW limiter
+    defaultTimebaseNoiseRejectMode = 4; // for PS5000A => 62.5 MHz approximately 3x HW BW limiter
 
     signalGeneratorPrecision = 200.0e6 / (double)UINT32_MAX;
 

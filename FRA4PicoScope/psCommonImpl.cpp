@@ -159,7 +159,7 @@ CommonCtor(SCOPE_FAMILY_LT)( int16_t _handle ) : PicoScope()
     minRange = 0;
     maxRange = 0;
     timebaseNoiseRejectMode = 0;
-    fSampNoiseRejectMode = 0.0;
+    defaultTimebaseNoiseRejectMode = 0;
     signalGeneratorPrecision = 0.0;
     mInputChannel = PS_CHANNEL_INVALID;
     mOutputChannel = PS_CHANNEL_INVALID;
@@ -285,6 +285,11 @@ void CommonMethod(SCOPE_FAMILY_LT,GetAvailableCouplings)( vector<wstring>& coupl
 #endif
 }
 
+void CommonMethod(SCOPE_FAMILY_LT,SetDesiredNoiseRejectModeTimebase)( uint32_t timebase )
+{
+    timebaseNoiseRejectMode = timebase;
+}
+
 uint32_t CommonMethod(SCOPE_FAMILY_LT,GetDefaultNoiseRejectModeTimebase)( void )
 {
     return defaultTimebaseNoiseRejectMode;
@@ -299,7 +304,7 @@ uint32_t CommonMethod(SCOPE_FAMILY_LT,GetNoiseRejectModeTimebase)( void )
             ((mInputChannel == PS_CHANNEL_C || mInputChannel == PS_CHANNEL_D) &&
              (mOutputChannel == PS_CHANNEL_C || mOutputChannel == PS_CHANNEL_D)))
         {
-            return 2;
+            return max( 2, timebaseNoiseRejectMode );
         }
     }
 
@@ -308,17 +313,9 @@ uint32_t CommonMethod(SCOPE_FAMILY_LT,GetNoiseRejectModeTimebase)( void )
 
 double CommonMethod(SCOPE_FAMILY_LT,GetNoiseRejectModeSampleRate)( void )
 {
-    if (model == PS6407)
-    {
-        if (((mInputChannel == PS_CHANNEL_A || mInputChannel == PS_CHANNEL_B) &&
-             (mOutputChannel == PS_CHANNEL_A || mOutputChannel == PS_CHANNEL_B)) ||
-            ((mInputChannel == PS_CHANNEL_C || mInputChannel == PS_CHANNEL_D) &&
-             (mOutputChannel == PS_CHANNEL_C || mOutputChannel == PS_CHANNEL_D)))
-        {
-            return 1.25e9;
-        }
-    }
-    return fSampNoiseRejectMode;
+    double sampleRate;
+    GetFrequencyFromTimebase( GetNoiseRejectModeTimebase(), sampleRate );
+    return sampleRate;
 }
 
 double CommonMethod(SCOPE_FAMILY_LT,GetSignalGeneratorPrecision)( void )
@@ -865,38 +862,6 @@ bool CommonMethod(SCOPE_FAMILY_LT, GetMaxSamples)( uint32_t* pMaxSamples )
 
     return retVal;
 }
-
-#if 0
-bool CommonMethod(SCOPE_FAMILY_LT, GetFrequencyFromTimebase)( uint32_t timebase, double &frequency )
-{
-    PICO_STATUS status;
-    bool retVal = true;
-    wstringstream fraStatusText;
-#if defined(NEW_PS_DRIVER_MODEL)
-    float sampleInterval;
-#else
-    int32_t sampleInterval;
-#endif
-
-    if (PICO_ERROR(CommonApi(SCOPE_FAMILY_LT, GetTimebase)( handle, timebase, 0, &sampleInterval, TIME_UNITS_ARG OVERSAMPLE_ARG NULL SEGMENT_INDEX_ARG )))
-    {
-        fraStatusText << L"Fatal error: Failed to determine sampling frequency: " << status;
-        LogMessage( fraStatusText.str() );
-        retVal = false;
-    }
-    else
-    {
-#if defined(NEW_PS_DRIVER_MODEL)
-        frequency = 1.0 / sampleInterval;
-#else
-        frequency = 1.0e9 / sampleInterval;
-#endif
-        retVal = true;
-    }
-
-    return retVal;
-}
-#endif
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 //
