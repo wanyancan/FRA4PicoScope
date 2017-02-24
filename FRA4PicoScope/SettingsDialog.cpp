@@ -197,14 +197,22 @@ INT_PTR CALLBACK SettingsDialogHandler(HWND hDlg, UINT message, WPARAM wParam, L
 
             if (pCurrentScope)
             {
-                hndCtrl = GetDlgItem( hDlg, IDC_EDIT_NOISE_REJECT_TIMEBASE );
-                Edit_SetText( hndCtrl, pSettings->GetNoiseRejectModeTimebaseAsString().c_str() );
+                hndCtrl = GetDlgItem( hDlg, IDC_UPDOWN_NOISE_REJECT_TIMEBASE );
+                SendMessage( hndCtrl, UDM_SETBUDDY, (WPARAM)GetDlgItem( hDlg, IDC_EDIT_NOISE_REJECT_TIMEBASE ), 0L );
+                // Up/Down (Spin) controls with buddies only support signed 32 bit range.
+                // That OK because it's contradictory to have very large timebases in noise reject mode anyway.
+                SendMessage( hndCtrl, UDM_SETRANGE32, pCurrentScope->GetMinTimebase(), min((uint32_t)(std::numeric_limits<int32_t>::max)(), pCurrentScope->GetMaxTimebase()) );
+                SendMessage( hndCtrl, UDM_SETPOS32, 0L, pSettings->GetNoiseRejectModeTimebase() );
             }
             else
             {
                 hndCtrl = GetDlgItem( hDlg, IDC_EDIT_NOISE_REJECT_TIMEBASE );
                 EnableWindow( hndCtrl, FALSE );
                 hndCtrl = GetDlgItem( hDlg, IDC_STATIC_NOISE_REJECT_TIMEBASE );
+                EnableWindow( hndCtrl, FALSE );
+                hndCtrl = GetDlgItem( hDlg, IDC_UPDOWN_NOISE_REJECT_TIMEBASE );
+                EnableWindow( hndCtrl, FALSE );
+                hndCtrl = GetDlgItem( hDlg, IDC_STATIC_NOISE_REJECT_SAMPLING_RATE );
                 EnableWindow( hndCtrl, FALSE );
             }
 
@@ -307,18 +315,49 @@ INT_PTR CALLBACK SettingsDialogHandler(HWND hDlg, UINT message, WPARAM wParam, L
                         DWORD lvDims = ListView_ApproximateViewRect( hndCtrl, -1, -1, numLogVerbosityFlags );
                         SetWindowPos( hndCtrl, 0, 0, 0, LOWORD(lvDims)+rect.left, HIWORD(lvDims), SWP_NOZORDER | SWP_NOMOVE );
                         logVerbositySelectorOpen = true;
-                        break;
                     }
                     else
                     {
                         hndCtrl = GetDlgItem( hDlg, IDC_LIST_LOG_VERBOSITY );
                         SetWindowPos( hndCtrl, 0, 0, 0, LOWORD(ListView_ApproximateViewRect( hndCtrl, -1, -1, numLogVerbosityFlags )), 0, SWP_NOZORDER | SWP_NOMOVE);
                         logVerbositySelectorOpen = false;
-                        break;
                     }
-                    default:
-                        break;
+                    break;
                 }
+                case IDC_EDIT_NOISE_REJECT_TIMEBASE:
+                {
+                    if (EN_CHANGE == HIWORD(wParam))
+                    {
+                        uint32_t newTimebase;
+                        double newFrequency;
+                        wchar_t newTimebaseText[16];
+                        wchar_t sampleRateDisplayString[128];
+                        Edit_GetText((HWND)lParam, newTimebaseText, 16);
+                        if (wcslen(newTimebaseText))
+                        {
+                            swscanf(newTimebaseText, L"%lu", &newTimebase);
+                            if (pCurrentScope->GetFrequencyFromTimebase(newTimebase, newFrequency))
+                            {
+                                swprintf(sampleRateDisplayString, 128, L"Noise reject sample rate: %g Hz", newFrequency);
+                            }
+                            else
+                            {
+                                swprintf(sampleRateDisplayString, 128, L"Noise reject sample rate: INVALID");
+                            }
+                            hndCtrl = GetDlgItem(hDlg, IDC_STATIC_NOISE_REJECT_SAMPLING_RATE);
+                            Static_SetText(hndCtrl, sampleRateDisplayString);
+                        }
+                        else
+                        {
+                            swprintf(sampleRateDisplayString, 128, L"Noise reject sample rate: INVALID");
+                            hndCtrl = GetDlgItem(hDlg, IDC_STATIC_NOISE_REJECT_SAMPLING_RATE);
+                            Static_SetText(hndCtrl, sampleRateDisplayString);
+                        }
+                    }
+                    break;
+                }
+                default:
+                    break;
             }
             return (INT_PTR)TRUE;
             break;

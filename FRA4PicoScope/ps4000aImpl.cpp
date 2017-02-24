@@ -83,6 +83,9 @@ bool ps4000aImpl::InitializeScope(void)
 {
     defaultTimebaseNoiseRejectMode = 0;
 
+    minTimebase = 0;
+    maxTimebase = (std::numeric_limits<uint32_t>::max)();
+
     signalGeneratorPrecision = 80.0e6 / (double)UINT32_MAX;
 
     minRange = (PS_RANGE)PS4000A_10MV;

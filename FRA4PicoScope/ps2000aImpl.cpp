@@ -210,6 +210,9 @@ bool ps2000aImpl::InitializeScope(void)
     bool retVal = true;
     defaultTimebaseNoiseRejectMode = 1;
 
+    minTimebase = 1;
+    maxTimebase = (std::numeric_limits<uint32_t>::max)();
+
     switch (model)
     {
         case PS2206:

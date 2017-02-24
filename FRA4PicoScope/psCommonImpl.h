@@ -27,6 +27,8 @@ public:
 bool Initialized( void );
 uint8_t GetNumChannels( void );
 void GetAvailableCouplings( vector<wstring>& couplingText );
+uint32_t GetMinTimebase( void );
+uint32_t GetMaxTimebase( void );
 uint32_t GetNoiseRejectModeTimebase( void );
 void SetDesiredNoiseRejectModeTimebase( uint32_t timebase );
 uint32_t GetDefaultNoiseRejectModeTimebase( void );
@@ -69,6 +71,8 @@ static const RANGE_INFO_T rangeInfo[];
 int16_t handle;
 PS_RANGE minRange;
 PS_RANGE maxRange;
+uint32_t minTimebase;
+uint32_t maxTimebase;
 uint32_t defaultTimebaseNoiseRejectMode;
 uint32_t timebaseNoiseRejectMode;
 PS_CHANNEL mInputChannel;

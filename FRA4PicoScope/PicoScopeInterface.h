@@ -194,6 +194,8 @@ class PicoScope
         virtual bool Initialized(void) = 0;
         virtual uint8_t GetNumChannels( void ) = 0;
         virtual void GetAvailableCouplings( vector<wstring>& couplingText ) = 0;
+        virtual uint32_t GetMinTimebase( void ) = 0;
+        virtual uint32_t GetMaxTimebase( void ) = 0;
         virtual void SetDesiredNoiseRejectModeTimebase( uint32_t timebase ) = 0;
         virtual uint32_t GetNoiseRejectModeTimebase( void ) = 0;
         virtual uint32_t GetDefaultNoiseRejectModeTimebase( void ) = 0;

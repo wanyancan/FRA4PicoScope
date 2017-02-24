@@ -163,6 +163,8 @@
 #define IDC_STATIC_INPUT_START_RANGE    1051
 #define IDC_STATIC_OUTPUT_START_RANGE   1052
 #define IDC_STATIC_NOISE_REJECT_TIMEBASE 1053
+#define IDC_UPDOWN_NOISE_REJECT_TIMEBASE 1054
+#define IDC_STATIC_NOISE_REJECT_SAMPLING_RATE 1055
 #define IDC_STATIC                      -1
 
 // Next default values for new objects
@@ -171,7 +173,7 @@
 #ifndef APSTUDIO_READONLY_SYMBOLS
 #define _APS_NEXT_RESOURCE_VALUE        106
 #define _APS_NEXT_COMMAND_VALUE         40002
-#define _APS_NEXT_CONTROL_VALUE         1054
+#define _APS_NEXT_CONTROL_VALUE         1056
 #define _APS_NEXT_SYMED_VALUE           101
 #endif
 #endif

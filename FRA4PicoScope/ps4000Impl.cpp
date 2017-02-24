@@ -76,7 +76,7 @@ bool ps4000Impl::GetTimebase( double desiredFrequency, double* actualFrequency, 
         if (model == PS4262)
         {
             fTimebase = max(0.0, ((10.0e6/(desiredFrequency)) - 1.0)); // ps4000pg.en r8 p17
-            fTimebase = min(fTimebase, (double)(1<<30)); // limit is 2^30
+            fTimebase = min(fTimebase, (double)((uint32_t)1<<30) - 1.0); // limit is 2^30-1
             *timebase = (uint32_t)fTimebase;
             retVal = GetFrequencyFromTimebase(*timebase, *actualFrequency);
         }
@@ -94,7 +94,7 @@ bool ps4000Impl::GetTimebase( double desiredFrequency, double* actualFrequency, 
             else
             {
                 fTimebase = ((31250000.0/(desiredFrequency)) + 2.0); // ps4000pg.en r8 p17
-                fTimebase = min(fTimebase, (double)(1<<30)); // limit is 2^30
+                fTimebase = min(fTimebase, (double)((uint32_t)1<<30) - 1.0); // limit is 2^30-1
                 *timebase = (uint32_t)fTimebase;
                 *timebase = max( *timebase, 4 ); // make sure it's at least 4
                 retVal = GetFrequencyFromTimebase(*timebase, *actualFrequency);
@@ -152,20 +152,25 @@ bool ps4000Impl::InitializeScope(void)
     {
         minRange = (PS_RANGE)PS4000_10MV;
         defaultTimebaseNoiseRejectMode = 15; // for PS4262 => 625 kHz, approximately 3x HW BW limiter
+        minTimebase = 0;
         signalGeneratorPrecision = 192.0e3 / (double)UINT32_MAX;
     }
     else if (model == PS4226)
     {
         minRange = (PS_RANGE)PS4000_50MV; // +/- 50mV
         defaultTimebaseNoiseRejectMode = 1; // for PS4226 => 125 MHz
+        minTimebase = 1;
         signalGeneratorPrecision = 20.0e6 / (double)UINT32_MAX;
     }
     else if (model == PS4227)
     {
         minRange = (PS_RANGE)PS4000_50MV; // +/- 50mV
         defaultTimebaseNoiseRejectMode = 0; // for PS4227 => 250 MHz
+        minTimebase = 0;
         signalGeneratorPrecision = 20.0e6 / (double)UINT32_MAX;
     }
+
+    maxTimebase = ((uint32_t)1<<30) - 1;
 
     return true;
 }

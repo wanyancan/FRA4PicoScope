@@ -158,6 +158,8 @@ CommonCtor(SCOPE_FAMILY_LT)( int16_t _handle ) : PicoScope()
 #endif
     minRange = 0;
     maxRange = 0;
+    minTimebase = 0;
+    maxTimebase = 0;
     timebaseNoiseRejectMode = 0;
     defaultTimebaseNoiseRejectMode = 0;
     signalGeneratorPrecision = 0.0;
@@ -283,6 +285,16 @@ void CommonMethod(SCOPE_FAMILY_LT,GetAvailableCouplings)( vector<wstring>& coupl
     couplingText[0] = TEXT("AC");
     couplingText[1] = TEXT("DC");
 #endif
+}
+
+uint32_t CommonMethod(SCOPE_FAMILY_LT,GetMinTimebase)( void )
+{
+    return minTimebase;
+}
+
+uint32_t CommonMethod(SCOPE_FAMILY_LT,GetMaxTimebase)( void )
+{
+    return maxTimebase;
 }
 
 void CommonMethod(SCOPE_FAMILY_LT,SetDesiredNoiseRejectModeTimebase)( uint32_t timebase )

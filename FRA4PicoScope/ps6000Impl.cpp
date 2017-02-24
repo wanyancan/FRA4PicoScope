@@ -121,8 +121,12 @@ bool ps6000Impl::InitializeScope(void)
     }
     else
     {
+        // A bandwidth limiter is available on these scope and will be used.
         defaultTimebaseNoiseRejectMode = 6;
     }
+
+    minTimebase = 1;
+    maxTimebase = (std::numeric_limits<uint32_t>::max)();
 
     signalGeneratorPrecision = 200.0e6 / (double)UINT32_MAX;
 

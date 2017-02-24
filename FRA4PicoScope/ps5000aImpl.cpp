@@ -84,6 +84,9 @@ bool ps5000aImpl::InitializeScope(void)
 {
     defaultTimebaseNoiseRejectMode = 4; // for PS5000A => 62.5 MHz approximately 3x HW BW limiter
 
+    minTimebase = 3;
+    maxTimebase = (std::numeric_limits<uint32_t>::max)();
+
     signalGeneratorPrecision = 200.0e6 / (double)UINT32_MAX;
 
     minRange = (PS_RANGE)PS5000A_10MV;

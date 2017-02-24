@@ -81,9 +81,9 @@ bool ps2000Impl::GetTimebase( double desiredFrequency, double* actualFrequency, 
 
             *timebase = saturation_cast<uint32_t,double>(log(maxFrequency/desiredFrequency) / M_LN2); // ps2000pg.en r10 p20; log2(n) implemented as log(n)/log(2)
 
-            // Bound to PS2200_MAX_TIMEBASE
-            // Doing this step in integer space to avoid potential for impossibility to reach PS2200_MAX_TIMEBASE caused by floating point precision issues
-            *timebase = min(*timebase, PS2200_MAX_TIMEBASE);
+            // Bound to PS2000_MAX_TIMEBASE
+            // Doing this step in integer space to avoid potential for impossibility to reach PS2000_MAX_TIMEBASE caused by floating point precision issues
+            *timebase = min(*timebase, PS2000_MAX_TIMEBASE);
             // Bound to 1, because none of these scopes can do the maximum frequency with both channels enabled
             *timebase = max(*timebase, 1);
 
@@ -144,6 +144,9 @@ bool ps2000Impl::InitializeScope(void)
 
     defaultTimebaseNoiseRejectMode = 1; // Because two channels are used, the maximum available frequency 
                                         // is half the scope's absolute maximum frequency => timebase=1
+
+    minTimebase = 1;
+    maxTimebase = PS2000_MAX_TIMEBASE;
 
     signalGeneratorPrecision = 48.0e6 / (double)UINT32_MAX;
 

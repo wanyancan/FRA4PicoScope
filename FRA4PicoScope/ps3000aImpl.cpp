@@ -186,6 +186,9 @@ bool ps3000aImpl::InitializeScope(void)
         defaultTimebaseNoiseRejectMode = 4;
     }
 
+    minTimebase = 1;
+    maxTimebase = (std::numeric_limits<uint32_t>::max)();
+
     if (model == PS3204A || model == PS3204B || model == PS3205A || model == PS3205B || model == PS3206A || model == PS3206B || model == PS3204MSO || model == PS3205MSO || model == PS3206MSO ||
         model == PS3404A || model == PS3404B || model == PS3405A || model == PS3405B || model == PS3406A || model == PS3406B ||
         model == PS3203D || model == PS3203DMSO || model == PS3204D || model == PS3204DMSO || model == PS3205D || model == PS3205DMSO || model == PS3206D || model == PS3206DMSO ||
