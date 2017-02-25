@@ -38,6 +38,7 @@
 #include <boost/algorithm/string.hpp>
 #include "utility.h"
 #include "SettingsDialog.h"
+#include "PlotAxesDialog.h"
 #include "PicoScopeFraApp.h"
 #include "PicoScopeInterface.h"
 #include "Resource.h"
@@ -695,6 +696,36 @@ INT_PTR CALLBACK SettingsDialogHandler(HWND hDlg, UINT message, WPARAM wParam, L
                         hndCtrl = GetDlgItem(hDlg, IDC_STATIC_NOISE_REJECT_SAMPLING_RATE);
                         Static_SetText(hndCtrl, sampleRateDisplayString);
                     }
+                    break;
+                }
+                case IDC_BUTTON_AXIS_SETTINGS:
+                {
+                    PlotScaleSettings_T plotSettings;
+                    DWORD dwDlgResp;
+
+                    plotSettings.freqAxisScale = pSettings->GetFreqScale();
+                    plotSettings.gainAxisScale = pSettings->GetGainScale();
+                    plotSettings.phaseAxisScale = pSettings->GetPhaseScale();
+                    plotSettings.freqAxisIntervals = pSettings->GetFreqIntervals();
+                    plotSettings.gainAxisIntervals = pSettings->GetGainIntervals();
+                    plotSettings.phaseAxisIntervals = pSettings->GetPhaseIntervals();
+                    plotSettings.gainMasterIntervals = pSettings->GetGainMasterIntervals();
+                    plotSettings.phaseMasterIntervals = pSettings->GetPhaseMasterIntervals();
+
+                    dwDlgResp = DialogBoxParam(NULL, MAKEINTRESOURCE(IDD_AXES_DIALOG), hDlg, PlotAxesDialogHandler, (LPARAM)&plotSettings);
+
+                    if (IDOK == dwDlgResp)
+                    {
+                        pSettings->SetFreqScale(plotSettings.freqAxisScale);
+                        pSettings->SetGainScale(plotSettings.gainAxisScale);
+                        pSettings->SetPhaseScale(plotSettings.phaseAxisScale);
+                        pSettings->SetFreqIntervals(plotSettings.freqAxisIntervals);
+                        pSettings->SetGainIntervals(plotSettings.gainAxisIntervals);
+                        pSettings->SetPhaseIntervals(plotSettings.phaseAxisIntervals);
+                        pSettings->SetGainMasterIntervals(plotSettings.gainMasterIntervals);
+                        pSettings->SetPhaseMasterIntervals(plotSettings.phaseMasterIntervals);
+                    }
+
                     break;
                 }
                 default:

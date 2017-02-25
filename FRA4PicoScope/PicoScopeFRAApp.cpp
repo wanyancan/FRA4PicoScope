@@ -785,7 +785,25 @@ BOOL CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
                     dwDlgResp = DialogBoxParam(hInst, MAKEINTRESOURCE(IDD_SETTINGS), hWnd, SettingsDialogHandler, (LPARAM)pScopeSelector->GetSelectedScope());
                     if (LOWORD(dwDlgResp) == IDOK)
                     {
-                        // Propagate and save settings changes
+                        LoadControlsData(hMainWnd);
+
+                        psFRA->SetFraSettings( pSettings->GetSamplingMode(), pSettings->GetAdaptiveStimulusMode(), pSettings->GetTargetResponseAmplitudeAsDouble(),
+                                               pSettings->GetSweepDescending(), pSettings->GetPhaseWrappingThreshold() );
+
+                        psFRA->SetFraTuning( pSettings->GetPurityLowerLimitAsFraction(), pSettings->GetExtraSettlingTimeMs(),
+                                             pSettings->GetAutorangeTriesPerStep(), pSettings->GetAutorangeTolerance(),
+                                             pSettings->GetAmplitudeLowerLimitAsFraction(), pSettings->GetMaxAutorangeAmplitude(),
+                                             pSettings->GetAdaptiveStimulusTriesPerStep(), pSettings->GetTargetResponseAmplitudeTolerance(),
+                                             pSettings->GetMinCyclesCaptured() );
+
+                        if (pSettings->GetTimeDomainPlotsEnabled())
+                        {
+                            psFRA->EnableDiagnostics(dataDirectoryName);
+                        }
+                        else
+                        {
+                            psFRA->DisableDiagnostics();
+                        }
                     }
                     return TRUE;
                 }

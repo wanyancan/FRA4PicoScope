@@ -148,15 +148,15 @@ bool ApplicationSettings::InitializeApplicationSettingsFile( void )
         AppSettingsPropTree.put( L"sweepDescending", false );
 
         AppSettingsPropTree.put( L"plot.freqAxis.autoscale", true );
-        AppSettingsPropTree.put( L"plot.freqAxis.min", 0.0 );
-        AppSettingsPropTree.put( L"plot.freqAxis.max", 0.0 );
+        AppSettingsPropTree.put( L"plot.freqAxis.min", L"1.0" );
+        AppSettingsPropTree.put( L"plot.freqAxis.max", L"10000000.0" );
         AppSettingsPropTree.put( L"plot.freqAxis.majorTickInterval", 0.0 );
         AppSettingsPropTree.put( L"plot.freqAxis.minorTicksPerMajorInterval", 0 );
         AppSettingsPropTree.put( L"plot.freqAxis.majorGrids", true );
         AppSettingsPropTree.put( L"plot.freqAxis.minorGrids", true );
 
         AppSettingsPropTree.put( L"plot.gainAxis.autoscale", true );
-        AppSettingsPropTree.put( L"plot.gainAxis.min", 0.0 );
+        AppSettingsPropTree.put( L"plot.gainAxis.min", L"-60.0" );
         AppSettingsPropTree.put( L"plot.gainAxis.max", 0.0 );
         AppSettingsPropTree.put( L"plot.gainAxis.majorTickInterval", 0.0 );
         AppSettingsPropTree.put( L"plot.gainAxis.minorTicksPerMajorInterval", 0 );
@@ -165,8 +165,8 @@ bool ApplicationSettings::InitializeApplicationSettingsFile( void )
         AppSettingsPropTree.put( L"plot.gainAxis.masterGrids", true );
 
         AppSettingsPropTree.put( L"plot.phaseAxis.autoscale", true );
-        AppSettingsPropTree.put( L"plot.phaseAxis.min", 0.0 );
-        AppSettingsPropTree.put( L"plot.phaseAxis.max", 0.0 );
+        AppSettingsPropTree.put( L"plot.phaseAxis.min", L"-180.0" );
+        AppSettingsPropTree.put( L"plot.phaseAxis.max", L"180.0" );
         AppSettingsPropTree.put( L"plot.phaseAxis.majorTickInterval", 0.0 );
         AppSettingsPropTree.put( L"plot.phaseAxis.minorTicksPerMajorInterval", 0 );
         AppSettingsPropTree.put( L"plot.phaseAxis.majorGrids", false );
