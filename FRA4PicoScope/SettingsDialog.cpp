@@ -24,10 +24,18 @@
 //////////////////////////////////////////////////////////////////////////////////////////////////
 
 #include "stdafx.h"
+
+// Suppress an unnecessary C4996 warning about use of checked
+// iterators invoked from Boost
+#if !defined(_SCL_SECURE_NO_WARNINGS)
+#define _SCL_SECURE_NO_WARNINGS
+#endif
+
 #include <Windowsx.h>
 #include <CommCtrl.h>
 #include <string>
 #include <sstream>
+#include <boost/algorithm/string.hpp>
 #include "utility.h"
 #include "SettingsDialog.h"
 #include "PicoScopeFraApp.h"
@@ -48,6 +56,55 @@ const wchar_t logVerbosityString[numLogVerbosityFlags][128] =
 
 bool logVerbositySelectorOpen = false;
 PicoScope* pCurrentScope = NULL;
+
+std::wstring PrintSampleRate(double sampleRate)
+{
+    std::wstring units;
+    std::wstringstream valueSS;
+    std::wstring valueStr;
+
+    if (sampleRate >= 1.0e9)
+    {
+        sampleRate /= 1.0e9;
+        units = L" GHz";
+    }
+    else if (sampleRate >= 1.0e6)
+    {
+        sampleRate /= 1.0e6;
+        units = L" MHz";
+    }
+    else if (sampleRate >= 1.0e3)
+    {
+        sampleRate /= 1.0e3;
+        units = L" kHz";
+    }
+    else
+    {
+        units = L" Hz";
+    }
+
+    // Output using fixed precision
+    valueSS.precision(3);
+    valueSS << std::fixed << sampleRate;
+    valueStr = valueSS.str();
+
+    // Smash trailing zeros right of a decimal point
+    if (string::npos != valueStr.find(L"."))
+    {
+        boost::algorithm::trim_right_if( valueStr, boost::algorithm::is_any_of(L"0") );
+        // If there's a decimal point remaining on the end, it needs to be stripped too
+        boost::algorithm::trim_right_if( valueStr, boost::algorithm::is_any_of(L".") );
+    }
+    // Finally, correct for possibility of "-0"
+    if (0 == valueStr.compare(L"-0"))
+    {
+        valueStr = L"0";
+    }
+
+    valueStr += units;
+
+    return (valueStr);
+}
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 //
@@ -335,11 +392,10 @@ INT_PTR CALLBACK SettingsDialogHandler(HWND hDlg, UINT message, WPARAM wParam, L
                         Edit_GetText((HWND)lParam, newTimebaseText, 16);
                         if (wcslen(newTimebaseText))
                         {
-                            //swscanf(newTimebaseText, L"%lu", &newTimebase);
                             newTimebase = _wtol(newTimebaseText);
                             if (pCurrentScope->GetFrequencyFromTimebase(newTimebase, newFrequency))
                             {
-                                swprintf(sampleRateDisplayString, 128, L"Noise reject sample rate: %g Hz", newFrequency);
+                                swprintf(sampleRateDisplayString, 128, L"Noise reject sample rate: %s", PrintSampleRate(newFrequency).c_str());
                             }
                             else
                             {
