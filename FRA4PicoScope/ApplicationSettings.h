@@ -112,7 +112,7 @@ class ApplicationSettings
         {
             return (bool)AppSettingsPropTree.get<bool>( L"adaptiveStimulusMode" );
         }
-        inline void SetSamplingMode( bool mode )
+        inline void SetAdaptiveStimulusMode( bool mode )
         {
             AppSettingsPropTree.put( L"adaptiveStimulusMode", mode );
         }

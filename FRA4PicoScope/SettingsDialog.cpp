@@ -108,6 +108,272 @@ std::wstring PrintSampleRate(double sampleRate)
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 //
+// Name: ValidateAndStoreSettings
+//
+// Purpose: Checks settings for validity and stores them if they are valid
+//
+// Parameters: [in] hDlg: handle to the settings dialog
+//
+// Notes: N/A
+//
+///////////////////////////////////////////////////////////////////////////////////////////////////
+
+bool ValidateAndStoreSettings( HWND hDlg )
+{
+    bool retVal = true;
+    WCHAR numberStr[32];
+    HWND hndCtrl;
+    wstring errorConditions[32];
+    uint8_t numErrors = 0;
+    uint32_t u32Val;
+    uint16_t u16Val;
+    uint8_t u8Val;
+    double fVal;
+    int curSel;
+
+    hndCtrl = GetDlgItem( hDlg, IDC_RADIO_NOISE_REJECT_MODE );
+    if (Button_GetCheck( hndCtrl ) ==  BST_CHECKED)
+    {
+        pSettings->SetSamplingMode(HIGH_NOISE);
+    }
+    else
+    {
+        pSettings->SetSamplingMode(LOW_NOISE);
+    }
+
+    hndCtrl = GetDlgItem( hDlg, IDC_RADIO_SWEEP_DESCENDING );
+    pSettings->SetSweepDescending(Button_GetCheck( hndCtrl ) ==  BST_CHECKED);
+
+    hndCtrl = GetDlgItem( hDlg, IDC_EDIT_EXTRA_SETTLING_TIME );
+    Edit_GetText( hndCtrl, numberStr, sizeof(numberStr)/sizeof(WCHAR) );
+    if (!WStringToUint16( numberStr, u16Val ))
+    {
+        errorConditions[numErrors++] = L"Extra settling time is not a valid number";
+        retVal = false;
+    }
+    else
+    {
+        pSettings->SetExtraSettlingTimeMs(u16Val);
+    }
+
+    hndCtrl = GetDlgItem( hDlg, IDC_ADAPTIVE_STIMULUS_ENABLE );
+    pSettings->SetAdaptiveStimulusMode(Button_GetCheck( hndCtrl ) == BST_CHECKED);
+
+    hndCtrl = GetDlgItem( hDlg, IDC_EDIT_ADAPTIVE_STIMULUS_TRIES_PER_STEP );
+    Edit_GetText( hndCtrl, numberStr, sizeof(numberStr)/sizeof(WCHAR) );
+    if (!WStringToUint8( numberStr, u8Val ))
+    {
+        errorConditions[numErrors++] = L"Adaptive stimulus tries/step is not a valid number";
+        retVal = false;
+    }
+    else
+    {
+        pSettings->SetAdaptiveStimulusTriesPerStep(u8Val);
+    }
+
+    hndCtrl = GetDlgItem( hDlg, IDC_EDIT_ADAPTIVE_STIMULUS_RESPONSE_TARGET_TOLERANCE );
+    Edit_GetText( hndCtrl, numberStr, sizeof(numberStr)/sizeof(WCHAR) );
+    if (!WStringToDouble( numberStr, fVal ))
+    {
+        errorConditions[numErrors++] = L"Adaptive stimulus target tolerance is not a valid number";
+        retVal = false;
+    }
+    else
+    {
+        pSettings->SetTargetResponseAmplitudeTolerance(fVal);
+    }
+
+    // Autorange Settings
+    if (pCurrentScope)
+    {
+        hndCtrl = GetDlgItem( hDlg, IDC_COMBO_INPUT_START_RANGE );
+        if (CB_ERR != (curSel = ComboBox_GetCurSel(hndCtrl)))
+        {
+            pSettings->SetInputStartingRange(ComboBox_GetItemData(hndCtrl, curSel));
+        }
+
+        hndCtrl = GetDlgItem( hDlg, IDC_COMBO_OUTPUT_START_RANGE );
+        if (CB_ERR != (curSel = ComboBox_GetCurSel(hndCtrl)))
+        {
+            pSettings->SetOutputStartingRange(ComboBox_GetItemData(hndCtrl, curSel));
+        }
+    }
+
+    hndCtrl = GetDlgItem( hDlg, IDC_EDIT_AUTORANGE_TRIES_PER_STEP );
+    Edit_GetText( hndCtrl, numberStr, sizeof(numberStr)/sizeof(WCHAR) );
+    if (!WStringToUint8( numberStr, u8Val ))
+    {
+        errorConditions[numErrors++] = L"Autorange tries/step is not a valid number";
+        retVal = false;
+    }
+    else
+    {
+        pSettings->SetAutorangeTriesPerStep(u8Val);
+    }
+
+    hndCtrl = GetDlgItem( hDlg, IDC_EDIT_AUTORANGE_TOLERANCE );
+    Edit_GetText( hndCtrl, numberStr, sizeof(numberStr)/sizeof(WCHAR) );
+    if (!WStringToDouble( numberStr, fVal ))
+    {
+        errorConditions[numErrors++] = L"Autorange tolerance is not a valid number";
+        retVal = false;
+    }
+    else
+    {
+        pSettings->SetAutorangeTolerance(fVal);
+    }
+
+    // FRA Sample Settings
+    hndCtrl = GetDlgItem( hDlg, IDC_EDIT_FRA_MINIMUM_CYCLES_CAPTURED );
+    Edit_GetText( hndCtrl, numberStr, sizeof(numberStr)/sizeof(WCHAR) );
+    if (!WStringToUint16( numberStr, u16Val ))
+    {
+        errorConditions[numErrors++] = L" Minimum cycles captured is not a valid number";
+        retVal = false;
+    }
+    else
+    {
+        pSettings->SetMinCyclesCaptured(u16Val);
+    }
+
+    hndCtrl = GetDlgItem( hDlg, IDC_EDIT_FRA_MAXIMUM_CYCLES_CAPTURED );
+    Edit_GetText( hndCtrl, numberStr, sizeof(numberStr)/sizeof(WCHAR) );
+    if (!WStringToUint16( numberStr, u16Val ))
+    {
+        errorConditions[numErrors++] = L" Maximum cycles captured is not a valid number";
+        retVal = false;
+    }
+    else
+    {
+        pSettings->SetMaxCyclesCaptured(u16Val);
+    }
+
+    hndCtrl = GetDlgItem( hDlg, IDC_EDIT_FRA_LOW_NOISE_OVERSAMPLING );
+    Edit_GetText( hndCtrl, numberStr, sizeof(numberStr)/sizeof(WCHAR) );
+    if (!WStringToUint16( numberStr, u16Val ))
+    {
+        errorConditions[numErrors++] = L" Low noise oversampling is not a valid number";
+        retVal = false;
+    }
+    else
+    {
+        pSettings->SetLowNoiseOversampling(u16Val);
+    }
+
+    hndCtrl = GetDlgItem( hDlg, IDC_EDIT_FRA_NOISE_REJECT_BW );
+    Edit_GetText( hndCtrl, numberStr, sizeof(numberStr)/sizeof(WCHAR) );
+    if (!WStringToDouble( numberStr, fVal ))
+    {
+        errorConditions[numErrors++] = L"Noise reject bandwidth is not a valid number";
+        retVal = false;
+    }
+    else
+    {
+        pSettings->SetNoiseRejectBandwidth(fVal);
+    }
+
+    if (pCurrentScope)
+    {
+        hndCtrl = GetDlgItem( hDlg, IDC_EDIT_NOISE_REJECT_TIMEBASE );
+        Edit_GetText( hndCtrl, numberStr, sizeof(numberStr)/sizeof(WCHAR) );
+        if (!WStringToUint32( numberStr, u32Val ))
+        {
+            errorConditions[numErrors++] = L" Noise reject timebase is not a valid number";
+            retVal = false;
+        }
+        else
+        {
+            if (u32Val >= pCurrentScope->GetMinTimebase() && u32Val <= pCurrentScope->GetMaxTimebase())
+            {
+                pSettings->SetNoiseRejectModeTimebase(u32Val);
+            }
+            else
+            {
+                errorConditions[numErrors++] = L" Noise reject timebase is not valid";
+                retVal = false;
+            }
+        }
+    }
+
+    // Quality Limits
+    hndCtrl = GetDlgItem( hDlg, IDC_QUALITY_LIMITS_ENABLE );
+    pSettings->SetQualityLimitsState( Button_GetCheck(hndCtrl) == BST_CHECKED );
+
+    hndCtrl = GetDlgItem( hDlg, IDC_EDIT_AMPLITUDE_LOWER_QUALITY_LIMIT );
+    Edit_GetText( hndCtrl, numberStr, sizeof(numberStr)/sizeof(WCHAR) );
+    if (!WStringToDouble( numberStr, fVal ))
+    {
+        errorConditions[numErrors++] = L"Amplitude lower quality limit is not a valid number";
+        retVal = false;
+    }
+    else
+    {
+        pSettings->SetAmplitudeLowerLimit(fVal);
+    }
+
+    hndCtrl = GetDlgItem( hDlg, IDC_EDIT_PURITY_LOWER_QUALITY_LIMIT );
+    Edit_GetText( hndCtrl, numberStr, sizeof(numberStr)/sizeof(WCHAR) );
+    if (!WStringToDouble( numberStr, fVal ))
+    {
+        errorConditions[numErrors++] = L"Purity lower quality limit is not a valid number";
+        retVal = false;
+    }
+    else
+    {
+        pSettings->SetPurityLowerLimit(fVal);
+    }
+
+    hndCtrl = GetDlgItem( hDlg, IDC_EXCLUDE_DC_FROM_NOISE );
+    pSettings->SetDcExcludedFromNoiseState( Button_GetCheck(hndCtrl) == BST_CHECKED );
+
+    // FRA Bode Plot Options
+    hndCtrl = GetDlgItem( hDlg, IDC_EDIT_PHASE_WRAPPING_THRESHOLD );
+    Edit_GetText( hndCtrl, numberStr, sizeof(numberStr)/sizeof(WCHAR) );
+    if (!WStringToDouble( numberStr, fVal ))
+    {
+        errorConditions[numErrors++] = L"Phase wrapping threshold is not a valid number";
+        retVal = false;
+    }
+    else
+    {
+        pSettings->SetPhaseWrappingThreshold(fVal);
+    }
+
+    hndCtrl = GetDlgItem( hDlg, IDC_EDIT_GAIN_MARGIN_PHASE_CROSSOVER );
+    Edit_GetText( hndCtrl, numberStr, sizeof(numberStr)/sizeof(WCHAR) );
+    if (!WStringToDouble( numberStr, fVal ))
+    {
+        errorConditions[numErrors++] = L"Gain margin phase crossover is not a valid number";
+        retVal = false;
+    }
+    else
+    {
+        pSettings->SetGainMarginPhaseCrossover(fVal);
+    }
+
+    // Diagnostic settings
+    hndCtrl = GetDlgItem( hDlg, IDC_TIME_DOMAIN_DIAGNOSTIC_PLOTS_ENABLE );
+    pSettings->SetTimeDomainPlotsEnabled( Button_GetCheck(hndCtrl) == BST_CHECKED );
+
+    if (!retVal)
+    {
+        uint8_t i;
+        wstring errorMessage = L"The following are invalid:\n";
+        for (i = 0; i < numErrors-1; i++)
+        {
+            errorMessage += L"- " + errorConditions[i] + L",\n";
+        }
+        errorMessage += L"- " + errorConditions[i];
+
+        MessageBox( hDlg, errorMessage.c_str(), L"Error", MB_OK );
+    }
+
+    return retVal;
+
+}
+
+////////////////////////////////////////////////////////////////////////////////////////////////////
+//
 // Name: SettingsDialogHandler
 //
 // Purpose: Dialog procedure for the Settings Dialog.  Handles initialization and user actions.
@@ -355,11 +621,16 @@ INT_PTR CALLBACK SettingsDialogHandler(HWND hDlg, UINT message, WPARAM wParam, L
             {
                 case IDOK:
                 {
-                    EndDialog(hDlg, IDOK);
+                    if (ValidateAndStoreSettings(hDlg))
+                    {
+                        EndDialog(hDlg, IDOK);
+                    }
+                    break;
                 }
                 case IDCANCEL:
                 {
                     EndDialog(hDlg, IDCANCEL);
+                    break;
                 }
                 case IDC_BUTTON_LOG_VERBOSITY:
                 {
