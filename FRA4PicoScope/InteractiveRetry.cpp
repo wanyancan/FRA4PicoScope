@@ -165,11 +165,11 @@ INT_PTR CALLBACK InteractiveRetryHandler(HWND hDlg, UINT message, WPARAM wParam,
             Static_SetText( hndTxtCtrl, statusText );
 
             hndTxtCtrl = GetDlgItem( hDlg, IDC_RL_INPUT_CHANNEL_RANGE );
-            std::swprintf( statusText, 128, L"Input channel range: ± %s", pStatus->statusData.retryLimit.autorangeLimit.pRangeInfo[pStatus->statusData.retryLimit.autorangeLimit.inputRange].name );
+            std::swprintf( statusText, 128, L"Input channel range: %s", pStatus->statusData.retryLimit.autorangeLimit.pRangeInfo[pStatus->statusData.retryLimit.autorangeLimit.inputRange].name );
             Static_SetText( hndTxtCtrl, statusText );
 
             hndTxtCtrl = GetDlgItem( hDlg, IDC_RL_OUTPUT_CHANNEL_RANGE );
-            std::swprintf( statusText, 128, L"Output channel range: ± %s", pStatus->statusData.retryLimit.autorangeLimit.pRangeInfo[pStatus->statusData.retryLimit.autorangeLimit.outputRange].name );
+            std::swprintf( statusText, 128, L"Output channel range: %s", pStatus->statusData.retryLimit.autorangeLimit.pRangeInfo[pStatus->statusData.retryLimit.autorangeLimit.outputRange].name );
             Static_SetText( hndTxtCtrl, statusText );
 
             hndTxtCtrl = GetDlgItem( hDlg, IDC_RL_INPUT_CHANNEL_STATUS );
