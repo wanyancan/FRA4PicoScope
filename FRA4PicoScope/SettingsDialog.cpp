@@ -355,6 +355,12 @@ bool ValidateAndStoreSettings( HWND hDlg )
     hndCtrl = GetDlgItem( hDlg, IDC_TIME_DOMAIN_DIAGNOSTIC_PLOTS_ENABLE );
     pSettings->SetTimeDomainPlotsEnabled( Button_GetCheck(hndCtrl) == BST_CHECKED );
 
+    hndCtrl = GetDlgItem( hDlg, IDC_LIST_LOG_VERBOSITY );
+    for (int i = 0; i < numLogVerbosityFlags; i++)
+    {
+        pSettings->SetLogVerbosityFlag((LOG_MESSAGE_FLAGS_T)(1 << i), (ListView_GetCheckState(hndCtrl, i) != 0));
+    }
+
     if (!retVal)
     {
         uint8_t i;
@@ -592,6 +598,10 @@ INT_PTR CALLBACK SettingsDialogHandler(HWND hDlg, UINT message, WPARAM wParam, L
                 listViewItem.iItem = i;
                 listViewItem.pszText = (LPWSTR)logVerbosityString[i];
                 ListView_InsertItem( hndCtrl, &listViewItem );
+                if (pSettings->GetLogVerbosityFlag((LOG_MESSAGE_FLAGS_T)(1 << i)))
+                {
+                    ListView_SetCheckState(hndCtrl, i, TRUE);
+                }
             }
 
             ListView_SetColumnWidth( hndCtrl, 0, LVSCW_AUTOSIZE );
@@ -605,12 +615,17 @@ INT_PTR CALLBACK SettingsDialogHandler(HWND hDlg, UINT message, WPARAM wParam, L
         }
         case WM_NOTIFY:
         {
-            // Don't let items be selected in the log verbosity list
+            // Don't let items be selected in the log verbosity list, and toggle check when the item is clicked (even outside the checkbox)
             NMHDR* pNMHDR = ((NMHDR*)lParam);
             if (IDC_LIST_LOG_VERBOSITY == pNMHDR->idFrom &&
                 LVN_ITEMCHANGED == pNMHDR->code)
             {
-                ListView_SetItemState(pNMHDR->hwndFrom, -1, 0, LVIS_SELECTED);
+                NMLISTVIEW* pNMLV = ((NMLISTVIEW*)lParam);
+                if (((pNMLV->uChanged & LVIF_STATE) == LVIF_STATE) && ((pNMLV->uNewState & LVIS_SELECTED) == LVIS_SELECTED))
+                {
+                    ListView_SetItemState(pNMHDR->hwndFrom, pNMLV->iItem, 0, LVIS_SELECTED);
+                    ListView_SetCheckState( pNMHDR->hwndFrom, pNMLV->iItem, !ListView_GetCheckState(pNMHDR->hwndFrom, pNMLV->iItem) );
+                }
             }
             return (INT_PTR)TRUE;
             break;

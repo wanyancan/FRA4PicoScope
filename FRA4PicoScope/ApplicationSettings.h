@@ -502,6 +502,24 @@ class ApplicationSettings
             AppSettingsPropTree.put( L"qualityLimits.excludeDcFromNoise", enable );
         }
 
+        inline bool GetLogVerbosityFlag(LOG_MESSAGE_FLAGS_T flag)
+        {
+            return (((LOG_MESSAGE_FLAGS_T)AppSettingsPropTree.get<int>( L"diagnostics.logVerbosityFlags" ) & flag) == flag);
+        }
+        inline void SetLogVerbosityFlag(LOG_MESSAGE_FLAGS_T flag, bool set)
+        {
+            LOG_MESSAGE_FLAGS_T currentFlags = (LOG_MESSAGE_FLAGS_T)AppSettingsPropTree.get<int>( L"diagnostics.logVerbosityFlags" );
+            if (set)
+            {
+                currentFlags  = (LOG_MESSAGE_FLAGS_T)((int)currentFlags | (int)flag);
+            }
+            else
+            {
+                currentFlags  = (LOG_MESSAGE_FLAGS_T)((int)currentFlags & ~(int)flag);
+            }
+            AppSettingsPropTree.put( L"diagnostics.logVerbosityFlags", (int)currentFlags );
+        }
+
         inline bool GetTimeDomainPlotsEnabled( void )
         {
             return AppSettingsPropTree.get<bool>( L"diagnostics.timeDomainPlots" );

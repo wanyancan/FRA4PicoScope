@@ -207,7 +207,7 @@ bool ApplicationSettings::InitializeApplicationSettingsFile( void )
         AppSettingsPropTree.put( L"plot.savedImageFileColor.phasePlot.green", 0 );
         AppSettingsPropTree.put( L"plot.savedImageFileColor.phasePlot.blue", 0 );
 
-        AppSettingsPropTree.put( L"diagnostics.logVerbosityFlags", 0 );
+        AppSettingsPropTree.put( L"diagnostics.logVerbosityFlags", FRA_PROGRESS );
         AppSettingsPropTree.put( L"diagnostics.timeDomainPlots", false );
 
         AppSettingsPropTree.put( L"expert.purityLowerLimit", L"0.80" ); // 80%
