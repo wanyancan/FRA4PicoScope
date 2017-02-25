@@ -99,29 +99,28 @@ bool ps2000Impl::GetFrequencyFromTimebase(uint32_t timebase, double &frequency)
     bool retVal = false;
     double maxFrequency;
 
-    if (model == PS2203 || model == PS2204 || model == PS2205 || model == PS2204A || model == PS2205A)
+    if (timebase >= minTimebase && timebase <= maxTimebase)
     {
-        switch (model)
+        if (model == PS2203 || model == PS2204 || model == PS2205 || model == PS2204A || model == PS2205A)
         {
-        case PS2203:
-            maxFrequency = 40e6;
-            break;
-        case PS2204:
-        case PS2204A:
-            maxFrequency = 100e6;
-            break;
-        case PS2205: 
-        case PS2205A:
-            maxFrequency = 200e6;
-            break;
-        }
+            switch (model)
+            {
+                case PS2203:
+                    maxFrequency = 40e6;
+                    break;
+                case PS2204:
+                case PS2204A:
+                    maxFrequency = 100e6;
+                    break;
+                case PS2205: 
+                case PS2205A:
+                    maxFrequency = 200e6;
+                    break;
+            }
 
-        frequency = maxFrequency / (double)(1 << timebase);
-        retVal = true;
-    }
-    else
-    {
-        retVal = false;
+            frequency = maxFrequency / (double)(1 << timebase);
+            retVal = true;
+        }
     }
 
     return retVal;

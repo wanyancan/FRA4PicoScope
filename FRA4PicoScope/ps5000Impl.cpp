@@ -73,17 +73,16 @@ bool ps5000Impl::GetTimebase( double desiredFrequency, double* actualFrequency, 
     if (desiredFrequency != 0.0 && actualFrequency && timebase)
     {
         if (desiredFrequency > 125.0e6)
-            {
-                *timebase = saturation_cast<uint32_t,double>(log(1.0e9/desiredFrequency) / M_LN2); // ps5000pg.en p16; log2(n) implemented as log(n)/log(2)
-                retVal = GetFrequencyFromTimebase(*timebase, *actualFrequency);
-            }
-            else
-            {
-                fTimebase = ((125.0e6/(desiredFrequency)) + 2.0); // ps5000pg.en p16
-                *timebase = saturation_cast<uint32_t,double>(fTimebase);
-                *timebase = max( *timebase, 3 ); // Guarding against potential of float precision issues leading to divide by 0
-                retVal = GetFrequencyFromTimebase(*timebase, *actualFrequency);
-            }
+        {
+            *timebase = saturation_cast<uint32_t,double>(log(1.0e9/desiredFrequency) / M_LN2); // ps5000pg.en p16; log2(n) implemented as log(n)/log(2)
+        }
+        else
+        {
+            fTimebase = ((125.0e6/(desiredFrequency)) + 2.0); // ps5000pg.en p16
+            *timebase = saturation_cast<uint32_t,double>(fTimebase);
+            *timebase = max( *timebase, 3 ); // Guarding against potential of float precision issues leading to divide by 0
+        }
+        retVal = GetFrequencyFromTimebase(*timebase, *actualFrequency);
     }
 
     return retVal;
@@ -91,16 +90,22 @@ bool ps5000Impl::GetTimebase( double desiredFrequency, double* actualFrequency, 
 
 bool ps5000Impl::GetFrequencyFromTimebase(uint32_t timebase, double &frequency)
 {
-    if (timebase <= 2)
+    bool retVal = false;
+
+    if (timebase >= minTimebase && timebase <= maxTimebase)
     {
-        frequency = 1.0e9 / (double)(1<<(timebase));
-    }
-    else
-    {
-        frequency = 125.0e6 / ((double)(timebase - 2)); // ps5000pg.en p16
+        if (timebase <= 2)
+        {
+            frequency = 1.0e9 / (double)(1<<(timebase));
+        }
+        else
+        {
+            frequency = 125.0e6 / ((double)(timebase - 2)); // ps5000pg.en p16
+        }
+        retVal = true;
     }
 
-    return true;
+    return retVal;
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////

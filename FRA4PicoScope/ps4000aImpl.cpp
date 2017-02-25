@@ -63,8 +63,13 @@ bool ps4000aImpl::GetTimebase( double desiredFrequency, double* actualFrequency,
 
 bool ps4000aImpl::GetFrequencyFromTimebase(uint32_t timebase, double &frequency)
 {
-    frequency = 80.0e6 / ((double)(timebase + 1)); // ps4000apg.en r1: p17
-    return true;
+    bool retVal = false;
+    if (timebase >= minTimebase && timebase <= maxTimebase)
+    {
+        frequency = 80.0e6 / ((double)(timebase + 1)); // ps4000apg.en r1: p17
+        retVal = true;
+    }
+    return retVal;
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////

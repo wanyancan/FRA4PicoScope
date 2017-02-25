@@ -335,7 +335,8 @@ INT_PTR CALLBACK SettingsDialogHandler(HWND hDlg, UINT message, WPARAM wParam, L
                         Edit_GetText((HWND)lParam, newTimebaseText, 16);
                         if (wcslen(newTimebaseText))
                         {
-                            swscanf(newTimebaseText, L"%lu", &newTimebase);
+                            //swscanf(newTimebaseText, L"%lu", &newTimebase);
+                            newTimebase = _wtol(newTimebaseText);
                             if (pCurrentScope->GetFrequencyFromTimebase(newTimebase, newFrequency))
                             {
                                 swprintf(sampleRateDisplayString, 128, L"Noise reject sample rate: %g Hz", newFrequency);
@@ -344,15 +345,13 @@ INT_PTR CALLBACK SettingsDialogHandler(HWND hDlg, UINT message, WPARAM wParam, L
                             {
                                 swprintf(sampleRateDisplayString, 128, L"Noise reject sample rate: INVALID");
                             }
-                            hndCtrl = GetDlgItem(hDlg, IDC_STATIC_NOISE_REJECT_SAMPLING_RATE);
-                            Static_SetText(hndCtrl, sampleRateDisplayString);
                         }
                         else
                         {
                             swprintf(sampleRateDisplayString, 128, L"Noise reject sample rate: INVALID");
-                            hndCtrl = GetDlgItem(hDlg, IDC_STATIC_NOISE_REJECT_SAMPLING_RATE);
-                            Static_SetText(hndCtrl, sampleRateDisplayString);
                         }
+                        hndCtrl = GetDlgItem(hDlg, IDC_STATIC_NOISE_REJECT_SAMPLING_RATE);
+                        Static_SetText(hndCtrl, sampleRateDisplayString);
                     }
                     break;
                 }

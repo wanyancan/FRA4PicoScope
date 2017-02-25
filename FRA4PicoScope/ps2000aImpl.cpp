@@ -70,15 +70,14 @@ bool ps2000aImpl::GetTimebase( double desiredFrequency, double* actualFrequency,
                 {
                     *timebase = saturation_cast<uint32_t, double>(log(500.0e6 / desiredFrequency) / M_LN2); // ps2000apg.en r6 p16; log2(n) implemented as log(n)/log(2)
                     *timebase = max(*timebase, 1); // None of the 2000A scopes can use timebase 0 with two channels enabled
-                    retVal = GetFrequencyFromTimebase(*timebase, *actualFrequency);
                 }
                 else
                 {
                     fTimebase = ((62.5e6 / (desiredFrequency)) + 2.0); // ps2000apg.en r6 p16
                     *timebase = saturation_cast<uint32_t, double>(fTimebase);
                     *timebase = max(*timebase, 3); // Guarding against potential of float precision issues leading to divide by 0
-                    retVal = GetFrequencyFromTimebase(*timebase, *actualFrequency);
                 }
+                retVal = GetFrequencyFromTimebase(*timebase, *actualFrequency);
                 break;
             }
             // 1GSs models
@@ -99,15 +98,14 @@ bool ps2000aImpl::GetTimebase( double desiredFrequency, double* actualFrequency,
                 {
                     *timebase = saturation_cast<uint32_t, double>(log(1.0e9 / desiredFrequency) / M_LN2); // ps2000apg.en r6 p16; log2(n) implemented as log(n)/log(2)
                     *timebase = max(*timebase, 1); // None of the 2000A scopes can use timebase 0 with two channels enabled
-                    retVal = GetFrequencyFromTimebase(*timebase, *actualFrequency);
                 }
                 else
                 {
                     fTimebase = ((125.0e6 / (desiredFrequency)) + 2.0); // ps2000apg.en r6 p16
                     *timebase = saturation_cast<uint32_t, double>(fTimebase);
                     *timebase = max(*timebase, 3); // Guarding against potential of float precision issues leading to divide by 0
-                    retVal = GetFrequencyFromTimebase(*timebase, *actualFrequency);
                 }
+                retVal = GetFrequencyFromTimebase(*timebase, *actualFrequency);
                 break;
             }
             case PS2205MSO:
@@ -128,66 +126,71 @@ bool ps2000aImpl::GetTimebase( double desiredFrequency, double* actualFrequency,
 
 bool ps2000aImpl::GetFrequencyFromTimebase(uint32_t timebase, double &frequency)
 {
-    bool retVal = true;
+    bool retVal = false;
 
-    switch (model)
+    if (timebase >= minTimebase && timebase <= maxTimebase)
     {
-        // 500 MSs models
-        case PS2206:
-        case PS2206A:
-        case PS2206B:
-        case PS2205AMSO:
-        case PS2405A:
+        switch (model)
         {
-            if (timebase <= 2)
+            // 500 MSs models
+            case PS2206:
+            case PS2206A:
+            case PS2206B:
+            case PS2205AMSO:
+            case PS2405A:
             {
-                frequency = 500.0e6 / (double)(1 << (timebase));
+                if (timebase <= 2)
+                {
+                    frequency = 500.0e6 / (double)(1 << (timebase));
+                }
+                else
+                {
+                    frequency = 62.5e6 / ((double)(timebase - 2)); // ps2000apg.en r6 p16
+                }
+                retVal = true;
+                break;
             }
-            else
+            // 1GSs models
+            case PS2207:
+            case PS2207A:
+            case PS2207B:
+            case PS2208:
+            case PS2208A:
+            case PS2208B:
+            case PS2206BMSO:
+            case PS2207BMSO:
+            case PS2208BMSO:
+            case PS2406B:
+            case PS2407B:
+            case PS2408B:
             {
-                frequency = 62.5e6 / ((double)(timebase - 2)); // ps2000apg.en r6 p16
+                if (timebase <= 2)
+                {
+                    frequency = 1.0e9 / (double)(1 << (timebase));
+                }
+                else
+                {
+                    frequency = 125.0e6 / ((double)(timebase - 2)); // ps2000apg.en r6 p16
+                }
+                retVal = true;
+                break;
             }
-            break;
+            case PS2205MSO:
+            {
+                if (timebase > 0)
+                {
+                    frequency = 100.0e6 / ((double)timebase); // ps2000apg.en r6 p16
+                }
+                else
+                {
+                    frequency = 200.0e6;
+                }
+                retVal = true;
+                break;
+            }
+            default:
+                break;
         }
-        // 1GSs models
-        case PS2207:
-        case PS2207A:
-        case PS2207B:
-        case PS2208:
-        case PS2208A:
-        case PS2208B:
-        case PS2206BMSO:
-        case PS2207BMSO:
-        case PS2208BMSO:
-        case PS2406B:
-        case PS2407B:
-        case PS2408B:
-        {
-            if (timebase <= 2)
-            {
-                frequency = 1.0e9 / (double)(1 << (timebase));
-            }
-            else
-            {
-                frequency = 125.0e6 / ((double)(timebase - 2)); // ps2000apg.en r6 p16
-            }
-            break;
-        }
-        case PS2205MSO:
-        {
-            if (timebase > 0)
-            {
-                frequency = 100.0e6 / ((double)timebase); // ps2000apg.en r6 p16
-            }
-            else
-            {
-                frequency = 200.0e6;
-            }
-            break;
-        }
-        default:
-            retVal = false;
-            break;
     }
 
     return retVal;

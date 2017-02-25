@@ -89,7 +89,6 @@ bool ps4000Impl::GetTimebase( double desiredFrequency, double* actualFrequency, 
                 {
                     *timebase = 1; // PS4226 can't use timebase 0
                 }
-                retVal = GetFrequencyFromTimebase(*timebase, *actualFrequency);
             }
             else
             {
@@ -97,34 +96,35 @@ bool ps4000Impl::GetTimebase( double desiredFrequency, double* actualFrequency, 
                 fTimebase = min(fTimebase, (double)((uint32_t)1<<30) - 1.0); // limit is 2^30-1
                 *timebase = (uint32_t)fTimebase;
                 *timebase = max( *timebase, 4 ); // make sure it's at least 4
-                retVal = GetFrequencyFromTimebase(*timebase, *actualFrequency);
             }
+            retVal = GetFrequencyFromTimebase(*timebase, *actualFrequency);
         }
     }
 
     return retVal;
-
 }
 
 bool ps4000Impl::GetFrequencyFromTimebase(uint32_t timebase, double &frequency)
 {
     bool retVal = false;
-
-    if (model == PS4262)
+    
+    if (timebase >= minTimebase && timebase <= maxTimebase)
     {
-        frequency = 10.0e6 / ((double)(timebase + 1)); // ps4000pg.en r8 p17
-        retVal = true;
-    }
-    else if (model == PS4226 || model == PS4227)
-    {
-        if (timebase <= 3)
+        if (model == PS4262)
         {
-            frequency = 250.0e6 / (double)(1<<(timebase));
+            frequency = 10.0e6 / ((double)(timebase + 1)); // ps4000pg.en r8 p17
             retVal = true;
         }
-        else
+        else if (model == PS4226 || model == PS4227)
         {
-            frequency = 31250000.0 / ((double)(timebase - 2)); // ps4000pg.en r8 p17
+            if (timebase <= 3)
+            {
+                frequency = 250.0e6 / (double)(1<<(timebase));
+            }
+            else
+            {
+                frequency = 31250000.0 / ((double)(timebase - 2)); // ps4000pg.en r8 p17
+            }
             retVal = true;
         }
     }

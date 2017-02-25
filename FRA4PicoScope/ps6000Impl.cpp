@@ -72,15 +72,14 @@ bool ps6000Impl::GetTimebase( double desiredFrequency, double* actualFrequency, 
             {
                 *timebase = max(*timebase, 1); // With two channels on, cannot use timebase 0 (5GS/s)
             }
-            retVal = GetFrequencyFromTimebase(*timebase, *actualFrequency);
         }
         else
         {
             fTimebase = ((156250000.0/(desiredFrequency)) + 4.0); // ps6000pg.en r9 p19
             *timebase = saturation_cast<uint32_t,double>(fTimebase);
             *timebase = max( *timebase, 5 ); // Guarding against potential of float precision issues leading to divide by 0
-            retVal = GetFrequencyFromTimebase(*timebase, *actualFrequency);
         }
+        retVal = GetFrequencyFromTimebase(*timebase, *actualFrequency);
     }
 
     return retVal;
@@ -88,15 +87,22 @@ bool ps6000Impl::GetTimebase( double desiredFrequency, double* actualFrequency, 
 
 bool ps6000Impl::GetFrequencyFromTimebase(uint32_t timebase, double &frequency)
 {
-    if (timebase <= 4)
+    bool retVal = false;
+
+    if (timebase >= minTimebase && timebase <= maxTimebase)
     {
-        frequency = 5.0e9 / (double)(1<<(timebase));
+        if (timebase <= 4)
+        {
+            frequency = 5.0e9 / (double)(1<<(timebase));
+        }
+        else
+        {
+            frequency = 156250000.0 / ((double)(timebase - 4)); // ps6000pg.en r9 p19
+        }
+        retVal = true;
     }
-    else
-    {
-        frequency = 156250000.0 / ((double)(timebase - 4)); // ps6000pg.en r9 p19
-    }
-    return true;
+
+    return retVal;
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
