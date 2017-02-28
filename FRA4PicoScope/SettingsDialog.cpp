@@ -126,63 +126,80 @@ bool ValidateAndStoreSettings( HWND hDlg )
     HWND hndCtrl;
     wstring errorConditions[32];
     uint8_t numErrors = 0;
-    uint32_t u32Val;
-    uint16_t u16Val;
-    uint8_t u8Val;
-    double fVal;
+
+    SamplingMode_T sampleMode = LOW_NOISE;
+    bool sweepDescending = false;
+    uint16_t extraSettlingTime = 0;
+    bool adaptiveStimulusMode = false;
+    uint8_t adaptiveStimulusTriesPerStep = 0;
+    double adaptiveStimulusTargetTolerance = 0.0;
+    bool qualityLimitsEnable = false;
+    double amplitudeLowerLimit = 0.0;
+    double purityLowerLimit = 0.0;
+    bool excludeDcFromNoise = false;
+    int32_t inputStartRange = 0;
+    int32_t outputStartRange = 0;
+    uint8_t autorangeTriesPerStep = 0;
+    double autorangeTolerance = 0.0;
+    uint16_t minCyclesCaptured = 0;
+    uint16_t maxCyclesCaptured = 0;
+    uint16_t lowNoiseOversampling = 0;
+    double noiseRejectModeBandwidth = 0.0;
+    uint32_t noiseRejectModeTimebase = 0;
+    double phaseWrappingThreshold = 0.0;
+    double gainMarginPhaseCrossover = 0.0;
+    bool timeDomainDiagnosticPlots = false;
+    uint16_t logVerbosityFlags = 0;
+
     int curSel;
+    bool minCyclesValid = false;
+    bool maxCyclesValid = false;
 
     hndCtrl = GetDlgItem( hDlg, IDC_RADIO_NOISE_REJECT_MODE );
     if (Button_GetCheck( hndCtrl ) ==  BST_CHECKED)
     {
-        pSettings->SetSamplingMode(HIGH_NOISE);
+        sampleMode = HIGH_NOISE;
     }
     else
     {
-        pSettings->SetSamplingMode(LOW_NOISE);
+        sampleMode = LOW_NOISE;
     }
 
     hndCtrl = GetDlgItem( hDlg, IDC_RADIO_SWEEP_DESCENDING );
-    pSettings->SetSweepDescending(Button_GetCheck( hndCtrl ) ==  BST_CHECKED);
+    sweepDescending = (Button_GetCheck( hndCtrl ) ==  BST_CHECKED);
 
     hndCtrl = GetDlgItem( hDlg, IDC_EDIT_EXTRA_SETTLING_TIME );
     Edit_GetText( hndCtrl, numberStr, sizeof(numberStr)/sizeof(WCHAR) );
-    if (!WStringToUint16( numberStr, u16Val ))
+    if (!WStringToUint16( numberStr, extraSettlingTime ))
     {
         errorConditions[numErrors++] = L"Extra settling time is not a valid number";
         retVal = false;
     }
-    else
-    {
-        pSettings->SetExtraSettlingTimeMs(u16Val);
-    }
 
     hndCtrl = GetDlgItem( hDlg, IDC_ADAPTIVE_STIMULUS_ENABLE );
-    pSettings->SetAdaptiveStimulusMode(Button_GetCheck( hndCtrl ) == BST_CHECKED);
+    adaptiveStimulusMode = (Button_GetCheck( hndCtrl ) == BST_CHECKED);
 
     hndCtrl = GetDlgItem( hDlg, IDC_EDIT_ADAPTIVE_STIMULUS_TRIES_PER_STEP );
     Edit_GetText( hndCtrl, numberStr, sizeof(numberStr)/sizeof(WCHAR) );
-    if (!WStringToUint8( numberStr, u8Val ))
+    if (!WStringToUint8( numberStr, adaptiveStimulusTriesPerStep ))
     {
         errorConditions[numErrors++] = L"Adaptive stimulus tries/step is not a valid number";
         retVal = false;
     }
-    else
+    else if (adaptiveStimulusTriesPerStep < 1)
     {
-        pSettings->SetAdaptiveStimulusTriesPerStep(u8Val);
+        errorConditions[numErrors++] = L"Adaptive stimulus tries/step must be >= 1";
+        retVal = false;
     }
 
     hndCtrl = GetDlgItem( hDlg, IDC_EDIT_ADAPTIVE_STIMULUS_RESPONSE_TARGET_TOLERANCE );
     Edit_GetText( hndCtrl, numberStr, sizeof(numberStr)/sizeof(WCHAR) );
-    if (!WStringToDouble( numberStr, fVal ))
+    if (!WStringToDouble( numberStr, adaptiveStimulusTargetTolerance ))
     {
         errorConditions[numErrors++] = L"Adaptive stimulus target tolerance is not a valid number";
         retVal = false;
     }
-    else
-    {
-        pSettings->SetTargetResponseAmplitudeTolerance(fVal);
-    }
+    // Allow negative values because they can have meaning
 
     // Autorange Settings
     if (pCurrentScope)
@@ -190,176 +207,196 @@ bool ValidateAndStoreSettings( HWND hDlg )
         hndCtrl = GetDlgItem( hDlg, IDC_COMBO_INPUT_START_RANGE );
         if (CB_ERR != (curSel = ComboBox_GetCurSel(hndCtrl)))
         {
-            pSettings->SetInputStartingRange(ComboBox_GetItemData(hndCtrl, curSel));
+            inputStartRange = ComboBox_GetItemData(hndCtrl, curSel);
+        }
+        else
+        {
+            errorConditions[numErrors++] = L"Input start range selection is invalid";
+            retVal = false;
         }
 
         hndCtrl = GetDlgItem( hDlg, IDC_COMBO_OUTPUT_START_RANGE );
         if (CB_ERR != (curSel = ComboBox_GetCurSel(hndCtrl)))
         {
-            pSettings->SetOutputStartingRange(ComboBox_GetItemData(hndCtrl, curSel));
+            outputStartRange = ComboBox_GetItemData(hndCtrl, curSel);
+        }
+        else
+        {
+            errorConditions[numErrors++] = L"Output start range selection is invalid";
+            retVal = false;
         }
     }
 
     hndCtrl = GetDlgItem( hDlg, IDC_EDIT_AUTORANGE_TRIES_PER_STEP );
     Edit_GetText( hndCtrl, numberStr, sizeof(numberStr)/sizeof(WCHAR) );
-    if (!WStringToUint8( numberStr, u8Val ))
+    if (!WStringToUint8( numberStr, autorangeTriesPerStep ))
     {
         errorConditions[numErrors++] = L"Autorange tries/step is not a valid number";
         retVal = false;
     }
-    else
+    else if (autorangeTriesPerStep < 1)
     {
-        pSettings->SetAutorangeTriesPerStep(u8Val);
+        errorConditions[numErrors++] = L"Autorange tries/step must be >= 1";
+        retVal = false;
     }
 
     hndCtrl = GetDlgItem( hDlg, IDC_EDIT_AUTORANGE_TOLERANCE );
     Edit_GetText( hndCtrl, numberStr, sizeof(numberStr)/sizeof(WCHAR) );
-    if (!WStringToDouble( numberStr, fVal ))
+    if (!WStringToDouble( numberStr, autorangeTolerance ))
     {
         errorConditions[numErrors++] = L"Autorange tolerance is not a valid number";
         retVal = false;
     }
-    else
+    else  if (autorangeTolerance <= 0.0)
     {
-        pSettings->SetAutorangeTolerance(fVal);
+        errorConditions[numErrors++] = L"Autorange tolerance must be > 0.0";
+        retVal = false;
     }
 
     // FRA Sample Settings
     hndCtrl = GetDlgItem( hDlg, IDC_EDIT_FRA_MINIMUM_CYCLES_CAPTURED );
     Edit_GetText( hndCtrl, numberStr, sizeof(numberStr)/sizeof(WCHAR) );
-    if (!WStringToUint16( numberStr, u16Val ))
+    if (!WStringToUint16( numberStr, minCyclesCaptured ))
     {
-        errorConditions[numErrors++] = L" Minimum cycles captured is not a valid number";
+        errorConditions[numErrors++] = L"Minimum cycles captured is not a valid number";
+        retVal = false;
+    }
+    else if (minCyclesCaptured < 1)
+    {
+        errorConditions[numErrors++] = L"Minimum cycles captured must be >= 1";
         retVal = false;
     }
     else
     {
-        pSettings->SetMinCyclesCaptured(u16Val);
+        minCyclesValid = true;
     }
 
     hndCtrl = GetDlgItem( hDlg, IDC_EDIT_FRA_MAXIMUM_CYCLES_CAPTURED );
     Edit_GetText( hndCtrl, numberStr, sizeof(numberStr)/sizeof(WCHAR) );
-    if (!WStringToUint16( numberStr, u16Val ))
+    if (!WStringToUint16( numberStr, maxCyclesCaptured ))
     {
-        errorConditions[numErrors++] = L" Maximum cycles captured is not a valid number";
+        errorConditions[numErrors++] = L"Maximum cycles captured is not a valid number";
+        retVal = false;
+    }
+    else if (maxCyclesCaptured < 1)
+    {
+        errorConditions[numErrors++] = L"Maximum cycles captured must be >= 1";
         retVal = false;
     }
     else
     {
-        pSettings->SetMaxCyclesCaptured(u16Val);
+        maxCyclesValid = true;
     }
 
     hndCtrl = GetDlgItem( hDlg, IDC_EDIT_FRA_LOW_NOISE_OVERSAMPLING );
     Edit_GetText( hndCtrl, numberStr, sizeof(numberStr)/sizeof(WCHAR) );
-    if (!WStringToUint16( numberStr, u16Val ))
+    if (!WStringToUint16( numberStr, lowNoiseOversampling ))
     {
-        errorConditions[numErrors++] = L" Low noise oversampling is not a valid number";
+        errorConditions[numErrors++] = L"Low noise oversampling is not a valid number";
         retVal = false;
     }
-    else
+    else if (lowNoiseOversampling < 2)
     {
-        pSettings->SetLowNoiseOversampling(u16Val);
+        errorConditions[numErrors++] = L"Low noise oversampling must be >= 2";
+        retVal = false;
     }
 
     hndCtrl = GetDlgItem( hDlg, IDC_EDIT_FRA_NOISE_REJECT_BW );
     Edit_GetText( hndCtrl, numberStr, sizeof(numberStr)/sizeof(WCHAR) );
-    if (!WStringToDouble( numberStr, fVal ))
+    if (!WStringToDouble( numberStr, noiseRejectModeBandwidth ))
     {
         errorConditions[numErrors++] = L"Noise reject bandwidth is not a valid number";
         retVal = false;
     }
-    else
+    else if (noiseRejectModeBandwidth <= 0.0)
     {
-        pSettings->SetNoiseRejectBandwidth(fVal);
+        errorConditions[numErrors++] = L"Noise reject bandwidth must be > 0.0";
+        retVal = false;
     }
 
     if (pCurrentScope)
     {
         hndCtrl = GetDlgItem( hDlg, IDC_EDIT_NOISE_REJECT_TIMEBASE );
         Edit_GetText( hndCtrl, numberStr, sizeof(numberStr)/sizeof(WCHAR) );
-        if (!WStringToUint32( numberStr, u32Val ))
+        if (!WStringToUint32( numberStr, noiseRejectModeTimebase ))
         {
-            errorConditions[numErrors++] = L" Noise reject timebase is not a valid number";
+            errorConditions[numErrors++] = L"Noise reject timebase is not a valid number";
             retVal = false;
         }
-        else
+        else if (noiseRejectModeTimebase < pCurrentScope->GetMinTimebase() || noiseRejectModeTimebase > pCurrentScope->GetMaxTimebase())
         {
-            if (u32Val >= pCurrentScope->GetMinTimebase() && u32Val <= pCurrentScope->GetMaxTimebase())
-            {
-                pSettings->SetNoiseRejectModeTimebase(u32Val);
-            }
-            else
-            {
-                errorConditions[numErrors++] = L" Noise reject timebase is not valid";
-                retVal = false;
-            }
+            errorConditions[numErrors++] = L"Noise reject timebase is not valid";
+            retVal = false;
         }
     }
 
     // Quality Limits
     hndCtrl = GetDlgItem( hDlg, IDC_QUALITY_LIMITS_ENABLE );
-    pSettings->SetQualityLimitsState( Button_GetCheck(hndCtrl) == BST_CHECKED );
+    qualityLimitsEnable = (Button_GetCheck(hndCtrl) == BST_CHECKED);
 
     hndCtrl = GetDlgItem( hDlg, IDC_EDIT_AMPLITUDE_LOWER_QUALITY_LIMIT );
     Edit_GetText( hndCtrl, numberStr, sizeof(numberStr)/sizeof(WCHAR) );
-    if (!WStringToDouble( numberStr, fVal ))
+    if (!WStringToDouble( numberStr, amplitudeLowerLimit ))
     {
         errorConditions[numErrors++] = L"Amplitude lower quality limit is not a valid number";
         retVal = false;
     }
-    else
+    else if (amplitudeLowerLimit <= 0.0)
     {
-        pSettings->SetAmplitudeLowerLimit(fVal);
+        errorConditions[numErrors++] = L"Amplitude lower quality limit must be > 0.0";
+        retVal = false;
     }
 
     hndCtrl = GetDlgItem( hDlg, IDC_EDIT_PURITY_LOWER_QUALITY_LIMIT );
     Edit_GetText( hndCtrl, numberStr, sizeof(numberStr)/sizeof(WCHAR) );
-    if (!WStringToDouble( numberStr, fVal ))
+    if (!WStringToDouble( numberStr, purityLowerLimit ))
     {
         errorConditions[numErrors++] = L"Purity lower quality limit is not a valid number";
         retVal = false;
     }
-    else
+    else if (purityLowerLimit <= 0.0)
     {
-        pSettings->SetPurityLowerLimit(fVal);
+        errorConditions[numErrors++] = L"Purity lower quality limit must be > 0.0";
+        retVal = false;
     }
 
     hndCtrl = GetDlgItem( hDlg, IDC_EXCLUDE_DC_FROM_NOISE );
-    pSettings->SetDcExcludedFromNoiseState( Button_GetCheck(hndCtrl) == BST_CHECKED );
+    excludeDcFromNoise = (Button_GetCheck(hndCtrl) == BST_CHECKED );
 
     // FRA Bode Plot Options
     hndCtrl = GetDlgItem( hDlg, IDC_EDIT_PHASE_WRAPPING_THRESHOLD );
     Edit_GetText( hndCtrl, numberStr, sizeof(numberStr)/sizeof(WCHAR) );
-    if (!WStringToDouble( numberStr, fVal ))
+    if (!WStringToDouble( numberStr, phaseWrappingThreshold ))
     {
         errorConditions[numErrors++] = L"Phase wrapping threshold is not a valid number";
         retVal = false;
     }
-    else
-    {
-        pSettings->SetPhaseWrappingThreshold(fVal);
-    }
 
     hndCtrl = GetDlgItem( hDlg, IDC_EDIT_GAIN_MARGIN_PHASE_CROSSOVER );
     Edit_GetText( hndCtrl, numberStr, sizeof(numberStr)/sizeof(WCHAR) );
-    if (!WStringToDouble( numberStr, fVal ))
+    if (!WStringToDouble( numberStr, gainMarginPhaseCrossover ))
     {
         errorConditions[numErrors++] = L"Gain margin phase crossover is not a valid number";
         retVal = false;
     }
-    else
+
+    if (minCyclesValid && maxCyclesValid && minCyclesCaptured > maxCyclesCaptured)
     {
-        pSettings->SetGainMarginPhaseCrossover(fVal);
+        errorConditions[numErrors++] = L"Minimum cycles captured must be <= maximum cycles captured";
+        retVal = false;
     }
 
     // Diagnostic settings
     hndCtrl = GetDlgItem( hDlg, IDC_TIME_DOMAIN_DIAGNOSTIC_PLOTS_ENABLE );
-    pSettings->SetTimeDomainPlotsEnabled( Button_GetCheck(hndCtrl) == BST_CHECKED );
+    timeDomainDiagnosticPlots = (Button_GetCheck(hndCtrl) == BST_CHECKED);
 
     hndCtrl = GetDlgItem( hDlg, IDC_LIST_LOG_VERBOSITY );
     for (int i = 0; i < numLogVerbosityFlags; i++)
     {
-        pSettings->SetLogVerbosityFlag((LOG_MESSAGE_FLAGS_T)(1 << i), (ListView_GetCheckState(hndCtrl, i) != 0));
+        if (ListView_GetCheckState(hndCtrl, i) != 0)
+        {
+            logVerbosityFlags |= (1 << i);
+        }
     }
 
     if (!retVal)
@@ -373,6 +410,32 @@ bool ValidateAndStoreSettings( HWND hDlg )
         errorMessage += L"- " + errorConditions[i];
 
         MessageBox( hDlg, errorMessage.c_str(), L"Error", MB_OK );
+    }
+    else
+    {
+        pSettings->SetSamplingMode(sampleMode);
+        pSettings->SetSweepDescending(sweepDescending);
+        pSettings->SetExtraSettlingTimeMs(extraSettlingTime);
+        pSettings->SetAdaptiveStimulusMode(adaptiveStimulusMode);
+        pSettings->SetAdaptiveStimulusTriesPerStep(adaptiveStimulusTriesPerStep);
+        pSettings->SetTargetResponseAmplitudeTolerance(adaptiveStimulusTargetTolerance);
+        pSettings->SetInputStartingRange(inputStartRange);
+        pSettings->SetOutputStartingRange(outputStartRange);
+        pSettings->SetAutorangeTriesPerStep(autorangeTriesPerStep);
+        pSettings->SetAutorangeTolerance(autorangeTolerance);
+        pSettings->SetMinCyclesCaptured(minCyclesCaptured);
+        pSettings->SetMaxCyclesCaptured(maxCyclesCaptured);
+        pSettings->SetLowNoiseOversampling(lowNoiseOversampling);
+        pSettings->SetNoiseRejectBandwidth(noiseRejectModeBandwidth);
+        pSettings->SetNoiseRejectModeTimebase(noiseRejectModeTimebase);
+        pSettings->SetQualityLimitsState(qualityLimitsEnable);
+        pSettings->SetAmplitudeLowerLimit(amplitudeLowerLimit);
+        pSettings->SetPurityLowerLimit(purityLowerLimit);
+        pSettings->SetDcExcludedFromNoiseState(excludeDcFromNoise);
+        pSettings->SetPhaseWrappingThreshold(phaseWrappingThreshold);
+        pSettings->SetGainMarginPhaseCrossover(gainMarginPhaseCrossover);
+        pSettings->SetTimeDomainPlotsEnabled(timeDomainDiagnosticPlots);
+        pSettings->SetLogVerbosityFlags(logVerbosityFlags);
     }
 
     return retVal;

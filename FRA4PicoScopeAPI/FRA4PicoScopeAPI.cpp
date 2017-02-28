@@ -63,6 +63,7 @@ static const double maxAutorangeAmplitudeDefault = 1.0;
 static const uint8_t adaptiveStimulusTriesPerStepDefault = 10;
 static const double targetResponseAmplitudeToleranceDefault = 0.1; // 10%
 static const uint16_t minCyclesCapturedDefault = 16;
+static const uint16_t maxCyclesCapturedDefault = 100;
 
 // Parameters used to communicate from API to execution thread
 static double startFreqHz = 0.0;
@@ -112,7 +113,7 @@ bool __stdcall Initialize( void )
 
             pFRA->SetFraTuning( purityLowerLimitDefault, extraSettlingTimeMsDefault, autorangeTriesPerStepDefault, autorangeToleranceDefault,
                                 smallSignalResolutionToleranceDefault, maxAutorangeAmplitudeDefault, adaptiveStimulusTriesPerStepDefault,
-                                targetResponseAmplitudeToleranceDefault, minCyclesCapturedDefault );
+                                targetResponseAmplitudeToleranceDefault, minCyclesCapturedDefault, maxCyclesCapturedDefault );
 
             pFRA->DisableDiagnostics();
 
@@ -404,6 +405,7 @@ void __stdcall SetFraSettings( SamplingMode_T samplingMode, bool adaptiveStimulu
 //             [in] targetResponseAmplitudeTolerance - Percent tolerance above target allowed for
 //                                                     the smallest stimulus (input or output)
 //             [in] minCyclesCaptured - Minimum cycles captured for stmulus signal
+//             [in] maxCyclesCaptured - Maximum cycles captured for stmulus signal
 //
 // Notes: None
 //
@@ -411,13 +413,14 @@ void __stdcall SetFraSettings( SamplingMode_T samplingMode, bool adaptiveStimulu
 
 void __stdcall SetFraTuning( double purityLowerLimit, uint16_t extraSettlingTimeMs, uint8_t autorangeTriesPerStep,
                              double autorangeTolerance, double smallSignalResolutionTolerance, double maxAutorangeAmplitude,
-                             uint8_t adaptiveStimulusTriesPerStep, double targetResponseAmplitudeTolerance, uint16_t minCyclesCaptured )
+                             uint8_t adaptiveStimulusTriesPerStep, double targetResponseAmplitudeTolerance, uint16_t minCyclesCaptured,
+                             uint16_t maxCyclesCaptured )
 {
     if (pFRA)
     {
         pFRA->SetFraTuning( purityLowerLimit, extraSettlingTimeMs, autorangeTriesPerStep, autorangeTolerance,
                             smallSignalResolutionTolerance, maxAutorangeAmplitude, adaptiveStimulusTriesPerStep,
-                            targetResponseAmplitudeTolerance, minCyclesCaptured );
+                            targetResponseAmplitudeTolerance, minCyclesCaptured, maxCyclesCaptured );
     }
 }
 

@@ -519,6 +519,10 @@ class ApplicationSettings
             }
             AppSettingsPropTree.put( L"diagnostics.logVerbosityFlags", (int)currentFlags );
         }
+        inline void SetLogVerbosityFlags(uint16_t flags)
+        {
+            AppSettingsPropTree.put( L"diagnostics.logVerbosityFlags", (int)flags );
+        }
 
         inline bool GetTimeDomainPlotsEnabled( void )
         {

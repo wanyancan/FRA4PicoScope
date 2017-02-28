@@ -120,6 +120,7 @@ PicoScopeFRA::PicoScopeFRA(FRA_STATUS_CALLBACK statusCB)
     maxAutorangeRetries = 0;
     mExtraSettlingTimeMs = 0;
     mMinCyclesCaptured = 0;
+    mMaxCyclesCaptured = 0;
     mSweepDescending = false;
     mAdaptiveStimulus = false;
     mTargetResponseAmplitude = 0.0;
@@ -232,6 +233,7 @@ void PicoScopeFRA::SetFraSettings( SamplingMode_T samplingMode, bool adaptiveSti
 //             [in] targetResponseAmplitudeTolerance - Percent tolerance above target allowed for
 //                                                     the smallest stimulus (input or output)
 //             [in] minCyclesCaptured - Minimum cycles captured for stmulus signal
+//             [in] maxCyclesCaptured - Maximum cycles captured for stmulus signal
 //
 // Notes: None
 //
@@ -239,7 +241,8 @@ void PicoScopeFRA::SetFraSettings( SamplingMode_T samplingMode, bool adaptiveSti
 
 void PicoScopeFRA::SetFraTuning( double purityLowerLimit, uint16_t extraSettlingTimeMs, uint8_t autorangeTriesPerStep,
                                  double autorangeTolerance, double smallSignalResolutionTolerance, double maxAutorangeAmplitude,
-                                 uint8_t adaptiveStimulusTriesPerStep, double targetResponseAmplitudeTolerance, uint16_t minCyclesCaptured )
+                                 uint8_t adaptiveStimulusTriesPerStep, double targetResponseAmplitudeTolerance, uint16_t minCyclesCaptured,
+                                 uint16_t maxCyclesCaptured )
 {
     mPurityLowerLimit = purityLowerLimit;
     mExtraSettlingTimeMs = extraSettlingTimeMs;
@@ -250,6 +253,7 @@ void PicoScopeFRA::SetFraTuning( double purityLowerLimit, uint16_t extraSettling
     maxAdaptiveStimulusRetries = adaptiveStimulusTriesPerStep;
     mTargetResponseAmplitudeTolerance = targetResponseAmplitudeTolerance;
     mMinCyclesCaptured = minCyclesCaptured;
+    mMaxCyclesCaptured = maxCyclesCaptured;
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -1483,11 +1487,7 @@ bool PicoScopeFRA::StartCapture( double measFreqHz )
     }
     else
     {
-        // Goertzel bin width divided by selection frequency is the inverse of the number of periods
-        // sampled.  So, attempt to set bin +/- 0.5% around the selection frequency => 100 periods.
-        // This is easy to achieve at higher frequencies, but at lower frequencies, we may not have the
-        // buffer space.
-        numCycles = min( 100, (uint32_t)((measFreqHz * (double)maxScopeSamplesPerChannel) / ps->GetNoiseRejectModeSampleRate()) );
+        numCycles = min( mMaxCyclesCaptured, (uint32_t)((measFreqHz * (double)maxScopeSamplesPerChannel) / ps->GetNoiseRejectModeSampleRate()) );
         numSamples = (int32_t)(((double)numCycles * ps->GetNoiseRejectModeSampleRate()) / measFreqHz) + 1;
 
         timebase = ps->GetNoiseRejectModeTimebase();
