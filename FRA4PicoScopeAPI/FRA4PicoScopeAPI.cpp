@@ -64,6 +64,7 @@ static const uint8_t adaptiveStimulusTriesPerStepDefault = 10;
 static const double targetResponseAmplitudeToleranceDefault = 0.1; // 10%
 static const uint16_t minCyclesCapturedDefault = 16;
 static const uint16_t maxCyclesCapturedDefault = 100;
+static const uint16_t lowNoiseOversamplingDefault = 64;
 
 // Parameters used to communicate from API to execution thread
 static double startFreqHz = 0.0;
@@ -113,7 +114,7 @@ bool __stdcall Initialize( void )
 
             pFRA->SetFraTuning( purityLowerLimitDefault, extraSettlingTimeMsDefault, autorangeTriesPerStepDefault, autorangeToleranceDefault,
                                 smallSignalResolutionToleranceDefault, maxAutorangeAmplitudeDefault, adaptiveStimulusTriesPerStepDefault,
-                                targetResponseAmplitudeToleranceDefault, minCyclesCapturedDefault, maxCyclesCapturedDefault );
+                                targetResponseAmplitudeToleranceDefault, minCyclesCapturedDefault, maxCyclesCapturedDefault, lowNoiseOversamplingDefault );
 
             pFRA->DisableDiagnostics();
 
@@ -414,13 +415,13 @@ void __stdcall SetFraSettings( SamplingMode_T samplingMode, bool adaptiveStimulu
 void __stdcall SetFraTuning( double purityLowerLimit, uint16_t extraSettlingTimeMs, uint8_t autorangeTriesPerStep,
                              double autorangeTolerance, double smallSignalResolutionTolerance, double maxAutorangeAmplitude,
                              uint8_t adaptiveStimulusTriesPerStep, double targetResponseAmplitudeTolerance, uint16_t minCyclesCaptured,
-                             uint16_t maxCyclesCaptured )
+                             uint16_t maxCyclesCaptured, uint16_t lowNoiseOversampling )
 {
     if (pFRA)
     {
         pFRA->SetFraTuning( purityLowerLimit, extraSettlingTimeMs, autorangeTriesPerStep, autorangeTolerance,
                             smallSignalResolutionTolerance, maxAutorangeAmplitude, adaptiveStimulusTriesPerStep,
-                            targetResponseAmplitudeTolerance, minCyclesCaptured, maxCyclesCaptured );
+                            targetResponseAmplitudeTolerance, minCyclesCaptured, maxCyclesCaptured, lowNoiseOversampling );
     }
 }
 

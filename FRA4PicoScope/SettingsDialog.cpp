@@ -341,9 +341,9 @@ bool ValidateAndStoreSettings( HWND hDlg )
         errorConditions[numErrors++] = L"Amplitude lower quality limit is not a valid number";
         retVal = false;
     }
-    else if (amplitudeLowerLimit <= 0.0)
+    else if (amplitudeLowerLimit < 0.0)
     {
-        errorConditions[numErrors++] = L"Amplitude lower quality limit must be > 0.0";
+        errorConditions[numErrors++] = L"Amplitude lower quality limit must be >= 0.0";
         retVal = false;
     }
 
@@ -354,9 +354,9 @@ bool ValidateAndStoreSettings( HWND hDlg )
         errorConditions[numErrors++] = L"Purity lower quality limit is not a valid number";
         retVal = false;
     }
-    else if (purityLowerLimit <= 0.0)
+    else if (purityLowerLimit < 0.0)
     {
-        errorConditions[numErrors++] = L"Purity lower quality limit must be > 0.0";
+        errorConditions[numErrors++] = L"Purity lower quality limit must be >= 0.0";
         retVal = false;
     }
 

@@ -60,7 +60,7 @@ class PicoScopeFRA
         void SetFraTuning( double purityLowerLimit, uint16_t extraSettlingTimeMs, uint8_t autorangeTriesPerStep,
                            double autorangeTolerance, double smallSignalResolutionTolerance, double maxAutorangeAmplitude,
                            uint8_t adaptiveStimulusTriesPerStep, double targetSignalAmplitudeTolerance, uint16_t minCyclesCaptured,
-                           uint16_t maxCyclesCaptured );
+                           uint16_t maxCyclesCaptured, uint16_t lowNoiseOversampling );
         bool SetupChannels( int inputChannel, int inputChannelCoupling, int inputChannelAttenuation, double inputDcOffset,
                             int outputChannel, int outputChannelCoupling, int outputChannelAttenuation, double outputDcOffset,
                             double initialSignalVpp, double maxSignalVpp );
@@ -134,6 +134,7 @@ class PicoScopeFRA
         uint16_t mExtraSettlingTimeMs;      // Extra settling time between auto-range tries
         uint16_t mMinCyclesCaptured;        // Minimum whole stimulus signal cycles to capture
         uint16_t mMaxCyclesCaptured;        // Maximum whole stimulus signal cycles to capture
+        uint16_t mLowNoiseOversampling;     // Amount to oversample the stimulus frequency in low noise mode
         bool mSweepDescending;              // Whether to sweep frequency from high to low
         bool mAdaptiveStimulus;             // Whether to adjust stimulus Vpp to target an output goal
         double mTargetResponseAmplitude;      // Target amplitude for measured signals, goal is that both signals be at least this large

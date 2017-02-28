@@ -223,7 +223,7 @@ bool ApplicationSettings::InitializeApplicationSettingsFile( void )
         AppSettingsPropTree.put( L"expert.lowNoiseOversampling", L"64" ); // 64x
 
         AppSettingsPropTree.put( L"qualityLimits.enable", L"false" ); // Quality limits off
-        AppSettingsPropTree.put( L"qualityLimits.amplitudeLowerLimit", L"1.0" );
+        AppSettingsPropTree.put( L"qualityLimits.amplitudeLowerLimit", L"0.0" );
         AppSettingsPropTree.put( L"qualityLimits.purityLowerLimit", L"80" ); // 80%
         AppSettingsPropTree.put( L"qualityLimits.excludeDcFromNoise", L"false" );
 

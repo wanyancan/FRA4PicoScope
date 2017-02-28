@@ -638,7 +638,7 @@ BOOL CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
                                  pSettings->GetAutorangeTriesPerStep(), pSettings->GetAutorangeTolerance(),
                                  pSettings->GetAmplitudeLowerLimitAsFraction(), pSettings->GetMaxAutorangeAmplitude(),
                                  pSettings->GetAdaptiveStimulusTriesPerStep(), pSettings->GetTargetResponseAmplitudeTolerance(),
-                                 pSettings->GetMinCyclesCaptured(), pSettings->GetMaxCyclesCaptured() );
+                                 pSettings->GetMinCyclesCaptured(), pSettings->GetMaxCyclesCaptured(), pSettings->GetLowNoiseOversamplingAsNumber() );
 
             if (pSettings->GetTimeDomainPlotsEnabled())
             {
@@ -794,7 +794,7 @@ BOOL CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
                                              pSettings->GetAutorangeTriesPerStep(), pSettings->GetAutorangeTolerance(),
                                              pSettings->GetAmplitudeLowerLimitAsFraction(), pSettings->GetMaxAutorangeAmplitude(),
                                              pSettings->GetAdaptiveStimulusTriesPerStep(), pSettings->GetTargetResponseAmplitudeTolerance(),
-                                             pSettings->GetMinCyclesCaptured(), pSettings->GetMaxCyclesCaptured() );
+                                             pSettings->GetMinCyclesCaptured(), pSettings->GetMaxCyclesCaptured(), pSettings->GetLowNoiseOversamplingAsNumber() );
 
                         if (pSettings->GetTimeDomainPlotsEnabled())
                         {

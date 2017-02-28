@@ -121,6 +121,7 @@ PicoScopeFRA::PicoScopeFRA(FRA_STATUS_CALLBACK statusCB)
     mExtraSettlingTimeMs = 0;
     mMinCyclesCaptured = 0;
     mMaxCyclesCaptured = 0;
+    mLowNoiseOversampling = 0;
     mSweepDescending = false;
     mAdaptiveStimulus = false;
     mTargetResponseAmplitude = 0.0;
@@ -242,7 +243,7 @@ void PicoScopeFRA::SetFraSettings( SamplingMode_T samplingMode, bool adaptiveSti
 void PicoScopeFRA::SetFraTuning( double purityLowerLimit, uint16_t extraSettlingTimeMs, uint8_t autorangeTriesPerStep,
                                  double autorangeTolerance, double smallSignalResolutionTolerance, double maxAutorangeAmplitude,
                                  uint8_t adaptiveStimulusTriesPerStep, double targetResponseAmplitudeTolerance, uint16_t minCyclesCaptured,
-                                 uint16_t maxCyclesCaptured )
+                                 uint16_t maxCyclesCaptured, uint16_t lowNoiseOversampling )
 {
     mPurityLowerLimit = purityLowerLimit;
     mExtraSettlingTimeMs = extraSettlingTimeMs;
@@ -254,6 +255,7 @@ void PicoScopeFRA::SetFraTuning( double purityLowerLimit, uint16_t extraSettling
     mTargetResponseAmplitudeTolerance = targetResponseAmplitudeTolerance;
     mMinCyclesCaptured = minCyclesCaptured;
     mMaxCyclesCaptured = maxCyclesCaptured;
+    mLowNoiseOversampling = lowNoiseOversampling;
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -1471,15 +1473,13 @@ bool PicoScopeFRA::StartCapture( double measFreqHz )
         // - In order for the amplitude calculation to be accurate, and minimize
         //   spectral leakage, we need to try to capture an integer number of 
         //   periods of the signal of interest.
-        // - Sampling frequency well above Nyquist (at least 64x)
-        // - Enough samples that the selection bin is narrow.
-        if (!(ps->GetTimebase(measFreqHz*64.0, &actualSampFreqHz, &timebase)))
+        if (!(ps->GetTimebase(measFreqHz*(double)mLowNoiseOversampling, &actualSampFreqHz, &timebase)))
         {
             return false;
         }
         // Calculate actual sample frequency, and number of samples, collecting enough
-        // samples for 16 cycles of the measured frequency.
-        numCycles = 16;
+        // samples for the configured cycles of the measured frequency.
+        numCycles = mMinCyclesCaptured;
         double samplesPerCycle = actualSampFreqHz / measFreqHz;
         // Deferring the integer truncation till this point ensures
         // the least inaccuracy in hitting the integer periods criteria
