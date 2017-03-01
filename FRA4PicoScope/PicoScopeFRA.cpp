@@ -59,7 +59,7 @@ void __stdcall DataReady( short handle, PICO_STATUS status, void * pParameter)
 }
 
 const double PicoScopeFRA::attenInfo[] = {1.0, 10.0, 20.0, 100.0, 200.0, 1000.0};
-const double PicoScopeFRA::inputRangeInitialEstimateMargin = 0.95;
+const double PicoScopeFRA::stimulusBasedInitialRangeEstimateMargin = 0.95;
 const uint32_t PicoScopeFRA::timeDomainDiagnosticDataLengthLimit = 1024;
 
 PICO_STATUS PicoScopeFRA::captureStatus;
@@ -118,6 +118,8 @@ PicoScopeFRA::PicoScopeFRA(FRA_STATUS_CALLBACK statusCB)
     minAmplitudeRatioTolerance = 0.0;
     maxAmplitudeRatio = 0.0;
     maxAutorangeRetries = 0;
+    mInputStartRange = 0;
+    mOutputStartRange = 0;
     mExtraSettlingTimeMs = 0;
     mMinCyclesCaptured = 0;
     mMaxCyclesCaptured = 0;
@@ -230,11 +232,15 @@ void PicoScopeFRA::SetFraSettings( SamplingMode_T samplingMode, bool adaptiveSti
 //             [in] smallSignalResolutionTolerance - Lower limit on signal amplitide before we
 //                                                    take action
 //             [in] maxAutorangeAmplitude - Amplitude before we switch to next higher range
+//             [in] inputStartRange - Range to start input channel; -1 means base on stimulus
+//             [in] outputStartRange - Range to start output channel; -1 means base on stimulus
 //             [in] adaptiveStimulusTriesPerStep - Number of adaptive stimulus tries allowed
 //             [in] targetResponseAmplitudeTolerance - Percent tolerance above target allowed for
 //                                                     the smallest stimulus (input or output)
 //             [in] minCyclesCaptured - Minimum cycles captured for stmulus signal
 //             [in] maxCyclesCaptured - Maximum cycles captured for stmulus signal
+//             [in] lowNoiseOversampling - Amount to oversample the stimulus frequency in low
+//                                         noise mode
 //
 // Notes: None
 //
@@ -242,8 +248,9 @@ void PicoScopeFRA::SetFraSettings( SamplingMode_T samplingMode, bool adaptiveSti
 
 void PicoScopeFRA::SetFraTuning( double purityLowerLimit, uint16_t extraSettlingTimeMs, uint8_t autorangeTriesPerStep,
                                  double autorangeTolerance, double smallSignalResolutionTolerance, double maxAutorangeAmplitude,
-                                 uint8_t adaptiveStimulusTriesPerStep, double targetResponseAmplitudeTolerance, uint16_t minCyclesCaptured,
-                                 uint16_t maxCyclesCaptured, uint16_t lowNoiseOversampling )
+                                 int32_t inputStartRange, int32_t outputStartRange, uint8_t adaptiveStimulusTriesPerStep,
+                                 double targetResponseAmplitudeTolerance, uint16_t minCyclesCaptured, uint16_t maxCyclesCaptured,
+                                 uint16_t lowNoiseOversampling )
 {
     mPurityLowerLimit = purityLowerLimit;
     mExtraSettlingTimeMs = extraSettlingTimeMs;
@@ -251,6 +258,8 @@ void PicoScopeFRA::SetFraTuning( double purityLowerLimit, uint16_t extraSettling
     minAmplitudeRatioTolerance = autorangeTolerance;
     minAllowedAmplitudeRatio = smallSignalResolutionTolerance;
     maxAmplitudeRatio = maxAutorangeAmplitude;
+    mInputStartRange = inputStartRange;
+    mOutputStartRange = outputStartRange;
     maxAdaptiveStimulusRetries = adaptiveStimulusTriesPerStep;
     mTargetResponseAmplitudeTolerance = targetResponseAmplitudeTolerance;
     mMinCyclesCaptured = minCyclesCaptured;
@@ -356,7 +365,6 @@ bool PicoScopeFRA::SetupChannels( int inputChannel, int inputChannelCoupling, in
                                   double initialStimulusVpp, double maxStimulusVpp )
 {
     FRA_STATUS_MESSAGE_T fraStatusMsg;
-    PS_RANGE inputRange;
 
     if (!ps)
     {
@@ -371,18 +379,39 @@ bool PicoScopeFRA::SetupChannels( int inputChannel, int inputChannelCoupling, in
     outputMinRange = ps->GetMinRange(mOutputChannelCoupling);
     outputMaxRange = ps->GetMaxRange(mOutputChannelCoupling);
 
-    for (inputRange = inputMaxRange; inputRange > inputMinRange; inputRange--)
+    if (-1 == mInputStartRange)
     {
-        if (initialStimulusVpp > 2.0*rangeInfo[inputRange].rangeVolts*attenInfo[mInputChannelAttenuation]*inputRangeInitialEstimateMargin)
+        for (currentInputChannelRange = inputMaxRange; currentInputChannelRange > inputMinRange; currentInputChannelRange--)
         {
-            inputRange++; // We stepped one too far, so backup
-            inputRange = min(inputRange, inputMaxRange); // Just in case, so we can't get an illegal range
-            break;
+            if (initialStimulusVpp > 2.0*rangeInfo[currentInputChannelRange].rangeVolts*attenInfo[mInputChannelAttenuation]*stimulusBasedInitialRangeEstimateMargin)
+            {
+                currentInputChannelRange++; // We stepped one too far, so backup
+                currentInputChannelRange = min(currentInputChannelRange, inputMaxRange); // Just in case, so we can't get an illegal range
+                break;
+            }
         }
     }
+    else
+    {
+        currentInputChannelRange = min(inputMaxRange, max(mInputStartRange, inputMinRange));
+    }
 
-    currentInputChannelRange = inputRange;
-    currentOutputChannelRange = outputMinRange;
+    if (-1 == mOutputStartRange)
+    {
+        for (currentOutputChannelRange = outputMaxRange; currentOutputChannelRange > outputMinRange; currentOutputChannelRange--)
+        {
+            if (initialStimulusVpp > 2.0*rangeInfo[currentOutputChannelRange].rangeVolts*attenInfo[mOutputChannelAttenuation]*stimulusBasedInitialRangeEstimateMargin)
+            {
+                currentOutputChannelRange++; // We stepped one too far, so backup
+                currentOutputChannelRange = min(currentOutputChannelRange, outputMaxRange); // Just in case, so we can't get an illegal range
+                break;
+            }
+        }
+    }
+    else
+    {
+        currentOutputChannelRange = min(outputMaxRange, max(mOutputStartRange, outputMinRange));
+    }
 
     mInputChannel = (PS_CHANNEL)inputChannel;
     mOutputChannel = (PS_CHANNEL)outputChannel;

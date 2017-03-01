@@ -636,7 +636,7 @@ BOOL CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 
             psFRA->SetFraTuning( pSettings->GetPurityLowerLimitAsFraction(), pSettings->GetExtraSettlingTimeMs(),
                                  pSettings->GetAutorangeTriesPerStep(), pSettings->GetAutorangeTolerance(),
-                                 pSettings->GetAmplitudeLowerLimitAsFraction(), pSettings->GetMaxAutorangeAmplitude(),
+                                 pSettings->GetAmplitudeLowerLimitAsFraction(), pSettings->GetMaxAutorangeAmplitude(), 0, 0,
                                  pSettings->GetAdaptiveStimulusTriesPerStep(), pSettings->GetTargetResponseAmplitudeTolerance(),
                                  pSettings->GetMinCyclesCaptured(), pSettings->GetMaxCyclesCaptured(), pSettings->GetLowNoiseOversamplingAsNumber() );
 
@@ -793,8 +793,14 @@ BOOL CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
                         psFRA->SetFraTuning( pSettings->GetPurityLowerLimitAsFraction(), pSettings->GetExtraSettlingTimeMs(),
                                              pSettings->GetAutorangeTriesPerStep(), pSettings->GetAutorangeTolerance(),
                                              pSettings->GetAmplitudeLowerLimitAsFraction(), pSettings->GetMaxAutorangeAmplitude(),
+                                             pSettings->GetInputStartingRange(), pSettings->GetOutputStartingRange(),
                                              pSettings->GetAdaptiveStimulusTriesPerStep(), pSettings->GetTargetResponseAmplitudeTolerance(),
                                              pSettings->GetMinCyclesCaptured(), pSettings->GetMaxCyclesCaptured(), pSettings->GetLowNoiseOversamplingAsNumber() );
+
+                        if (pScopeSelector->GetSelectedScope())
+                        {
+                            pScopeSelector->GetSelectedScope()->SetDesiredNoiseRejectModeTimebase(pSettings->GetNoiseRejectModeTimebase());
+                        }
 
                         if (pSettings->GetTimeDomainPlotsEnabled())
                         {

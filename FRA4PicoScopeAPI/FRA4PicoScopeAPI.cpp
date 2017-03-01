@@ -60,6 +60,8 @@ static const uint8_t autorangeTriesPerStepDefault = 10;
 static const double autorangeToleranceDefault = 0.10;
 static const double smallSignalResolutionToleranceDefault = 0.0;
 static const double maxAutorangeAmplitudeDefault = 1.0;
+static const int32_t inputStartRangeDefault = -1;
+static const int32_t outputStartRangeDefault = 0;
 static const uint8_t adaptiveStimulusTriesPerStepDefault = 10;
 static const double targetResponseAmplitudeToleranceDefault = 0.1; // 10%
 static const uint16_t minCyclesCapturedDefault = 16;
@@ -113,8 +115,9 @@ bool __stdcall Initialize( void )
                                   sweepDescendingDefault, phaseWrappingThresholdDefault );
 
             pFRA->SetFraTuning( purityLowerLimitDefault, extraSettlingTimeMsDefault, autorangeTriesPerStepDefault, autorangeToleranceDefault,
-                                smallSignalResolutionToleranceDefault, maxAutorangeAmplitudeDefault, adaptiveStimulusTriesPerStepDefault,
-                                targetResponseAmplitudeToleranceDefault, minCyclesCapturedDefault, maxCyclesCapturedDefault, lowNoiseOversamplingDefault );
+                                smallSignalResolutionToleranceDefault, maxAutorangeAmplitudeDefault, 0, 0, adaptiveStimulusTriesPerStepDefault,
+                                targetResponseAmplitudeToleranceDefault, minCyclesCapturedDefault, maxCyclesCapturedDefault,
+                                lowNoiseOversamplingDefault );
 
             pFRA->DisableDiagnostics();
 
@@ -402,11 +405,15 @@ void __stdcall SetFraSettings( SamplingMode_T samplingMode, bool adaptiveStimulu
 //             [in] smallSignalResolutionTolerance - Lower limit on signal amplitide before we
 //                                                    take action
 //             [in] maxAutorangeAmplitude - Amplitude before we switch to next higher range
+//             [in] inputStartRange - Range to start input channel; -1 means base on stimulus
+//             [in] outputStartRange - Range to start output channel; -1 means base on stimulus
 //             [in] adaptiveStimulusTriesPerStep - Number of adaptive stimulus tries allowed
 //             [in] targetResponseAmplitudeTolerance - Percent tolerance above target allowed for
 //                                                     the smallest stimulus (input or output)
 //             [in] minCyclesCaptured - Minimum cycles captured for stmulus signal
 //             [in] maxCyclesCaptured - Maximum cycles captured for stmulus signal
+//             [in] lowNoiseOversampling - Amount to oversample the stimulus frequency in low
+//                                         noise mode
 //
 // Notes: None
 //
@@ -414,14 +421,16 @@ void __stdcall SetFraSettings( SamplingMode_T samplingMode, bool adaptiveStimulu
 
 void __stdcall SetFraTuning( double purityLowerLimit, uint16_t extraSettlingTimeMs, uint8_t autorangeTriesPerStep,
                              double autorangeTolerance, double smallSignalResolutionTolerance, double maxAutorangeAmplitude,
-                             uint8_t adaptiveStimulusTriesPerStep, double targetResponseAmplitudeTolerance, uint16_t minCyclesCaptured,
-                             uint16_t maxCyclesCaptured, uint16_t lowNoiseOversampling )
+                             int32_t inputStartRange, int32_t outputStartRange, uint8_t adaptiveStimulusTriesPerStep,
+                             double targetResponseAmplitudeTolerance, uint16_t minCyclesCaptured, uint16_t maxCyclesCaptured,
+                             uint16_t lowNoiseOversampling )
 {
     if (pFRA)
     {
         pFRA->SetFraTuning( purityLowerLimit, extraSettlingTimeMs, autorangeTriesPerStep, autorangeTolerance,
-                            smallSignalResolutionTolerance, maxAutorangeAmplitude, adaptiveStimulusTriesPerStep,
-                            targetResponseAmplitudeTolerance, minCyclesCaptured, maxCyclesCaptured, lowNoiseOversampling );
+                            smallSignalResolutionTolerance, maxAutorangeAmplitude, inputStartRange, outputStartRange,
+                            adaptiveStimulusTriesPerStep, targetResponseAmplitudeTolerance, minCyclesCaptured, maxCyclesCaptured,
+                            lowNoiseOversampling );
     }
 }
 

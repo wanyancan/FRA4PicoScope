@@ -59,8 +59,9 @@ class PicoScopeFRA
                              bool sweepDescending, double phaseWrappingThreshold );
         void SetFraTuning( double purityLowerLimit, uint16_t extraSettlingTimeMs, uint8_t autorangeTriesPerStep,
                            double autorangeTolerance, double smallSignalResolutionTolerance, double maxAutorangeAmplitude,
-                           uint8_t adaptiveStimulusTriesPerStep, double targetSignalAmplitudeTolerance, uint16_t minCyclesCaptured,
-                           uint16_t maxCyclesCaptured, uint16_t lowNoiseOversampling );
+                           int32_t inputStartRange, int32_t outputStartRange, uint8_t adaptiveStimulusTriesPerStep,
+                           double targetSignalAmplitudeTolerance, uint16_t minCyclesCaptured, uint16_t maxCyclesCaptured,
+                            uint16_t lowNoiseOversampling );
         bool SetupChannels( int inputChannel, int inputChannelCoupling, int inputChannelAttenuation, double inputDcOffset,
                             int outputChannel, int outputChannelCoupling, int outputChannelAttenuation, double outputDcOffset,
                             double initialSignalVpp, double maxSignalVpp );
@@ -137,8 +138,10 @@ class PicoScopeFRA
         uint16_t mLowNoiseOversampling;     // Amount to oversample the stimulus frequency in low noise mode
         bool mSweepDescending;              // Whether to sweep frequency from high to low
         bool mAdaptiveStimulus;             // Whether to adjust stimulus Vpp to target an output goal
-        double mTargetResponseAmplitude;      // Target amplitude for measured signals, goal is that both signals be at least this large
+        double mTargetResponseAmplitude;    // Target amplitude for measured signals, goal is that both signals be at least this large
         double mTargetResponseAmplitudeTolerance; // Amount the smallest signal is allowed to exceed target signal amplitude (percent)
+        int32_t mInputStartRange;           // Range to start input channel; -1 means base on stimulus
+        int32_t mOutputStartRange;          // Range to start output channel; -1 means base on stimulus
         double mMaxStimulusVpp;             // Maximum allowed stimulus voltage in adaptive stimulus mode
         int maxAdaptiveStimulusRetries;     // Maximum number of tries to adapt stimulus before failing
         double mPhaseWrappingThreshold;     // Phase value to use as wrapping point (in degrees); absolute value should be less than 360
@@ -193,7 +196,7 @@ class PicoScopeFRA
         PS_RANGE outputMaxRange;
 
         static const double attenInfo[];
-        static const double inputRangeInitialEstimateMargin;
+        static const double stimulusBasedInitialRangeEstimateMargin;
         static const uint32_t timeDomainDiagnosticDataLengthLimit;
 
         HANDLE hCaptureEvent;

@@ -54,8 +54,9 @@ FRA4PICOSCOPE_API void __stdcall SetFraSettings( SamplingMode_T samplingMode, bo
                                                  bool sweepDescending, double phaseWrappingThreshold );
 FRA4PICOSCOPE_API void __stdcall SetFraTuning( double purityLowerLimit, uint16_t extraSettlingTimeMs, uint8_t autorangeTriesPerStep,
                                                double autorangeTolerance, double smallSignalResolutionTolerance, double maxAutorangeAmplitude,
-                                               uint8_t adaptiveStimulusTriesPerStep, double targetResponseAmplitudeTolerance, uint16_t minCyclesCaptured,
-                                               uint16_t maxCyclesCaptured, uint16_t lowNoiseOversampling );
+                                               int32_t inputStartRange, int32_t outputStartRange, uint8_t adaptiveStimulusTriesPerStep,
+                                               double targetResponseAmplitudeTolerance, uint16_t minCyclesCaptured, uint16_t maxCyclesCaptured,
+                                               uint16_t lowNoiseOversampling );
 FRA4PICOSCOPE_API bool __stdcall SetupChannels( int inputChannel, int inputChannelCoupling, int inputChannelAttenuation, double inputDcOffset,
                                                 int outputChannel, int outputChannelCoupling, int outputChannelAttenuation, double outputDcOffset,
                                                 double initialStimulusVpp, double maxStimulusVpp );

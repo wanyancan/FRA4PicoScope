@@ -513,16 +513,20 @@ void ApplicationSettings::SetNoScopeSettings( void )
     ScopeSettingsPropTree.put( L"picoScope.inputChannel.attenuation", ATTEN_1X );
     ScopeSettingsPropTree.put( L"picoScope.inputChannel.coupling",PS_AC );
     ScopeSettingsPropTree.put( L"picoScope.inputChannel.dcOffset", L"0.0" );
+    ScopeSettingsPropTree.put( L"picoScope.inputChannel.startingRange", -1 );
     ScopeSettingsPropTree.put( L"picoScope.outputChannel.name", L"B" );
     ScopeSettingsPropTree.put( L"picoScope.outputChannel.attenuation", ATTEN_1X );
     ScopeSettingsPropTree.put( L"picoScope.outputChannel.coupling", PS_AC );
     ScopeSettingsPropTree.put( L"picoScope.outputChannel.dcOffset", L"0.0" );
+    ScopeSettingsPropTree.put( L"picoScope.outputChannel.startingRange", -1 );
 
     ScopeSettingsPropTree.put( L"picoScope.fraParam.stimulusVpp", L"0.0" );
     ScopeSettingsPropTree.put( L"picoScope.fraParam.maxStimulusVpp", L"0.0" );
     ScopeSettingsPropTree.put( L"picoScope.fraParam.startFrequency", L"0.0" );
     ScopeSettingsPropTree.put( L"picoScope.fraParam.stopFrequency", L"0.0" );
     ScopeSettingsPropTree.put( L"picoScope.fraParam.stepsPerDecade", 10 );
+
+    ScopeSettingsPropTree.put( L"picoScope.sampleParam.noiseRejectModeTimebase", 0 );
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
