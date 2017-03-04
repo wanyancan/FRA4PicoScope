@@ -211,7 +211,7 @@ bool ps2000aImpl::GetFrequencyFromTimebase(uint32_t timebase, double &frequency)
 bool ps2000aImpl::InitializeScope(void)
 {
     bool retVal = true;
-    defaultTimebaseNoiseRejectMode = 1;
+    timebaseNoiseRejectMode = defaultTimebaseNoiseRejectMode = 1;
 
     minTimebase = 1;
     maxTimebase = (std::numeric_limits<uint32_t>::max)();

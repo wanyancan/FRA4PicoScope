@@ -355,7 +355,16 @@ void SelectNewScope( AvailableScopeDescription_T scope, bool mruScope = false )
             exit(-1);
         }
 
+        // Set scope's desired timebase
         pScope->SetDesiredNoiseRejectModeTimebase(pSettings->GetNoiseRejectModeTimebase());
+
+        // Propagate new tuning values affected by scope
+        psFRA->SetFraTuning( pSettings->GetPurityLowerLimitAsFraction(), pSettings->GetExtraSettlingTimeMs(),
+                             pSettings->GetAutorangeTriesPerStep(), pSettings->GetAutorangeTolerance(),
+                             pSettings->GetAmplitudeLowerLimitAsFraction(), pSettings->GetMaxAutorangeAmplitude(),
+                             pSettings->GetInputStartingRange(), pSettings->GetOutputStartingRange(),
+                             pSettings->GetAdaptiveStimulusTriesPerStep(), pSettings->GetTargetResponseAmplitudeTolerance(),
+                             pSettings->GetMinCyclesCaptured(), pSettings->GetMaxCyclesCaptured(), pSettings->GetLowNoiseOversamplingAsNumber() );
 
         if (!mruScope) // Don't unnecessarily dirty the settings file
         {
@@ -631,14 +640,7 @@ BOOL CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
                 exit(-1);
             }
 #if !defined(TEST_PLOTTING)
-            psFRA->SetFraSettings( pSettings->GetSamplingMode(), pSettings->GetAdaptiveStimulusMode(), pSettings->GetTargetResponseAmplitudeAsDouble(),
-                                   pSettings->GetSweepDescending(), pSettings->GetPhaseWrappingThreshold() );
-
-            psFRA->SetFraTuning( pSettings->GetPurityLowerLimitAsFraction(), pSettings->GetExtraSettlingTimeMs(),
-                                 pSettings->GetAutorangeTriesPerStep(), pSettings->GetAutorangeTolerance(),
-                                 pSettings->GetAmplitudeLowerLimitAsFraction(), pSettings->GetMaxAutorangeAmplitude(), 0, 0,
-                                 pSettings->GetAdaptiveStimulusTriesPerStep(), pSettings->GetTargetResponseAmplitudeTolerance(),
-                                 pSettings->GetMinCyclesCaptured(), pSettings->GetMaxCyclesCaptured(), pSettings->GetLowNoiseOversamplingAsNumber() );
+            InitScope();
 
             if (pSettings->GetTimeDomainPlotsEnabled())
             {
@@ -648,8 +650,6 @@ BOOL CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
             {
                 psFRA->DisableDiagnostics();
             }
-            
-            InitScope();
 #else
             HWND hndCtrl;
             hndCtrl = GetDlgItem(hWnd, IDC_FRA_AUTO_AXES);

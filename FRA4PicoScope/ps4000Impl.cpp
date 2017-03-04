@@ -151,21 +151,21 @@ bool ps4000Impl::InitializeScope(void)
     if (model == PS4262)
     {
         minRange = (PS_RANGE)PS4000_10MV;
-        defaultTimebaseNoiseRejectMode = 15; // for PS4262 => 625 kHz, approximately 3x HW BW limiter
+        timebaseNoiseRejectMode = defaultTimebaseNoiseRejectMode = 15; // for PS4262 => 625 kHz, approximately 3x HW BW limiter
         minTimebase = 0;
         signalGeneratorPrecision = 192.0e3 / (double)UINT32_MAX;
     }
     else if (model == PS4226)
     {
         minRange = (PS_RANGE)PS4000_50MV; // +/- 50mV
-        defaultTimebaseNoiseRejectMode = 1; // for PS4226 => 125 MHz
+        timebaseNoiseRejectMode = defaultTimebaseNoiseRejectMode = 1; // for PS4226 => 125 MHz
         minTimebase = 1;
         signalGeneratorPrecision = 20.0e6 / (double)UINT32_MAX;
     }
     else if (model == PS4227)
     {
         minRange = (PS_RANGE)PS4000_50MV; // +/- 50mV
-        defaultTimebaseNoiseRejectMode = 0; // for PS4227 => 250 MHz
+        timebaseNoiseRejectMode = defaultTimebaseNoiseRejectMode = 0; // for PS4227 => 250 MHz
         minTimebase = 0;
         signalGeneratorPrecision = 20.0e6 / (double)UINT32_MAX;
     }

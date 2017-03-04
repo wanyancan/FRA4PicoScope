@@ -86,7 +86,7 @@ bool ps4000aImpl::GetFrequencyFromTimebase(uint32_t timebase, double &frequency)
 
 bool ps4000aImpl::InitializeScope(void)
 {
-    defaultTimebaseNoiseRejectMode = 0;
+    timebaseNoiseRejectMode = defaultTimebaseNoiseRejectMode = 0;
 
     minTimebase = 0;
     maxTimebase = (std::numeric_limits<uint32_t>::max)();

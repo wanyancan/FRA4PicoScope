@@ -89,7 +89,7 @@ bool ps5000aImpl::GetFrequencyFromTimebase(uint32_t timebase, double &frequency)
 
 bool ps5000aImpl::InitializeScope(void)
 {
-    defaultTimebaseNoiseRejectMode = 4; // for PS5000A => 62.5 MHz approximately 3x HW BW limiter
+    timebaseNoiseRejectMode = defaultTimebaseNoiseRejectMode = 4; // for PS5000A => 62.5 MHz approximately 3x HW BW limiter
 
     minTimebase = 3;
     maxTimebase = (std::numeric_limits<uint32_t>::max)();

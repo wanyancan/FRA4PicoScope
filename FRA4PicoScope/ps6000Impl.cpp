@@ -123,12 +123,12 @@ bool ps6000Impl::InitializeScope(void)
     {
         // Encode for the best case, and we'll adjust in the GetNoiseRejectMode[SampleRate|Timebase] 
         // functions when both channels are from same block.
-        defaultTimebaseNoiseRejectMode = 1;
+        timebaseNoiseRejectMode = defaultTimebaseNoiseRejectMode = 1;
     }
     else
     {
         // A bandwidth limiter is available on these scope and will be used.
-        defaultTimebaseNoiseRejectMode = 6;
+        timebaseNoiseRejectMode = defaultTimebaseNoiseRejectMode = 6;
     }
 
     minTimebase = 1;

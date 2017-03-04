@@ -139,13 +139,13 @@ bool ps3000Impl::InitializeScope(void)
 
     if (model == PS3205)
     {
-        defaultTimebaseNoiseRejectMode = 0; // On the PS3205, 100 MS/s is timebase 0
+        timebaseNoiseRejectMode = defaultTimebaseNoiseRejectMode = 0; // On the PS3205, 100 MS/s is timebase 0
         minTimebase = 0;
         maxTimebase = PS3205_MAX_TIMEBASE;
     }
     if (model == PS3206)
     {
-        defaultTimebaseNoiseRejectMode = 1; // On the PS3206, 100 MS/s is timebase 1
+        timebaseNoiseRejectMode = defaultTimebaseNoiseRejectMode = 1; // On the PS3206, 100 MS/s is timebase 1
         minTimebase = 1;
         maxTimebase = PS3206_MAX_TIMEBASE;
     }

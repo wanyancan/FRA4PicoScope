@@ -115,8 +115,8 @@ bool __stdcall Initialize( void )
                                   sweepDescendingDefault, phaseWrappingThresholdDefault );
 
             pFRA->SetFraTuning( purityLowerLimitDefault, extraSettlingTimeMsDefault, autorangeTriesPerStepDefault, autorangeToleranceDefault,
-                                smallSignalResolutionToleranceDefault, maxAutorangeAmplitudeDefault, 0, 0, adaptiveStimulusTriesPerStepDefault,
-                                targetResponseAmplitudeToleranceDefault, minCyclesCapturedDefault, maxCyclesCapturedDefault,
+                                smallSignalResolutionToleranceDefault, maxAutorangeAmplitudeDefault, inputStartRangeDefault, inputStartRangeDefault,
+                                adaptiveStimulusTriesPerStepDefault, targetResponseAmplitudeToleranceDefault, minCyclesCapturedDefault, maxCyclesCapturedDefault,
                                 lowNoiseOversamplingDefault );
 
             pFRA->DisableDiagnostics();
