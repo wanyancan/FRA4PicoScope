@@ -347,7 +347,7 @@ void SelectNewScope( AvailableScopeDescription_T scope, bool mruScope = false )
         pScope->GetModel(scopeModel);
         pScope->GetSerialNumber(scopeSN);
         statusMessage << L"Status: " << scopeModel.c_str() << L" S/N: " << scopeSN.c_str() << L" successfully initialized.";
-        LogMessage( statusMessage.str() );
+        LogMessage( statusMessage.str(), SCOPE_INITIALIZATION );
 
         if (false == pSettings -> ReadScopeSettings( pScope ))
         {
@@ -1870,7 +1870,7 @@ bool ValidateSettings(void)
             get<1>(freqScale) = psFRA->GetMinFrequency();
             pSettings->SetFreqScale(freqScale);
             wss << L"Warning: Frequency axis minimum too small; adjusting to: " << get<1>(freqScale);
-            LogMessage( wss.str() );
+            LogMessage( wss.str(), FRA_WARNING );
         }
         if (get<2>(freqScale) < psFRA->GetMinFrequency())
         {
@@ -1878,7 +1878,7 @@ bool ValidateSettings(void)
             get<2>(freqScale) = pScopeSelector->GetSelectedScope()->GetMaxFuncGenFreq();
             pSettings->SetFreqScale(freqScale);
             wss << L"Warning: Frequency axis maximum too small; adjusting to: " << get<2>(freqScale);
-            LogMessage( wss.str() );
+            LogMessage( wss.str(), FRA_WARNING );
         }
     }
 
@@ -2410,7 +2410,7 @@ void SaveRawData( wstring dataFilePath )
             dataFileOutputStream.close();
 
             wstring message = L"Exported data to file: " + dataFilePath;
-            LogMessage(message);
+            LogMessage(message, SAVE_EXPORT_STATUS);
         }
         else
         {
@@ -2467,7 +2467,7 @@ void SavePlotImageFile( wstring dataFilePath )
                 if (dataFileOutputStream.good())
                 {
                     wstring message = L"Saved plot image to file: " + dataFilePath;
-                    LogMessage(message);
+                    LogMessage(message, SAVE_EXPORT_STATUS);
                 }
                 else
                 {

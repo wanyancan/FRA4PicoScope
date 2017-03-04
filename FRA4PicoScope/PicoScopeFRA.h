@@ -221,6 +221,7 @@ class PicoScopeFRA
         void TransferLatestResults(void);
 
         // Utilities for sending a message via the callback
+        // Power State
         inline bool UpdateStatus(FRA_STATUS_MESSAGE_T &msg, FRA_STATUS_T status, bool powerState)
         {
             msg.status = status;
@@ -237,6 +238,7 @@ class PicoScopeFRA
             }
             return StatusCallback(msg);
         }
+        // Progress Status
         inline bool UpdateStatus( FRA_STATUS_MESSAGE_T &msg, FRA_STATUS_T status, int stepsComplete, int numSteps )
         {
             msg.status = status;
@@ -253,6 +255,7 @@ class PicoScopeFRA
             }
             return StatusCallback( msg );
         }
+        // Retry Limit Reached
         inline bool UpdateStatus( FRA_STATUS_MESSAGE_T &msg, FRA_STATUS_T status, AUTORANGE_STATUS_T inputChannelStatus, AUTORANGE_STATUS_T outputChannelStatus )
         {
             msg.status = status;
@@ -273,12 +276,14 @@ class PicoScopeFRA
             msg.statusData.retryLimit.adaptiveStimulusLimit.outputResponseAmplitudeV = currentOutputAmplitudeVolts;
             return StatusCallback( msg );
         }
-        inline bool UpdateStatus( FRA_STATUS_MESSAGE_T &msg, FRA_STATUS_T status, const wchar_t* statusMessage )
+        // Status Messages
+        inline bool UpdateStatus( FRA_STATUS_MESSAGE_T &msg, FRA_STATUS_T status, const wchar_t* statusMessage, LOG_MESSAGE_FLAGS_T type = FRA_ERROR )
         {
             msg.status = status;
             msg.statusData.progress.numSteps = numSteps;
             msg.statusData.progress.stepsComplete = freqStepCounter;
             msg.statusText = statusMessage;
+            msg.messageType = type;
             return StatusCallback( msg );
         }
 };

@@ -38,9 +38,9 @@ HANDLE hExecuteFraEvent;
 
 wstring messageLog;
 bool bLogMessages = false;
-uint16_t logFlags = FRA_PROGRESS | STEP_TRIAL_PROGRESS | AUTORANGE_DIAGNOSTICS |
-                    ADAPTIVE_STIMULUS_DIAGNOSTICS | SAMPLE_PROCESSING_DIAGNOSTICS |
-                    DFT_DIAGNOSTICS | FRA_WARNING;
+uint16_t logVerbosityFlags = FRA_PROGRESS | STEP_TRIAL_PROGRESS | AUTORANGE_DIAGNOSTICS |
+                             ADAPTIVE_STIMULUS_DIAGNOSTICS | SAMPLE_PROCESSING_DIAGNOSTICS |
+                             DFT_DIAGNOSTICS | FRA_WARNING;
 bool bAutoClearLog = true;
 static const size_t messageLogSizeLimit = 16777216; // 16MB
 FRA_STATUS_CALLBACK FraStatusCallback = NULL;
@@ -183,26 +183,26 @@ void __stdcall Cleanup( void )
     bInitialized = false;
 }
 
-bool GetLogFlag(LOG_MESSAGE_FLAGS_T flag)
+bool GetLogVerbosityFlag(LOG_MESSAGE_FLAGS_T flag)
 {
-    return (((LOG_MESSAGE_FLAGS_T)logFlags & flag) == flag);
+    return (((LOG_MESSAGE_FLAGS_T)logVerbosityFlags & flag) == flag);
 }
 
-void __stdcall SetLogFlag(LOG_MESSAGE_FLAGS_T flag, bool set)
+void __stdcall SetLogVerbosityFlag(LOG_MESSAGE_FLAGS_T flag, bool set)
 {
     if (set)
     {
-        logFlags  = (logFlags | (uint16_t)flag);
+        logVerbosityFlags  = (logVerbosityFlags | (uint16_t)flag);
     }
     else
     {
-        logFlags  = (logFlags & ~(uint16_t)flag);
+        logVerbosityFlags  = (logVerbosityFlags & ~(uint16_t)flag);
     }
 }
 
-void __stdcall SetLogFlags(LOG_MESSAGE_FLAGS_T flags)
+void __stdcall SetLogVerbosityFlags(LOG_MESSAGE_FLAGS_T flags)
 {
-    logFlags = (uint16_t)flags;
+    logVerbosityFlags = (uint16_t)flags;
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -212,6 +212,8 @@ void __stdcall SetLogFlags(LOG_MESSAGE_FLAGS_T flags)
 // Purpose: Logs messages to the internal log, which can be retrieved later by the client
 //
 // Parameters: [in] statusMessage - the text to be logged
+//             [in] type - type of message, used to determine whether to log a message based on
+//                         verbosity settings
 //
 // Notes: Limits message log to messageLogSizeLimit.  If it would exceed this it will be cleared
 //        first before adding the new message.
@@ -220,7 +222,7 @@ void __stdcall SetLogFlags(LOG_MESSAGE_FLAGS_T flags)
 
 void LogMessage( const wstring statusMessage, LOG_MESSAGE_FLAGS_T type )
 {
-    if (bLogMessages && (type == FRA_ERROR || GetLogFlag(type)))
+    if (bLogMessages && (type == FRA_ERROR || GetLogVerbosityFlag(type)))
     {
         if (messageLog.size() + statusMessage.size() > messageLogSizeLimit)
         {
@@ -779,9 +781,13 @@ static bool LocalFraStatusCallback( FRA_STATUS_MESSAGE_T& fraStatus )
         }
     }
 
-    if (FRA_STATUS_MESSAGE == fraStatus.status)
+    if (FRA_STATUS_FATAL_ERROR == fraStatus.status)
     {
         LogMessage(fraStatus.statusText);
+    }
+    else if (FRA_STATUS_MESSAGE == fraStatus.status)
+    {
+        LogMessage(fraStatus.statusText, fraStatus.messageType);
     }
 
     return true;

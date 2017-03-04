@@ -66,6 +66,8 @@ FRA4PICOSCOPE_API void __stdcall EnableDiagnostics( wchar_t* baseDataPath );
 FRA4PICOSCOPE_API void __stdcall DisableDiagnostics( void );
 FRA4PICOSCOPE_API void __stdcall AutoClearMessageLog( bool bAutoClear );
 FRA4PICOSCOPE_API void __stdcall EnableMessageLog( bool bEnable );
+FRA4PICOSCOPE_API void __stdcall SetLogVerbosityFlag(LOG_MESSAGE_FLAGS_T flag, bool set);
+FRA4PICOSCOPE_API void __stdcall SetLogVerbosityFlags(LOG_MESSAGE_FLAGS_T flags);
 FRA4PICOSCOPE_API const wchar_t* __stdcall GetMessageLog( void );
 FRA4PICOSCOPE_API void __stdcall ClearMessageLog( void );
 FRA4PICOSCOPE_API void __stdcall SetCallback( FRA_STATUS_CALLBACK fraCb );

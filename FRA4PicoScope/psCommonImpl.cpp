@@ -675,7 +675,7 @@ bool CommonMethod(SCOPE_FAMILY_LT, DisableAllDigitalChannels)(void)
         if (PICO_NOT_USED != status) // PICO_NOT_USED is returned when the scope has no digital channels.
         {
             fraStatusText << L"Warning: Failed to disable digital channels 0-7: " << status;
-            LogMessage(fraStatusText.str());
+            LogMessage(fraStatusText.str(), FRA_WARNING);
             retVal = false;
         }
     }
@@ -687,7 +687,7 @@ bool CommonMethod(SCOPE_FAMILY_LT, DisableAllDigitalChannels)(void)
             fraStatusText.clear();
             fraStatusText.str(L"");
             fraStatusText << L"Warning: Failed to disable digital channels 8-15: " << status;
-            LogMessage(fraStatusText.str());
+            LogMessage(fraStatusText.str(), FRA_WARNING);
             retVal = false;
         }
     }
