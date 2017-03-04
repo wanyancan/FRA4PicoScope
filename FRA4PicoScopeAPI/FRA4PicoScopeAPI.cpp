@@ -38,13 +38,16 @@ HANDLE hExecuteFraEvent;
 
 wstring messageLog;
 bool bLogMessages = false;
+uint16_t logFlags = FRA_PROGRESS | STEP_TRIAL_PROGRESS | AUTORANGE_DIAGNOSTICS |
+                    ADAPTIVE_STIMULUS_DIAGNOSTICS | SAMPLE_PROCESSING_DIAGNOSTICS |
+                    DFT_DIAGNOSTICS | FRA_WARNING;
 bool bAutoClearLog = true;
 static const size_t messageLogSizeLimit = 16777216; // 16MB
 FRA_STATUS_CALLBACK FraStatusCallback = NULL;
 
 static DWORD WINAPI ExecuteFRA(LPVOID lpdwThreadParam);
 static bool LocalFraStatusCallback( FRA_STATUS_MESSAGE_T& fraStatus );
-void LogMessage(const wstring statusMessage);
+void LogMessage(const wstring statusMessage, LOG_MESSAGE_FLAGS_T type = FRA_ERROR );
 
 // Storage for default/initial FRA parameters
 // For basic settings
@@ -180,6 +183,28 @@ void __stdcall Cleanup( void )
     bInitialized = false;
 }
 
+bool GetLogFlag(LOG_MESSAGE_FLAGS_T flag)
+{
+    return (((LOG_MESSAGE_FLAGS_T)logFlags & flag) == flag);
+}
+
+void __stdcall SetLogFlag(LOG_MESSAGE_FLAGS_T flag, bool set)
+{
+    if (set)
+    {
+        logFlags  = (logFlags | (uint16_t)flag);
+    }
+    else
+    {
+        logFlags  = (logFlags & ~(uint16_t)flag);
+    }
+}
+
+void __stdcall SetLogFlags(LOG_MESSAGE_FLAGS_T flags)
+{
+    logFlags = (uint16_t)flags;
+}
+
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 //
 // Name: LogMessage
@@ -193,9 +218,9 @@ void __stdcall Cleanup( void )
 //
 ///////////////////////////////////////////////////////////////////////////////////////////////////
 
-void LogMessage( const wstring statusMessage )
+void LogMessage( const wstring statusMessage, LOG_MESSAGE_FLAGS_T type )
 {
-    if (bLogMessages)
+    if (bLogMessages && (type == FRA_ERROR || GetLogFlag(type)))
     {
         if (messageLog.size() + statusMessage.size() > messageLogSizeLimit)
         {

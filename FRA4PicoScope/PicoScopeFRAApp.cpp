@@ -2069,24 +2069,11 @@ bool FraStatusCallback( FRA_STATUS_MESSAGE_T& fraStatusMsg )
         hndCtrl = GetDlgItem( hMainWnd, IDC_STATUS_TEXT );
         Edit_SetText( hndCtrl, szStatus );
 
-        hndCtrl = GetDlgItem( hMainWnd, IDC_LOG );
-        int insertPoint = GetWindowTextLength(hndCtrl);
-        Edit_SetSel( hndCtrl, insertPoint, insertPoint );
-        fraStatusMsg.statusText.append(L"\r\n");
-        Edit_ReplaceSel( hndCtrl, fraStatusMsg.statusText.c_str() );
-        Edit_SetSel( hndCtrl, -1, -1 );
-        Edit_ScrollCaret( hndCtrl );
+        LogMessage( fraStatusMsg.statusText );
     }
     else if (fraStatusMsg.status == FRA_STATUS_MESSAGE)
     {
-        HWND hndCtrl;
-        hndCtrl = GetDlgItem( hMainWnd, IDC_LOG );
-        int insertPoint = GetWindowTextLength(hndCtrl);
-        Edit_SetSel( hndCtrl, insertPoint, insertPoint );
-        fraStatusMsg.statusText.append(L"\r\n");
-        Edit_ReplaceSel( hndCtrl, fraStatusMsg.statusText.c_str() );
-        Edit_SetSel( hndCtrl, -1, -1 );
-        Edit_ScrollCaret( hndCtrl );
+        LogMessage( fraStatusMsg.statusText, fraStatusMsg.messageType );
     }
     else if (fraStatusMsg.status == FRA_STATUS_RETRY_LIMIT)
     {
@@ -2158,17 +2145,20 @@ bool FraStatusCallback( FRA_STATUS_MESSAGE_T& fraStatusMsg )
 //
 ///////////////////////////////////////////////////////////////////////////////////////////////////
 
-void LogMessage( const wstring statusMessage )
+void LogMessage( const wstring statusMessage, LOG_MESSAGE_FLAGS_T type )
 {
-    HWND hndCtrl;
-    hndCtrl = GetDlgItem( hMainWnd, IDC_LOG );
-    int insertPoint = GetWindowTextLength(hndCtrl);
-    Edit_SetSel( hndCtrl, insertPoint, insertPoint );
-    wstring msg = statusMessage;
-    msg.append(L"\r\n");
-    Edit_ReplaceSel( hndCtrl, msg.c_str() );
-    Edit_SetSel( hndCtrl, -1, -1 );
-    Edit_ScrollCaret( hndCtrl );
+    if (FRA_ERROR == type || pSettings->GetLogVerbosityFlag(type))
+    {
+        HWND hndCtrl;
+        hndCtrl = GetDlgItem( hMainWnd, IDC_LOG );
+        int insertPoint = GetWindowTextLength(hndCtrl);
+        Edit_SetSel( hndCtrl, insertPoint, insertPoint );
+        wstring msg = statusMessage;
+        msg.append(L"\r\n");
+        Edit_ReplaceSel( hndCtrl, msg.c_str() );
+        Edit_SetSel( hndCtrl, -1, -1 );
+        Edit_ScrollCaret( hndCtrl );
+    }
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////

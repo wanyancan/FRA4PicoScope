@@ -105,7 +105,9 @@ typedef enum
     AUTORANGE_DIAGNOSTICS = 0x0004,
     ADAPTIVE_STIMULUS_DIAGNOSTICS = 0x0008,
     SAMPLE_PROCESSING_DIAGNOSTICS = 0x0010,
-    DFT_DIAGNOSTICS = 0x0020
+    DFT_DIAGNOSTICS = 0x0020,
+    FRA_WARNING = 0x0040,
+    FRA_ERROR = 0x8000
 } LOG_MESSAGE_FLAGS_T;
 
 typedef struct
@@ -148,6 +150,7 @@ typedef struct
         bool powerState; // false = No Aux DC power
     } statusData;
 
+    LOG_MESSAGE_FLAGS_T messageType;
     std::wstring statusText; // used to encode log or failure messages
 
     struct

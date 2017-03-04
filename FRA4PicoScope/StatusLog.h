@@ -24,5 +24,6 @@
 //////////////////////////////////////////////////////////////////////////////////////////////////
 
 #include <string>
+#include "FRA4PicoScopeInterfaceTypes.h"
 
-void LogMessage( const wstring statusMessage );
+void LogMessage( const wstring statusMessage, LOG_MESSAGE_FLAGS_T type = FRA_ERROR );
