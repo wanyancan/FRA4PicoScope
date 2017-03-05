@@ -38,9 +38,10 @@ HANDLE hExecuteFraEvent;
 
 wstring messageLog;
 bool bLogMessages = false;
-uint16_t logVerbosityFlags = FRA_PROGRESS | STEP_TRIAL_PROGRESS | AUTORANGE_DIAGNOSTICS |
+uint16_t logVerbosityFlags = SCOPE_ACCESS_DIAGNOSTICS | FRA_PROGRESS | STEP_TRIAL_PROGRESS |
+                             SIGNAL_GENERATOR_DIAGNOSTICS | AUTORANGE_DIAGNOSTICS |
                              ADAPTIVE_STIMULUS_DIAGNOSTICS | SAMPLE_PROCESSING_DIAGNOSTICS |
-                             DFT_DIAGNOSTICS | FRA_WARNING;
+                             SCOPE_POWER_EVENTS | DFT_DIAGNOSTICS | FRA_WARNING;
 bool bAutoClearLog = true;
 static const size_t messageLogSizeLimit = 16777216; // 16MB
 FRA_STATUS_CALLBACK FraStatusCallback = NULL;

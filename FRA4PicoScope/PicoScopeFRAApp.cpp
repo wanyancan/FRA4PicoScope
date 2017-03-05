@@ -347,7 +347,7 @@ void SelectNewScope( AvailableScopeDescription_T scope, bool mruScope = false )
         pScope->GetModel(scopeModel);
         pScope->GetSerialNumber(scopeSN);
         statusMessage << L"Status: " << scopeModel.c_str() << L" S/N: " << scopeSN.c_str() << L" successfully initialized.";
-        LogMessage( statusMessage.str(), SCOPE_INITIALIZATION );
+        LogMessage( statusMessage.str(), SCOPE_ACCESS_DIAGNOSTICS );
 
         if (false == pSettings -> ReadScopeSettings( pScope ))
         {
@@ -2104,18 +2104,21 @@ bool FraStatusCallback( FRA_STATUS_MESSAGE_T& fraStatusMsg )
         bScopePowerStateChanged = true;
         if (fraStatusMsg.responseData.proceed == false)
         {
-            (void)MessageBoxEx(hMainWnd, L"DC Power disconnected.  FRA will be stopped because channels other than A and B were selected.", L"Power Changed", MB_OK, 0);
+            LogMessage( L"DC power disconnected; FRA stopped", SCOPE_POWER_EVENTS );
+            (void)MessageBoxEx(hMainWnd, L"DC power disconnected.  FRA will be stopped because channels other than A and B were selected.", L"Power Changed", MB_OK, 0);
         }
         else
         {
             int response;
             if (fraStatusMsg.statusData.powerState)
             {
-                response = MessageBoxEx(hMainWnd, L"DC Power connected.  Continue?", L"Power Changed", MB_OKCANCEL, 0);
+                LogMessage( L"DC power connected", SCOPE_POWER_EVENTS );
+                response = MessageBoxEx(hMainWnd, L"DC power connected.  Continue?", L"Power Changed", MB_OKCANCEL, 0);
             }
             else
             {
-                response = MessageBoxEx(hMainWnd, L"DC Power disconnected.  Continue?", L"Power Changed", MB_OKCANCEL, 0);
+                LogMessage( L"DC power disconnected", SCOPE_POWER_EVENTS );
+                response = MessageBoxEx(hMainWnd, L"DC power disconnected.  Continue?", L"Power Changed", MB_OKCANCEL, 0);
             }
 
             if (IDCANCEL == response)
@@ -2139,7 +2142,9 @@ bool FraStatusCallback( FRA_STATUS_MESSAGE_T& fraStatusMsg )
 // Purpose: Provide a simpler functionality than FraStatusCallback for local needs to simply display 
 //          log messages
 //
-// Parameters: statusMessage: string to log/display
+// Parameters: [in] statusMessage: string to log/display
+//             [in] type: type of message, used to determine whether to log a message based on
+//                         verbosity settings
 //
 // Notes: 
 //
