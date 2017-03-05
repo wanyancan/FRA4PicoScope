@@ -146,6 +146,7 @@ bool ApplicationSettings::InitializeApplicationSettingsFile( void )
         AppSettingsPropTree.put( L"adaptiveStimulusMode", false );
         AppSettingsPropTree.put( L"targetResponseAmplitude", L"0.1" ); // 100 mV
         AppSettingsPropTree.put( L"sweepDescending", false );
+        AppSettingsPropTree.put( L"extraSettlingTimeMs", L"0" );
 
         AppSettingsPropTree.put( L"plot.freqAxis.autoscale", true );
         AppSettingsPropTree.put( L"plot.freqAxis.min", L"1.0" );
@@ -211,16 +212,15 @@ bool ApplicationSettings::InitializeApplicationSettingsFile( void )
                                                                    SCOPE_POWER_EVENTS | SAVE_EXPORT_STATUS | FRA_WARNING );
         AppSettingsPropTree.put( L"diagnostics.timeDomainPlots", false );
 
-        AppSettingsPropTree.put( L"expert.extraSettlingTimeMs", L"0" );
-        AppSettingsPropTree.put( L"expert.autorangeTriesPerStep", L"10" );
-        AppSettingsPropTree.put( L"expert.autorangeTolerance", L"10.0" );
-        AppSettingsPropTree.put( L"expert.maxAutorangeAmplitude", L"1.0" );
-        AppSettingsPropTree.put( L"expert.adaptiveStimulusTriesPerStep", L"10" );
-        AppSettingsPropTree.put( L"expert.targetResponseAmplitudeTolerance", L"10.0" ); // 10%
-        AppSettingsPropTree.put( L"expert.minCyclesCaptured", L"16" ); // Bin width 6.25% of stimulus frequency
-        AppSettingsPropTree.put( L"expert.maxCyclesCaptured", L"100" ); // Bin width 1% of stimulus frequency
-        AppSettingsPropTree.put( L"expert.noiseRejectBandwidth", L"100.0" ); // 100 Hz
-        AppSettingsPropTree.put( L"expert.lowNoiseOversampling", L"64" ); // 64x
+        AppSettingsPropTree.put( L"autorangeTuning.autorangeTriesPerStep", L"10" );
+        AppSettingsPropTree.put( L"autorangeTuning.autorangeTolerance", L"10.0" );
+        AppSettingsPropTree.put( L"autorangeTuning.maxAutorangeAmplitude", L"1.0" );
+        AppSettingsPropTree.put( L"adaptiveStimulusTuning.adaptiveStimulusTriesPerStep", L"10" );
+        AppSettingsPropTree.put( L"adaptiveStimulusTuning.targetResponseAmplitudeTolerance", L"10.0" ); // 10%
+        AppSettingsPropTree.put( L"sampleParam.minCyclesCaptured", L"16" ); // Bin width 6.25% of stimulus frequency
+        AppSettingsPropTree.put( L"sampleParam.maxCyclesCaptured", L"100" ); // Bin width 1% of stimulus frequency
+        AppSettingsPropTree.put( L"sampleParam.noiseRejectBandwidth", L"100.0" ); // 100 Hz
+        AppSettingsPropTree.put( L"sampleParam.lowNoiseOversampling", L"64" ); // 64x
 
         AppSettingsPropTree.put( L"qualityLimits.enable", L"false" ); // Quality limits off
         AppSettingsPropTree.put( L"qualityLimits.amplitudeLowerLimit", L"0.0" );

@@ -329,132 +329,130 @@ class ApplicationSettings
             AppSettingsPropTree.put( L"plot.gainMarginPhaseCrossover", gainMarginPhaseCrossover );
         }
 
-        // Expert settings
-
         inline uint16_t GetExtraSettlingTimeMsAsUint16( void )
         {
-            return AppSettingsPropTree.get<uint16_t>( L"expert.extraSettlingTimeMs" );
+            return AppSettingsPropTree.get<uint16_t>( L"extraSettlingTimeMs" );
         }
         inline const wstring GetExtraSettlingTimeMsAsString( void )
         {
-            return AppSettingsPropTree.get<wstring>( L"expert.extraSettlingTimeMs" );
+            return AppSettingsPropTree.get<wstring>( L"extraSettlingTimeMs" );
         }
         inline void SetExtraSettlingTimeMs( uint16_t extraSettlingTimeMs )
         {
-            AppSettingsPropTree.put( L"expert.extraSettlingTimeMs", extraSettlingTimeMs );
+            AppSettingsPropTree.put( L"extraSettlingTimeMs", extraSettlingTimeMs );
         }
 
         inline uint8_t GetAutorangeTriesPerStepAsUint8( void )
         {
-            return AppSettingsPropTree.get<uint8_t>( L"expert.autorangeTriesPerStep" );
+            return AppSettingsPropTree.get<uint8_t>( L"autorangeTuning.autorangeTriesPerStep" );
         }
         inline const wstring GetAutorangeTriesPerStepAsString( void )
         {
-            return AppSettingsPropTree.get<wstring>( L"expert.autorangeTriesPerStep" );
+            return AppSettingsPropTree.get<wstring>( L"autorangeTuning.autorangeTriesPerStep" );
         }
         inline void SetAutorangeTriesPerStep( uint8_t autorangeTriesPerStep )
         {
-            AppSettingsPropTree.put( L"expert.autorangeTriesPerStep", autorangeTriesPerStep );
+            AppSettingsPropTree.put( L"autorangeTuning.autorangeTriesPerStep", autorangeTriesPerStep );
         }
 
         inline double GetAutorangeToleranceAsFraction( void )
         {
-            return (AppSettingsPropTree.get<double>( L"expert.autorangeTolerance" )) / 100.0;
+            return (AppSettingsPropTree.get<double>( L"autorangeTuning.autorangeTolerance" )) / 100.0;
         }
         inline const wstring GetAutorangeToleranceAsString( void )
         {
-            return AppSettingsPropTree.get<wstring>( L"expert.autorangeTolerance" );
+            return AppSettingsPropTree.get<wstring>( L"autorangeTuning.autorangeTolerance" );
         }
         inline void SetAutorangeTolerance( wstring autorangeTolerance )
         {
-            AppSettingsPropTree.put( L"expert.autorangeTolerance", autorangeTolerance );
+            AppSettingsPropTree.put( L"autorangeTuning.autorangeTolerance", autorangeTolerance );
         }
 
         inline double GetMaxAutorangeAmplitude( void )
         {
-            return AppSettingsPropTree.get<double>( L"expert.maxAutorangeAmplitude" );
+            return AppSettingsPropTree.get<double>( L"autorangeTuning.maxAutorangeAmplitude" );
         }
         inline void SetMaxAutorangeAmplitude( double maxAutorangeAmplitude )
         {
-            AppSettingsPropTree.put( L"expert.maxAutorangeAmplitude", maxAutorangeAmplitude );
+            AppSettingsPropTree.put( L"autorangeTuning.maxAutorangeAmplitude", maxAutorangeAmplitude );
         }
 
         inline uint8_t GetAdaptiveStimulusTriesPerStepAsUint8( void )
         {
-            return AppSettingsPropTree.get<uint8_t>( L"expert.adaptiveStimulusTriesPerStep" );
+            return AppSettingsPropTree.get<uint8_t>( L"adaptiveStimulusTuning.adaptiveStimulusTriesPerStep" );
         }
         inline const wstring GetAdaptiveStimulusTriesPerStepAsString( void )
         {
-            return AppSettingsPropTree.get<wstring>( L"expert.adaptiveStimulusTriesPerStep" );
+            return AppSettingsPropTree.get<wstring>( L"adaptiveStimulusTuning.adaptiveStimulusTriesPerStep" );
         }
         inline void SetAdaptiveStimulusTriesPerStep( uint8_t adaptiveStimulusTriesPerStep )
         {
-            AppSettingsPropTree.put( L"expert.adaptiveStimulusTriesPerStep", adaptiveStimulusTriesPerStep );
+            AppSettingsPropTree.put( L"adaptiveStimulusTuning.adaptiveStimulusTriesPerStep", adaptiveStimulusTriesPerStep );
         }
 
         inline double GetTargetResponseAmplitudeToleranceAsFraction( void )
         {
-            return (AppSettingsPropTree.get<double>( L"expert.targetResponseAmplitudeTolerance" )) / 100.0;
+            return (AppSettingsPropTree.get<double>( L"adaptiveStimulusTuning.targetResponseAmplitudeTolerance" )) / 100.0;
         }
         inline const wstring GetTargetResponseAmplitudeToleranceAsString( void )
         {
-            return AppSettingsPropTree.get<wstring>( L"expert.targetResponseAmplitudeTolerance" );
+            return AppSettingsPropTree.get<wstring>( L"adaptiveStimulusTuning.targetResponseAmplitudeTolerance" );
         }
         inline void SetTargetResponseAmplitudeTolerance( wstring targetResponseAmplitudeTolerance )
         {
-            AppSettingsPropTree.put( L"expert.targetResponseAmplitudeTolerance", targetResponseAmplitudeTolerance );
+            AppSettingsPropTree.put( L"adaptiveStimulusTuning.targetResponseAmplitudeTolerance", targetResponseAmplitudeTolerance );
         }
 
         inline uint16_t GetMinCyclesCapturedAsUint16( void )
         {
-            return AppSettingsPropTree.get<uint16_t>( L"expert.minCyclesCaptured" );
+            return AppSettingsPropTree.get<uint16_t>( L"sampleParam.minCyclesCaptured" );
         }
         inline const wstring GetMinCyclesCapturedAsString( void )
         {
-            return AppSettingsPropTree.get<wstring>( L"expert.minCyclesCaptured" );
+            return AppSettingsPropTree.get<wstring>( L"sampleParam.minCyclesCaptured" );
         }
         inline void SetMinCyclesCaptured( uint16_t minCyclesCaptured )
         {
-            AppSettingsPropTree.put( L"expert.minCyclesCaptured", minCyclesCaptured );
+            AppSettingsPropTree.put( L"sampleParam.minCyclesCaptured", minCyclesCaptured );
         }
 
         inline uint16_t GetMaxCyclesCapturedAsUint16( void )
         {
-            return AppSettingsPropTree.get<uint16_t>( L"expert.maxCyclesCaptured" );
+            return AppSettingsPropTree.get<uint16_t>( L"sampleParam.maxCyclesCaptured" );
         }
         inline const wstring GetMaxCyclesCapturedAsString( void )
         {
-            return AppSettingsPropTree.get<wstring>( L"expert.maxCyclesCaptured" );
+            return AppSettingsPropTree.get<wstring>( L"sampleParam.maxCyclesCaptured" );
         }
         inline void SetMaxCyclesCaptured( uint16_t maxCyclesCaptured )
         {
-            AppSettingsPropTree.put( L"expert.maxCyclesCaptured", maxCyclesCaptured );
+            AppSettingsPropTree.put( L"sampleParam.maxCyclesCaptured", maxCyclesCaptured );
         }
 
         inline uint16_t GetLowNoiseOversamplingAsUint16( void )
         {
-            return AppSettingsPropTree.get<uint16_t>( L"expert.lowNoiseOversampling" );
+            return AppSettingsPropTree.get<uint16_t>( L"sampleParam.lowNoiseOversampling" );
         }
         inline const wstring GetLowNoiseOversamplingAsString( void )
         {
-            return AppSettingsPropTree.get<wstring>( L"expert.lowNoiseOversampling" );
+            return AppSettingsPropTree.get<wstring>( L"sampleParam.lowNoiseOversampling" );
         }
         inline void SetLowNoiseOversampling( uint16_t lowNoiseOversample )
         {
-            AppSettingsPropTree.put( L"expert.lowNoiseOversampling", lowNoiseOversample );
+            AppSettingsPropTree.put( L"sampleParam.lowNoiseOversampling", lowNoiseOversample );
         }
 
         inline double GetNoiseRejectBandwidthAsDouble(void)
         {
-            return AppSettingsPropTree.get<double>( L"expert.noiseRejectBandwidth" );
+            return AppSettingsPropTree.get<double>( L"sampleParam.noiseRejectBandwidth" );
         }
         inline const wstring GetNoiseRejectBandwidthAsString(void)
         {
-            return AppSettingsPropTree.get<wstring>( L"expert.noiseRejectBandwidth" );
+            return AppSettingsPropTree.get<wstring>( L"sampleParam.noiseRejectBandwidth" );
         }
         inline void SetNoiseRejectBandwidth( wstring noiseRejectBandwidth )
         {
-            AppSettingsPropTree.put( L"expert.noiseRejectBandwidth", noiseRejectBandwidth );
+            AppSettingsPropTree.put( L"sampleParam.noiseRejectBandwidth", noiseRejectBandwidth );
         }
 
         ////
