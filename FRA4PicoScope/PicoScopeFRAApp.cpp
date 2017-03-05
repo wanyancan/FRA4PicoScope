@@ -356,15 +356,15 @@ void SelectNewScope( AvailableScopeDescription_T scope, bool mruScope = false )
         }
 
         // Set scope's desired timebase
-        pScope->SetDesiredNoiseRejectModeTimebase(pSettings->GetNoiseRejectModeTimebase());
+        pScope->SetDesiredNoiseRejectModeTimebase(pSettings->GetNoiseRejectModeTimebaseAsInt());
 
         // Propagate new tuning values affected by scope
-        psFRA->SetFraTuning( pSettings->GetPurityLowerLimitAsFraction(), pSettings->GetExtraSettlingTimeMs(),
-                             pSettings->GetAutorangeTriesPerStep(), pSettings->GetAutorangeTolerance(),
+        psFRA->SetFraTuning( pSettings->GetPurityLowerLimitAsFraction(), pSettings->GetExtraSettlingTimeMsAsUint16(),
+                             pSettings->GetAutorangeTriesPerStepAsUint8(), pSettings->GetAutorangeToleranceAsFraction(),
                              pSettings->GetAmplitudeLowerLimitAsFraction(), pSettings->GetMaxAutorangeAmplitude(),
                              pSettings->GetInputStartingRange(), pSettings->GetOutputStartingRange(),
-                             pSettings->GetAdaptiveStimulusTriesPerStep(), pSettings->GetTargetResponseAmplitudeTolerance(),
-                             pSettings->GetMinCyclesCaptured(), pSettings->GetMaxCyclesCaptured(), pSettings->GetLowNoiseOversamplingAsNumber() );
+                             pSettings->GetAdaptiveStimulusTriesPerStepAsUint8(), pSettings->GetTargetResponseAmplitudeToleranceAsFraction(),
+                             pSettings->GetMinCyclesCapturedAsUint16(), pSettings->GetMaxCyclesCapturedAsUint16(), pSettings->GetLowNoiseOversamplingAsUint16() );
 
         if (!mruScope) // Don't unnecessarily dirty the settings file
         {
@@ -788,18 +788,18 @@ BOOL CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
                         LoadControlsData(hMainWnd);
 
                         psFRA->SetFraSettings( pSettings->GetSamplingMode(), pSettings->GetAdaptiveStimulusMode(), pSettings->GetTargetResponseAmplitudeAsDouble(),
-                                               pSettings->GetSweepDescending(), pSettings->GetPhaseWrappingThreshold() );
+                                               pSettings->GetSweepDescending(), pSettings->GetPhaseWrappingThresholdAsDouble() );
 
-                        psFRA->SetFraTuning( pSettings->GetPurityLowerLimitAsFraction(), pSettings->GetExtraSettlingTimeMs(),
-                                             pSettings->GetAutorangeTriesPerStep(), pSettings->GetAutorangeTolerance(),
+                        psFRA->SetFraTuning( pSettings->GetPurityLowerLimitAsFraction(), pSettings->GetExtraSettlingTimeMsAsUint16(),
+                                             pSettings->GetAutorangeTriesPerStepAsUint8(), pSettings->GetAutorangeToleranceAsFraction(),
                                              pSettings->GetAmplitudeLowerLimitAsFraction(), pSettings->GetMaxAutorangeAmplitude(),
                                              pSettings->GetInputStartingRange(), pSettings->GetOutputStartingRange(),
-                                             pSettings->GetAdaptiveStimulusTriesPerStep(), pSettings->GetTargetResponseAmplitudeTolerance(),
-                                             pSettings->GetMinCyclesCaptured(), pSettings->GetMaxCyclesCaptured(), pSettings->GetLowNoiseOversamplingAsNumber() );
+                                             pSettings->GetAdaptiveStimulusTriesPerStepAsUint8(), pSettings->GetTargetResponseAmplitudeToleranceAsFraction(),
+                                             pSettings->GetMinCyclesCapturedAsUint16(), pSettings->GetMaxCyclesCapturedAsUint16(), pSettings->GetLowNoiseOversamplingAsUint16() );
 
                         if (pScopeSelector->GetSelectedScope())
                         {
-                            pScopeSelector->GetSelectedScope()->SetDesiredNoiseRejectModeTimebase(pSettings->GetNoiseRejectModeTimebase());
+                            pScopeSelector->GetSelectedScope()->SetDesiredNoiseRejectModeTimebase(pSettings->GetNoiseRejectModeTimebaseAsInt());
                         }
 
                         if (pSettings->GetTimeDomainPlotsEnabled())
@@ -1253,21 +1253,21 @@ BOOL LoadControlsData(HWND hDlg)
 
     hndCtrl = GetDlgItem( hDlg, IDC_INPUT_DC_OFFS );
     Edit_LimitText( hndCtrl, 16 );
-    Edit_SetText( hndCtrl, pSettings->GetInputDcOffset().c_str() );
+    Edit_SetText( hndCtrl, pSettings->GetInputDcOffsetAsString().c_str() );
 
     hndCtrl = GetDlgItem( hDlg, IDC_OUTPUT_DC_OFFS );
     Edit_LimitText( hndCtrl, 16 );
-    Edit_SetText( hndCtrl, pSettings->GetOutputDcOffset().c_str() );
+    Edit_SetText( hndCtrl, pSettings->GetOutputDcOffsetAsString().c_str() );
 
     hndCtrl = GetDlgItem( hDlg, IDC_STIMULUS_VPP );
     Edit_LimitText( hndCtrl, 16 );
-    Edit_SetText( hndCtrl, pSettings->GetStimulusVpp().c_str() );
+    Edit_SetText( hndCtrl, pSettings->GetStimulusVppAsString().c_str() );
 
     // Always populate these, otherwise store on run/exit won't work as designed
     hndCtrl = GetDlgItem(hDlg, IDC_RESPONSE_TARGET);
-    Edit_SetText( hndCtrl, pSettings->GetTargetResponseAmplitude().c_str() );
+    Edit_SetText( hndCtrl, pSettings->GetTargetResponseAmplitudeAsString().c_str() );
     hndCtrl = GetDlgItem( hDlg, IDC_MAX_STIMULUS_VPP );
-    Edit_SetText( hndCtrl, pSettings->GetMaxStimulusVpp().c_str() );
+    Edit_SetText( hndCtrl, pSettings->GetMaxStimulusVppAsString().c_str() );
 
     if (pSettings->GetAdaptiveStimulusMode())
     {
@@ -1312,15 +1312,15 @@ BOOL LoadControlsData(HWND hDlg)
 
     hndCtrl = GetDlgItem( hDlg, IDC_FRA_START_FREQ );
     Edit_LimitText( hndCtrl, 16 );
-    Edit_SetText( hndCtrl, pSettings->GetStartFreq().c_str() );
+    Edit_SetText( hndCtrl, pSettings->GetStartFreqAsString().c_str() );
 
     hndCtrl = GetDlgItem( hDlg, IDC_FRA_STOP_FREQ );
     Edit_LimitText( hndCtrl, 16 );
-    Edit_SetText( hndCtrl, pSettings->GetStopFreq().c_str() );
+    Edit_SetText( hndCtrl, pSettings->GetStopFreqAsString().c_str() );
 
     hndCtrl = GetDlgItem( hDlg, IDC_FRA_STEPS_PER_DECADE );
     Edit_LimitText( hndCtrl, 3 );
-    Edit_SetText( hndCtrl, pSettings->GetStepsPerDecade().c_str() );
+    Edit_SetText( hndCtrl, pSettings->GetStepsPerDecadeAsString().c_str() );
 
     if (pSettings->GetAutoAxes())
     {
@@ -1505,7 +1505,7 @@ DWORD WINAPI ExecuteFRA(LPVOID lpdwThreadParam)
             stepsPerDecade = pSettings->GetStepsPerDecadeAsInt();
 
             psFRA->SetFraSettings( pSettings->GetSamplingMode(), pSettings->GetAdaptiveStimulusMode(), pSettings->GetTargetResponseAmplitudeAsDouble(),
-                                   pSettings->GetSweepDescending(), pSettings->GetPhaseWrappingThreshold() );
+                                   pSettings->GetSweepDescending(), pSettings->GetPhaseWrappingThresholdAsDouble() );
 
             if (false == psFRA -> SetupChannels( inputChannel, inputChannelCoupling, inputChannelAttenuation, inputDcOffset,
                                                  outputChannel, outputChannelCoupling, outputChannelAttenuation, outputDcOffset,
@@ -1631,7 +1631,7 @@ bool GeneratePlot(bool rescale)
         if (rescale)
         {
             fraPlotter -> SetPlotSettings( pSettings->GetPlotGain(), pSettings->GetPlotPhase(), pSettings->GetPlotGainMargin(), pSettings->GetPlotPhaseMargin(),
-                                           pSettings->GetGainMarginPhaseCrossover(), false );
+                                           pSettings->GetGainMarginPhaseCrossoverAsDouble(), false );
             fraPlotter -> PlotFRA( freqsLogHz, gainsDb, phases, numSteps,
                                    freqAxisScale, gainAxisScale, phaseAxisScale,
                                    freqAxisIntervals, gainAxisIntervals, phaseAxisIntervals,
@@ -1641,7 +1641,7 @@ bool GeneratePlot(bool rescale)
         {
             fraPlotter -> SetPlotData( freqsLogHz, gainsDb, phases, numSteps, false );
             fraPlotter -> SetPlotSettings( pSettings->GetPlotGain(), pSettings->GetPlotPhase(), pSettings->GetPlotGainMargin(), pSettings->GetPlotPhaseMargin(),
-                                           pSettings->GetGainMarginPhaseCrossover(), true );
+                                           pSettings->GetGainMarginPhaseCrossoverAsDouble(), true );
         }
     }
     catch (runtime_error e)
@@ -1845,7 +1845,7 @@ bool ValidateSettings(void)
         if (startFreq < minFreq)
         {
             wstringstream wss;
-            wss << L"Start frequency must be >= " << minFreq;
+            wss << L"Start frequency must be >= " << minFreq << L" Hz";
             LogMessage( wss.str() );
             retVal = false;
         }

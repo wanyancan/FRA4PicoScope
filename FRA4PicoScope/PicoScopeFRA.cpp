@@ -807,7 +807,7 @@ bool PicoScopeFRA::CheckSignalOverflows(void)
         {
             inputChannelAutorangeStatus = HIGHEST_RANGE_LIMIT_REACHED;
         }
-        wsprintf( fraStatusText, L"Status: Input signal over-range" );
+        wsprintf( fraStatusText, L"Status: Measured input signal over-range" );
         UpdateStatus( fraStatusMsg, FRA_STATUS_MESSAGE, fraStatusText, AUTORANGE_DIAGNOSTICS );
     }
     if (ovOut)
@@ -821,7 +821,7 @@ bool PicoScopeFRA::CheckSignalOverflows(void)
         {
             outputChannelAutorangeStatus = HIGHEST_RANGE_LIMIT_REACHED;
         }
-        wsprintf( fraStatusText, L"Status: Output signal over-range" );
+        wsprintf( fraStatusText, L"Status: Measured output signal over-range" );
         UpdateStatus( fraStatusMsg, FRA_STATUS_MESSAGE, fraStatusText, AUTORANGE_DIAGNOSTICS );
     }
 

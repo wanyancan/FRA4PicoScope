@@ -117,7 +117,7 @@ class ApplicationSettings
             AppSettingsPropTree.put( L"adaptiveStimulusMode", mode );
         }
 
-        inline const wstring GetTargetResponseAmplitude( void )
+        inline const wstring GetTargetResponseAmplitudeAsString( void )
         {
             return AppSettingsPropTree.get<wstring>( L"targetResponseAmplitude" );
         }
@@ -303,7 +303,7 @@ class ApplicationSettings
             AppSettingsPropTree.put( L"plot.plotUnwrappedPhase", plotUnwrappedPhase );
         }
 
-        inline double GetPhaseWrappingThreshold(void)
+        inline double GetPhaseWrappingThresholdAsDouble(void)
         {
             return AppSettingsPropTree.get<double>( L"plot.phaseWrappingThreshold" );
         }
@@ -316,7 +316,7 @@ class ApplicationSettings
             AppSettingsPropTree.put( L"plot.phaseWrappingThreshold", phaseWrappingThreshold );
         }
 
-        inline double GetGainMarginPhaseCrossover(void)
+        inline double GetGainMarginPhaseCrossoverAsDouble(void)
         {
             return AppSettingsPropTree.get<double>( L"plot.gainMarginPhaseCrossover" );
         }
@@ -331,11 +331,11 @@ class ApplicationSettings
 
         // Expert settings
 
-        inline uint16_t GetExtraSettlingTimeMs( void )
+        inline uint16_t GetExtraSettlingTimeMsAsUint16( void )
         {
             return AppSettingsPropTree.get<uint16_t>( L"expert.extraSettlingTimeMs" );
         }
-        inline const wstring GetExtraSettlingTimeAsString( void )
+        inline const wstring GetExtraSettlingTimeMsAsString( void )
         {
             return AppSettingsPropTree.get<wstring>( L"expert.extraSettlingTimeMs" );
         }
@@ -344,7 +344,7 @@ class ApplicationSettings
             AppSettingsPropTree.put( L"expert.extraSettlingTimeMs", extraSettlingTimeMs );
         }
 
-        inline uint8_t GetAutorangeTriesPerStep( void )
+        inline uint8_t GetAutorangeTriesPerStepAsUint8( void )
         {
             return AppSettingsPropTree.get<uint8_t>( L"expert.autorangeTriesPerStep" );
         }
@@ -357,7 +357,7 @@ class ApplicationSettings
             AppSettingsPropTree.put( L"expert.autorangeTriesPerStep", autorangeTriesPerStep );
         }
 
-        inline double GetAutorangeTolerance( void )
+        inline double GetAutorangeToleranceAsFraction( void )
         {
             return (AppSettingsPropTree.get<double>( L"expert.autorangeTolerance" )) / 100.0;
         }
@@ -379,7 +379,7 @@ class ApplicationSettings
             AppSettingsPropTree.put( L"expert.maxAutorangeAmplitude", maxAutorangeAmplitude );
         }
 
-        inline uint8_t GetAdaptiveStimulusTriesPerStep( void )
+        inline uint8_t GetAdaptiveStimulusTriesPerStepAsUint8( void )
         {
             return AppSettingsPropTree.get<uint8_t>( L"expert.adaptiveStimulusTriesPerStep" );
         }
@@ -392,7 +392,7 @@ class ApplicationSettings
             AppSettingsPropTree.put( L"expert.adaptiveStimulusTriesPerStep", adaptiveStimulusTriesPerStep );
         }
 
-        inline double GetTargetResponseAmplitudeTolerance( void )
+        inline double GetTargetResponseAmplitudeToleranceAsFraction( void )
         {
             return (AppSettingsPropTree.get<double>( L"expert.targetResponseAmplitudeTolerance" )) / 100.0;
         }
@@ -405,7 +405,7 @@ class ApplicationSettings
             AppSettingsPropTree.put( L"expert.targetResponseAmplitudeTolerance", targetResponseAmplitudeTolerance );
         }
 
-        inline uint16_t GetMinCyclesCaptured( void )
+        inline uint16_t GetMinCyclesCapturedAsUint16( void )
         {
             return AppSettingsPropTree.get<uint16_t>( L"expert.minCyclesCaptured" );
         }
@@ -418,7 +418,7 @@ class ApplicationSettings
             AppSettingsPropTree.put( L"expert.minCyclesCaptured", minCyclesCaptured );
         }
 
-        inline uint16_t GetMaxCyclesCaptured( void )
+        inline uint16_t GetMaxCyclesCapturedAsUint16( void )
         {
             return AppSettingsPropTree.get<uint16_t>( L"expert.maxCyclesCaptured" );
         }
@@ -431,7 +431,7 @@ class ApplicationSettings
             AppSettingsPropTree.put( L"expert.maxCyclesCaptured", maxCyclesCaptured );
         }
 
-        inline uint16_t GetLowNoiseOversamplingAsNumber( void )
+        inline uint16_t GetLowNoiseOversamplingAsUint16( void )
         {
             return AppSettingsPropTree.get<uint16_t>( L"expert.lowNoiseOversampling" );
         }
@@ -444,7 +444,7 @@ class ApplicationSettings
             AppSettingsPropTree.put( L"expert.lowNoiseOversampling", minCyclesCaptured );
         }
 
-        inline double GetNoiseRejectBandwidth(void)
+        inline double GetNoiseRejectBandwidthAsDouble(void)
         {
             return AppSettingsPropTree.get<double>( L"expert.noiseRejectBandwidth" );
         }
@@ -571,9 +571,13 @@ class ApplicationSettings
             ScopeSettingsPropTree.put(L"picoScope.inputChannel.attenuation", attenuation);
         }
 
-        inline const wstring GetInputDcOffset()
+        inline const wstring GetInputDcOffsetAsString()
         {
             return ScopeSettingsPropTree.get<wstring>(L"picoScope.inputChannel.dcOffset");
+        }
+        inline double GetInputDcOffsetAsDouble()
+        {
+            return ScopeSettingsPropTree.get<double>(L"picoScope.inputChannel.dcOffset");
         }
         inline void SetInputDcOffset(const wchar_t* dcOffset)
         {
@@ -618,9 +622,13 @@ class ApplicationSettings
             ScopeSettingsPropTree.put(L"picoScope.outputChannel.attenuation", attenuation);
         }
 
-        inline const wstring GetOutputDcOffset()
+        inline const wstring GetOutputDcOffsetAsString()
         {
             return ScopeSettingsPropTree.get<wstring>(L"picoScope.outputChannel.dcOffset");
+        }
+        inline double GetOutputDcOffsetAsDouble()
+        {
+            return ScopeSettingsPropTree.get<double>(L"picoScope.outputChannel.dcOffset");
         }
         inline void SetOutputDcOffset(const wchar_t* dcOffset)
         {
@@ -636,52 +644,72 @@ class ApplicationSettings
             ScopeSettingsPropTree.put(L"picoScope.outputChannel.startingRange", range);
         }
 
-        inline const wstring GetStimulusVpp()
+        inline const wstring GetStimulusVppAsString()
         {
             return ScopeSettingsPropTree.get<wstring>(L"picoScope.fraParam.stimulusVpp");
+        }
+        inline double GetStimulusVppAsDouble()
+        {
+            return ScopeSettingsPropTree.get<double>(L"picoScope.fraParam.stimulusVpp");
         }
         inline void SetStimulusVpp(const wchar_t* stimulusVpp)
         {
             ScopeSettingsPropTree.put(L"picoScope.fraParam.stimulusVpp", wstring(stimulusVpp));
         }
 
-        inline const wstring GetMaxStimulusVpp()
+        inline const wstring GetMaxStimulusVppAsString()
         {
             return ScopeSettingsPropTree.get<wstring>(L"picoScope.fraParam.maxStimulusVpp");
+        }
+        inline double GetMaxStimulusVppAsDouble()
+        {
+            return ScopeSettingsPropTree.get<double>(L"picoScope.fraParam.maxStimulusVpp");
         }
         inline void SetMaxStimulusVpp(const wchar_t* maxStimulusVpp)
         {
             ScopeSettingsPropTree.put(L"picoScope.fraParam.maxStimulusVpp", wstring(maxStimulusVpp));
         }
 
-        inline const wstring GetStartFreq()
+        inline const wstring GetStartFreqAsString()
         {
             return ScopeSettingsPropTree.get<wstring>(L"picoScope.fraParam.startFrequency");
+        }
+        inline double GetStartFreqAsDouble()
+        {
+            return ScopeSettingsPropTree.get<double>(L"picoScope.fraParam.startFrequency");
         }
         inline void SetStartFrequency(const wchar_t* startFreq)
         {
             ScopeSettingsPropTree.put(L"picoScope.fraParam.startFrequency", wstring(startFreq));
         }
 
-        inline const wstring GetStopFreq()
+        inline const wstring GetStopFreqAsString()
         {
             return ScopeSettingsPropTree.get<wstring>(L"picoScope.fraParam.stopFrequency");
+        }
+        inline double GetStopFreqAsDouble()
+        {
+            return ScopeSettingsPropTree.get<double>(L"picoScope.fraParam.stopFrequency");
         }
         inline void SetStopFrequency(const wchar_t* stopFreq)
         {
             ScopeSettingsPropTree.put(L"picoScope.fraParam.stopFrequency", wstring(stopFreq));
         }
 
-        inline const wstring GetStepsPerDecade()
+        inline const wstring GetStepsPerDecadeAsString()
         {
             return ScopeSettingsPropTree.get<wstring>(L"picoScope.fraParam.stepsPerDecade");
+        }
+        inline int GetStepsPerDecadeAsInt()
+        {
+            return ScopeSettingsPropTree.get<int>(L"picoScope.fraParam.stepsPerDecade");
         }
         inline void SetStepsPerDecade(const wchar_t* stepsPerDecade)
         {
             ScopeSettingsPropTree.put(L"picoScope.fraParam.stepsPerDecade", wstring(stepsPerDecade));
         }
 
-        inline int GetNoiseRejectModeTimebase()
+        inline int GetNoiseRejectModeTimebaseAsInt()
         {
             return ScopeSettingsPropTree.get<int>(L"picoScope.sampleParam.noiseRejectModeTimebase");
         }
@@ -692,36 +720,6 @@ class ApplicationSettings
         inline void SetNoiseRejectModeTimebase(int timebase)
         {
             ScopeSettingsPropTree.put(L"picoScope.sampleParam.noiseRejectModeTimebase", timebase);
-        }
-
-        // Versions which convert the string to a number
-        inline double GetInputDcOffsetAsDouble()
-        {
-            return ScopeSettingsPropTree.get<double>(L"picoScope.inputChannel.dcOffset");
-        }
-        inline double GetOutputDcOffsetAsDouble()
-        {
-            return ScopeSettingsPropTree.get<double>(L"picoScope.outputChannel.dcOffset");
-        }
-        inline double GetStimulusVppAsDouble()
-        {
-            return ScopeSettingsPropTree.get<double>(L"picoScope.fraParam.stimulusVpp");
-        }
-        inline double GetMaxStimulusVppAsDouble()
-        {
-            return ScopeSettingsPropTree.get<double>(L"picoScope.fraParam.maxStimulusVpp");
-        }
-        inline double GetStartFreqAsDouble()
-        {
-            return ScopeSettingsPropTree.get<double>(L"picoScope.fraParam.startFrequency");
-        }
-        inline double GetStopFreqAsDouble()
-        {
-            return ScopeSettingsPropTree.get<double>(L"picoScope.fraParam.stopFrequency");
-        }
-        inline int GetStepsPerDecadeAsInt()
-        {
-            return ScopeSettingsPropTree.get<int>(L"picoScope.fraParam.stepsPerDecade");
         }
 
     private:

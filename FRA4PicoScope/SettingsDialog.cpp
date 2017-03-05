@@ -495,7 +495,7 @@ INT_PTR CALLBACK SettingsDialogHandler(HWND hDlg, UINT message, WPARAM wParam, L
             }
 
             hndCtrl = GetDlgItem( hDlg, IDC_EDIT_EXTRA_SETTLING_TIME );
-            Edit_SetText( hndCtrl, pSettings->GetExtraSettlingTimeAsString().c_str() );
+            Edit_SetText( hndCtrl, pSettings->GetExtraSettlingTimeMsAsString().c_str() );
 
             // Adaptive Stimulus
             hndCtrl = GetDlgItem( hDlg, IDC_ADAPTIVE_STIMULUS_ENABLE );
@@ -600,7 +600,7 @@ INT_PTR CALLBACK SettingsDialogHandler(HWND hDlg, UINT message, WPARAM wParam, L
                 // Up/Down (Spin) controls with buddies only support signed 32 bit range.
                 // That OK because it's contradictory to have very large timebases in noise reject mode anyway.
                 SendMessage( hndCtrl, UDM_SETRANGE32, pCurrentScope->GetMinTimebase(), min((uint32_t)(std::numeric_limits<int32_t>::max)(), pCurrentScope->GetMaxTimebase()) );
-                SendMessage( hndCtrl, UDM_SETPOS32, 0L, pSettings->GetNoiseRejectModeTimebase() );
+                SendMessage( hndCtrl, UDM_SETPOS32, 0L, pSettings->GetNoiseRejectModeTimebaseAsInt() );
             }
             else
             {
