@@ -61,6 +61,22 @@ inline bool WStringToInt16( wstring myString, int16_t& i )
     return (wss.eof() && !wss.fail());
 }
 
+inline bool WStringToUint16( wstring myString, uint16_t& i )
+{
+    wstringstream wss(myString);
+    wss >> noskipws >> i; // Consider leading whitespace invalid
+                          // Valid only if whole string was consumed and neither failbit nor badbit is set
+    return (wss.eof() && !wss.fail());
+}
+
+inline bool WStringToUint32( wstring myString, uint32_t& i )
+{
+    wstringstream wss(myString);
+    wss >> noskipws >> i; // Consider leading whitespace invalid
+                          // Valid only if whole string was consumed and neither failbit nor badbit is set
+    return (wss.eof() && !wss.fail());
+}
+
 inline bool WStringToUint8( wstring myString, uint8_t& u )
 {
     // Need to use a uint16_t because extract operator for a uint8_t will

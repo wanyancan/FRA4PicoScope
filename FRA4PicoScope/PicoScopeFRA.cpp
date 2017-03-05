@@ -59,7 +59,7 @@ void __stdcall DataReady( short handle, PICO_STATUS status, void * pParameter)
 }
 
 const double PicoScopeFRA::attenInfo[] = {1.0, 10.0, 20.0, 100.0, 200.0, 1000.0};
-const double PicoScopeFRA::inputRangeInitialEstimateMargin = 0.95;
+const double PicoScopeFRA::stimulusBasedInitialRangeEstimateMargin = 0.95;
 const uint32_t PicoScopeFRA::timeDomainDiagnosticDataLengthLimit = 1024;
 
 PICO_STATUS PicoScopeFRA::captureStatus;
@@ -118,8 +118,12 @@ PicoScopeFRA::PicoScopeFRA(FRA_STATUS_CALLBACK statusCB)
     minAmplitudeRatioTolerance = 0.0;
     maxAmplitudeRatio = 0.0;
     maxAutorangeRetries = 0;
+    mInputStartRange = 0;
+    mOutputStartRange = 0;
     mExtraSettlingTimeMs = 0;
     mMinCyclesCaptured = 0;
+    mMaxCyclesCaptured = 0;
+    mLowNoiseOversampling = 0;
     mSweepDescending = false;
     mAdaptiveStimulus = false;
     mTargetResponseAmplitude = 0.0;
@@ -228,10 +232,15 @@ void PicoScopeFRA::SetFraSettings( SamplingMode_T samplingMode, bool adaptiveSti
 //             [in] smallSignalResolutionTolerance - Lower limit on signal amplitide before we
 //                                                    take action
 //             [in] maxAutorangeAmplitude - Amplitude before we switch to next higher range
+//             [in] inputStartRange - Range to start input channel; -1 means base on stimulus
+//             [in] outputStartRange - Range to start output channel; -1 means base on stimulus
 //             [in] adaptiveStimulusTriesPerStep - Number of adaptive stimulus tries allowed
 //             [in] targetResponseAmplitudeTolerance - Percent tolerance above target allowed for
 //                                                     the smallest stimulus (input or output)
 //             [in] minCyclesCaptured - Minimum cycles captured for stmulus signal
+//             [in] maxCyclesCaptured - Maximum cycles captured for stmulus signal
+//             [in] lowNoiseOversampling - Amount to oversample the stimulus frequency in low
+//                                         noise mode
 //
 // Notes: None
 //
@@ -239,7 +248,9 @@ void PicoScopeFRA::SetFraSettings( SamplingMode_T samplingMode, bool adaptiveSti
 
 void PicoScopeFRA::SetFraTuning( double purityLowerLimit, uint16_t extraSettlingTimeMs, uint8_t autorangeTriesPerStep,
                                  double autorangeTolerance, double smallSignalResolutionTolerance, double maxAutorangeAmplitude,
-                                 uint8_t adaptiveStimulusTriesPerStep, double targetResponseAmplitudeTolerance, uint16_t minCyclesCaptured )
+                                 int32_t inputStartRange, int32_t outputStartRange, uint8_t adaptiveStimulusTriesPerStep,
+                                 double targetResponseAmplitudeTolerance, uint16_t minCyclesCaptured, uint16_t maxCyclesCaptured,
+                                 uint16_t lowNoiseOversampling )
 {
     mPurityLowerLimit = purityLowerLimit;
     mExtraSettlingTimeMs = extraSettlingTimeMs;
@@ -247,9 +258,13 @@ void PicoScopeFRA::SetFraTuning( double purityLowerLimit, uint16_t extraSettling
     minAmplitudeRatioTolerance = autorangeTolerance;
     minAllowedAmplitudeRatio = smallSignalResolutionTolerance;
     maxAmplitudeRatio = maxAutorangeAmplitude;
+    mInputStartRange = inputStartRange;
+    mOutputStartRange = outputStartRange;
     maxAdaptiveStimulusRetries = adaptiveStimulusTriesPerStep;
     mTargetResponseAmplitudeTolerance = targetResponseAmplitudeTolerance;
     mMinCyclesCaptured = minCyclesCaptured;
+    mMaxCyclesCaptured = maxCyclesCaptured;
+    mLowNoiseOversampling = lowNoiseOversampling;
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -350,7 +365,6 @@ bool PicoScopeFRA::SetupChannels( int inputChannel, int inputChannelCoupling, in
                                   double initialStimulusVpp, double maxStimulusVpp )
 {
     FRA_STATUS_MESSAGE_T fraStatusMsg;
-    PS_RANGE inputRange;
 
     if (!ps)
     {
@@ -365,18 +379,39 @@ bool PicoScopeFRA::SetupChannels( int inputChannel, int inputChannelCoupling, in
     outputMinRange = ps->GetMinRange(mOutputChannelCoupling);
     outputMaxRange = ps->GetMaxRange(mOutputChannelCoupling);
 
-    for (inputRange = inputMaxRange; inputRange > inputMinRange; inputRange--)
+    if (-1 == mInputStartRange)
     {
-        if (initialStimulusVpp > 2.0*rangeInfo[inputRange].rangeVolts*attenInfo[mInputChannelAttenuation]*inputRangeInitialEstimateMargin)
+        for (currentInputChannelRange = inputMaxRange; currentInputChannelRange > inputMinRange; currentInputChannelRange--)
         {
-            inputRange++; // We stepped one too far, so backup
-            inputRange = min(inputRange, inputMaxRange); // Just in case, so we can't get an illegal range
-            break;
+            if (initialStimulusVpp > 2.0*rangeInfo[currentInputChannelRange].rangeVolts*attenInfo[mInputChannelAttenuation]*stimulusBasedInitialRangeEstimateMargin)
+            {
+                currentInputChannelRange++; // We stepped one too far, so backup
+                currentInputChannelRange = min(currentInputChannelRange, inputMaxRange); // Just in case, so we can't get an illegal range
+                break;
+            }
         }
     }
+    else
+    {
+        currentInputChannelRange = min(inputMaxRange, max(mInputStartRange, inputMinRange));
+    }
 
-    currentInputChannelRange = inputRange;
-    currentOutputChannelRange = outputMinRange;
+    if (-1 == mOutputStartRange)
+    {
+        for (currentOutputChannelRange = outputMaxRange; currentOutputChannelRange > outputMinRange; currentOutputChannelRange--)
+        {
+            if (initialStimulusVpp > 2.0*rangeInfo[currentOutputChannelRange].rangeVolts*attenInfo[mOutputChannelAttenuation]*stimulusBasedInitialRangeEstimateMargin)
+            {
+                currentOutputChannelRange++; // We stepped one too far, so backup
+                currentOutputChannelRange = min(currentOutputChannelRange, outputMaxRange); // Just in case, so we can't get an illegal range
+                break;
+            }
+        }
+    }
+    else
+    {
+        currentOutputChannelRange = min(outputMaxRange, max(mOutputStartRange, outputMinRange));
+    }
 
     mInputChannel = (PS_CHANNEL)inputChannel;
     mOutputChannel = (PS_CHANNEL)outputChannel;
@@ -488,6 +523,10 @@ bool PicoScopeFRA::ExecuteFRA(double startFreqHz, double stopFreqHz, int stepsPe
         {
             totalRetryCounter[freqStepIndex] = 0;
             currentFreqHz = freqsHz[freqStepIndex];
+
+            swprintf(fraStatusText, 128, L"Status: Starting frequency step %d (%0.3lf Hz)", freqStepCounter, currentFreqHz);
+            UpdateStatus(fraStatusMsg, FRA_STATUS_MESSAGE, fraStatusText, FRA_PROGRESS);
+
             for (autorangeRetryCounter = 0, adaptiveStimulusRetryCounter = 0;
                  autorangeRetryCounter < maxAutorangeRetries && adaptiveStimulusRetryCounter < maxAdaptiveStimulusRetries;)
             {
@@ -501,7 +540,7 @@ bool PicoScopeFRA::ExecuteFRA(double startFreqHz, double stopFreqHz, int stepsPe
                     {
                         wsprintf(fraStatusText, L"Status: Starting frequency step %d, range try %d", freqStepCounter, autorangeRetryCounter + 1);
                     }
-                    UpdateStatus(fraStatusMsg, FRA_STATUS_MESSAGE, fraStatusText);
+                    UpdateStatus(fraStatusMsg, FRA_STATUS_MESSAGE, fraStatusText, STEP_TRIAL_PROGRESS);
                     if (true != StartCapture(currentFreqHz))
                     {
                         throw FraFault();
@@ -744,10 +783,8 @@ void PicoScopeFRA::SetCaptureStatus(PICO_STATUS status)
 bool PicoScopeFRA::CheckSignalOverflows(void)
 {
     bool retVal = true;
-#if 0
     FRA_STATUS_MESSAGE_T fraStatusMsg;
     wchar_t fraStatusText[128];
-#endif
 
     // Reset to default
     inputChannelAutorangeStatus = OK;
@@ -770,10 +807,8 @@ bool PicoScopeFRA::CheckSignalOverflows(void)
         {
             inputChannelAutorangeStatus = HIGHEST_RANGE_LIMIT_REACHED;
         }
-#if 0 // Determine when to log this once we have a log verbosity configuration
-        wsprintf( fraStatusText, L"Status: Input signal over-range" );
-        UpdateStatus( fraStatusMsg, FRA_STATUS_MESSAGE, fraStatusText );
-#endif
+        wsprintf( fraStatusText, L"Status: Measured input signal over-range" );
+        UpdateStatus( fraStatusMsg, FRA_STATUS_MESSAGE, fraStatusText, AUTORANGE_DIAGNOSTICS );
     }
     if (ovOut)
     {
@@ -786,10 +821,8 @@ bool PicoScopeFRA::CheckSignalOverflows(void)
         {
             outputChannelAutorangeStatus = HIGHEST_RANGE_LIMIT_REACHED;
         }
-#if 0 // Determine when to log this once we have a log verbosity configuration
-        wsprintf( fraStatusText, L"Status: Output signal over-range" );
-        UpdateStatus( fraStatusMsg, FRA_STATUS_MESSAGE, fraStatusText );
-#endif
+        wsprintf( fraStatusText, L"Status: Measured output signal over-range" );
+        UpdateStatus( fraStatusMsg, FRA_STATUS_MESSAGE, fraStatusText, AUTORANGE_DIAGNOSTICS );
     }
 
     if (ovIn && ovOut) // If both are over-range, signal to skip further processing.
@@ -823,10 +856,8 @@ bool PicoScopeFRA::CheckSignalRanges(void)
 {
 
     bool retVal = true;
-#if 0
     FRA_STATUS_MESSAGE_T fraStatusMsg;
     wchar_t fraStatusText[128];
-#endif
 
     // Want amplitude to be above a lower threshold to avoid excessive quantization noise.
     // Want the signal to be below an upper threshold to avoid being close to overflow.
@@ -873,10 +904,8 @@ bool PicoScopeFRA::CheckSignalRanges(void)
         {
             // Do nothing
         }
-#if 0 // Determine when to log this once we have a log verbosity configuration
-        swprintf( fraStatusText, 128, L"Status: Input absolute peak: %hu counts", inputAbsMax[freqStepIndex][totalRetryCounter[freqStepIndex]] );
-        UpdateStatus( fraStatusMsg, FRA_STATUS_MESSAGE, fraStatusText );
-#endif
+        swprintf( fraStatusText, 128, L"Status: Measured input absolute peak: %hu counts", inputAbsMax[freqStepIndex][totalRetryCounter[freqStepIndex]] );
+        UpdateStatus( fraStatusMsg, FRA_STATUS_MESSAGE, fraStatusText, AUTORANGE_DIAGNOSTICS );
     }
     else
     {
@@ -925,10 +954,8 @@ bool PicoScopeFRA::CheckSignalRanges(void)
         {
             // Do nothing
         }
-#if 0 // Determine when to log this once we have a log verbosity configuration
-        swprintf( fraStatusText, 128, L"Status: Output absolute peak: %hu counts", outputAbsMax[freqStepIndex][totalRetryCounter[freqStepIndex]] );
-        UpdateStatus( fraStatusMsg, FRA_STATUS_MESSAGE, fraStatusText );
-#endif
+        swprintf( fraStatusText, 128, L"Status: Measured output absolute peak: %hu counts", outputAbsMax[freqStepIndex][totalRetryCounter[freqStepIndex]] );
+        UpdateStatus( fraStatusMsg, FRA_STATUS_MESSAGE, fraStatusText, AUTORANGE_DIAGNOSTICS );
     }
     else
     {
@@ -1193,7 +1220,7 @@ void PicoScopeFRA::GenerateDiagnosticOutput(void)
     FRA_STATUS_MESSAGE_T fraStatusMsg;
     double maxValue;
 
-    UpdateStatus( fraStatusMsg, FRA_STATUS_MESSAGE, L"Status: Generating diagnostic time domain plots." );
+    UpdateStatus( fraStatusMsg, FRA_STATUS_MESSAGE, L"Status: Generating diagnostic time domain plots.", FRA_PROGRESS );
 
     maxSamples = *max_element(begin(diagNumSamplesToPlot),end(diagNumSamplesToPlot));
     times.resize(maxSamples);
@@ -1404,8 +1431,8 @@ bool PicoScopeFRA::StartCapture( double measFreqHz )
 
     if (autorangeRetryCounter == 0)
     {
-        swprintf( fraStatusText, 128, L"Status: Setting input frequency to %0.3lf Hz", measFreqHz );
-        UpdateStatus( fraStatusMsg, FRA_STATUS_MESSAGE, fraStatusText );
+        swprintf( fraStatusText, 128, L"Status: Setting signal generator frequency to %0.3lf Hz", measFreqHz );
+        UpdateStatus( fraStatusMsg, FRA_STATUS_MESSAGE, fraStatusText, SIGNAL_GENERATOR_DIAGNOSTICS );
     }
 
     if (mAdaptiveStimulus)
@@ -1416,8 +1443,8 @@ bool PicoScopeFRA::StartCapture( double measFreqHz )
             CalculateStepInitialStimulusVpp();
             stimulusChanged = true;
         }
-        swprintf( fraStatusText, 128, L"Status: Setting input stimulus to %0.3lf Vpp", currentStimulusVpp );
-        UpdateStatus( fraStatusMsg, FRA_STATUS_MESSAGE, fraStatusText );
+        swprintf( fraStatusText, 128, L"Status: Setting signal generator amplitude to %0.3lf Vpp", currentStimulusVpp );
+        UpdateStatus( fraStatusMsg, FRA_STATUS_MESSAGE, fraStatusText, ADAPTIVE_STIMULUS_DIAGNOSTICS );
     }
 
     if (autorangeRetryCounter == 0 || (mAdaptiveStimulus && stimulusChanged))
@@ -1436,14 +1463,14 @@ bool PicoScopeFRA::StartCapture( double measFreqHz )
     stimVpp[freqStepIndex][totalRetryCounter[freqStepIndex]] = currentStimulusVpp;
 
     wsprintf( fraStatusText, L"Status: Setting input channel range to %s", rangeInfo[currentInputChannelRange].name );
-    UpdateStatus( fraStatusMsg, FRA_STATUS_MESSAGE, fraStatusText );
+    UpdateStatus( fraStatusMsg, FRA_STATUS_MESSAGE, fraStatusText, AUTORANGE_DIAGNOSTICS );
     if( !(ps->SetupChannel((PS_CHANNEL)mInputChannel, (PS_COUPLING)mInputChannelCoupling, currentInputChannelRange, (float)mInputDcOffset)) )
     {
         return false;
     }
 
     wsprintf( fraStatusText, L"Status: Setting output channel range to %s", rangeInfo[currentOutputChannelRange].name );
-    UpdateStatus( fraStatusMsg, FRA_STATUS_MESSAGE, fraStatusText );
+    UpdateStatus( fraStatusMsg, FRA_STATUS_MESSAGE, fraStatusText, AUTORANGE_DIAGNOSTICS );
     if( !(ps->SetupChannel((PS_CHANNEL)mOutputChannel, (PS_COUPLING)mOutputChannelCoupling, currentOutputChannelRange, (float)mOutputDcOffset)) )
     {
         return false;
@@ -1467,15 +1494,13 @@ bool PicoScopeFRA::StartCapture( double measFreqHz )
         // - In order for the amplitude calculation to be accurate, and minimize
         //   spectral leakage, we need to try to capture an integer number of 
         //   periods of the signal of interest.
-        // - Sampling frequency well above Nyquist (at least 64x)
-        // - Enough samples that the selection bin is narrow.
-        if (!(ps->GetTimebase(measFreqHz*64.0, &actualSampFreqHz, &timebase)))
+        if (!(ps->GetTimebase(measFreqHz*(double)mLowNoiseOversampling, &actualSampFreqHz, &timebase)))
         {
             return false;
         }
         // Calculate actual sample frequency, and number of samples, collecting enough
-        // samples for 16 cycles of the measured frequency.
-        numCycles = 16;
+        // samples for the configured cycles of the measured frequency.
+        numCycles = mMinCyclesCaptured;
         double samplesPerCycle = actualSampFreqHz / measFreqHz;
         // Deferring the integer truncation till this point ensures
         // the least inaccuracy in hitting the integer periods criteria
@@ -1483,11 +1508,7 @@ bool PicoScopeFRA::StartCapture( double measFreqHz )
     }
     else
     {
-        // Goertzel bin width divided by selection frequency is the inverse of the number of periods
-        // sampled.  So, attempt to set bin +/- 0.5% around the selection frequency => 100 periods.
-        // This is easy to achieve at higher frequencies, but at lower frequencies, we may not have the
-        // buffer space.
-        numCycles = min( 100, (uint32_t)((measFreqHz * (double)maxScopeSamplesPerChannel) / ps->GetNoiseRejectModeSampleRate()) );
+        numCycles = min( mMaxCyclesCaptured, (uint32_t)((measFreqHz * (double)maxScopeSamplesPerChannel) / ps->GetNoiseRejectModeSampleRate()) );
         numSamples = (int32_t)(((double)numCycles * ps->GetNoiseRejectModeSampleRate()) / measFreqHz) + 1;
 
         timebase = ps->GetNoiseRejectModeTimebase();
@@ -1517,7 +1538,7 @@ bool PicoScopeFRA::StartCapture( double measFreqHz )
 #endif
 
     swprintf( fraStatusText, 128, L"Status: Capturing %d samples (%d cycles) at %.3lg Hz takes %0.1lf sec.", numSamples, numCycles, actualSampFreqHz, (double)timeIndisposedMs/1000.0 );
-    UpdateStatus( fraStatusMsg, FRA_STATUS_MESSAGE, fraStatusText );
+    UpdateStatus( fraStatusMsg, FRA_STATUS_MESSAGE, fraStatusText, SAMPLE_PROCESSING_DIAGNOSTICS );
 
     return true;
 }
@@ -1541,7 +1562,7 @@ bool PicoScopeFRA::ProcessData(void)
     wchar_t fraStatusText[128];
 
     wsprintf( fraStatusText, L"Status: Transferring and processing %d samples", numSamples );
-    UpdateStatus( fraStatusMsg, FRA_STATUS_MESSAGE, fraStatusText );
+    UpdateStatus( fraStatusMsg, FRA_STATUS_MESSAGE, fraStatusText, SAMPLE_PROCESSING_DIAGNOSTICS );
 
     if (!(ps->GetPeakValues( inputAbsMax[freqStepIndex][totalRetryCounter[freqStepIndex]], outputAbsMax[freqStepIndex][totalRetryCounter[freqStepIndex]], ovIn, ovOut )))
     {
@@ -1613,10 +1634,10 @@ bool PicoScopeFRA::ProcessData(void)
                                           rangeInfo[adaptiveStimulusOutputChannelRange].rangeVolts *
                                           attenInfo[mOutputChannelAttenuation];
 
-            swprintf( fraStatusText, 128, L"Status: Input amplitude: %0.3lf V", currentInputAmplitudeVolts );
-            UpdateStatus( fraStatusMsg, FRA_STATUS_MESSAGE, fraStatusText );
-            swprintf( fraStatusText, 128, L"Status: Output amplitude: %0.3lf V", currentOutputAmplitudeVolts );
-            UpdateStatus( fraStatusMsg, FRA_STATUS_MESSAGE, fraStatusText );
+            swprintf( fraStatusText, 128, L"Status: Measured input amplitude: %0.3lf V", currentInputAmplitudeVolts );
+            UpdateStatus( fraStatusMsg, FRA_STATUS_MESSAGE, fraStatusText, ADAPTIVE_STIMULUS_DIAGNOSTICS );
+            swprintf( fraStatusText, 128, L"Status: Measured output amplitude: %0.3lf V", currentOutputAmplitudeVolts );
+            UpdateStatus( fraStatusMsg, FRA_STATUS_MESSAGE, fraStatusText, ADAPTIVE_STIMULUS_DIAGNOSTICS );
 
             if (false == CheckStimulusTarget())
             {

@@ -38,6 +38,8 @@ EXPORTS
     DisableDiagnostics=DisableDiagnostics
     AutoClearMessageLog=AutoClearMessageLog
     EnableMessageLog=EnableMessageLog
+    SetLogVerbosityFlag = SetLogVerbosityFlag
+    SetLogVerbosityFlags = SetLogVerbosityFlags
     GetMessageLog=GetMessageLog
     ClearMessageLog=ClearMessageLog
     SetCallback=SetCallback

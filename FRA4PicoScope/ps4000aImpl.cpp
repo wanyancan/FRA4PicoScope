@@ -50,18 +50,25 @@
 
 bool ps4000aImpl::GetTimebase( double desiredFrequency, double* actualFrequency, uint32_t* timebase )
 {
-    bool retVal = true;
+    bool retVal = false;
 
     if (desiredFrequency != 0.0 && actualFrequency && timebase)
     {
         *timebase = saturation_cast<uint32_t,double>((80.0e6/desiredFrequency) - 1.0); // ps4000apg.en r1: p17
-        *actualFrequency = 80.0e6 / ((double)(*timebase + 1)); // ps4000apg.en r1: p17
-    }
-    else
-    {
-        retVal = false;
+        retVal = GetFrequencyFromTimebase(*timebase, *actualFrequency);
     }
 
+    return retVal;
+}
+
+bool ps4000aImpl::GetFrequencyFromTimebase(uint32_t timebase, double &frequency)
+{
+    bool retVal = false;
+    if (timebase >= minTimebase && timebase <= maxTimebase)
+    {
+        frequency = 80.0e6 / ((double)(timebase + 1)); // ps4000apg.en r1: p17
+        retVal = true;
+    }
     return retVal;
 }
 
@@ -79,8 +86,10 @@ bool ps4000aImpl::GetTimebase( double desiredFrequency, double* actualFrequency,
 
 bool ps4000aImpl::InitializeScope(void)
 {
-    timebaseNoiseRejectMode = 0;
-    fSampNoiseRejectMode = 80.0e6;
+    timebaseNoiseRejectMode = defaultTimebaseNoiseRejectMode = 0;
+
+    minTimebase = 0;
+    maxTimebase = (std::numeric_limits<uint32_t>::max)();
 
     signalGeneratorPrecision = 80.0e6 / (double)UINT32_MAX;
 

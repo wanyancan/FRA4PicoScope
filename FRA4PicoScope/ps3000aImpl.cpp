@@ -52,7 +52,7 @@
 
 bool ps3000aImpl::GetTimebase( double desiredFrequency, double* actualFrequency, uint32_t* timebase )
 {
-    bool retVal = true;
+    bool retVal = false;
     double fTimebase;
 
     if (desiredFrequency != 0.0 && actualFrequency && timebase)
@@ -63,15 +63,14 @@ bool ps3000aImpl::GetTimebase( double desiredFrequency, double* actualFrequency,
             {
                 *timebase = saturation_cast<uint32_t,double>(log(500.0e6/desiredFrequency) / M_LN2); // ps3000apg.en r10 p11; log2(n) implemented as log(n)/log(2)
                 *timebase = max( *timebase, 1 ); // None of the 3000A scopes can use timebase 0 with two or more channels enabled
-                *actualFrequency = 500.0e6 / (double)(1<<(*timebase));
             }
             else
             {
                 fTimebase = ((62.5e6/(desiredFrequency)) + 2.0); // ps3000apg.en r10 p11
                 *timebase = saturation_cast<uint32_t,double>(fTimebase);
                 *timebase = max( *timebase, 3 ); // Guarding against potential of float precision issues leading to divide by 0
-                *actualFrequency = 62.5e6 / ((double)(*timebase - 2)); // ps3000apg.en r10 p11
             }
+            retVal = GetFrequencyFromTimebase(*timebase, *actualFrequency);
         }
         else if (model == PS3404A || model == PS3404B || model == PS3405A || model == PS3405B || model == PS3406A || model == PS3406B || model == PS3207A || model == PS3207B ||
                  model == PS3203D || model == PS3203DMSO || model == PS3204D || model == PS3204DMSO || model == PS3205D || model == PS3205DMSO || model == PS3206D || model == PS3206DMSO ||
@@ -81,15 +80,14 @@ bool ps3000aImpl::GetTimebase( double desiredFrequency, double* actualFrequency,
             {
                 *timebase = saturation_cast<uint32_t,double>(log(1.0e9/desiredFrequency) / M_LN2); // ps3000apg.en r10 p11; log2(n) implemented as log(n)/log(2)
                 *timebase = max( *timebase, 1 ); // None of the 3000A scopes can use timebase 0 with two or more channels enabled
-                *actualFrequency = 1.0e9 / (double)(1<<(*timebase));
             }
             else
             {
                 fTimebase = ((125.0e6/(desiredFrequency)) + 2.0); // ps3000apg.en r10 p11
                 *timebase = saturation_cast<uint32_t,double>(fTimebase);
                 *timebase = max( *timebase, 3 ); // Guarding against potential of float precision issues leading to divide by 0
-                *actualFrequency = 125.0e6 / ((double)(*timebase - 2)); // ps3000apg.en r10 p11
             }
+            retVal = GetFrequencyFromTimebase(*timebase, *actualFrequency);
         }
         else if (model == PS3204MSO || model == PS3205MSO || model == PS3206MSO)
         {
@@ -97,24 +95,64 @@ bool ps3000aImpl::GetTimebase( double desiredFrequency, double* actualFrequency,
             {
                 *timebase = saturation_cast<uint32_t,double>(log(500.0e6/desiredFrequency) / M_LN2); // ps3000apg.en r10 p11; log2(n) implemented as log(n)/log(2)
                 *timebase = max( *timebase, 1 ); // None of the 3000A scopes can use timebase 0 with two or more channels enabled
-                *actualFrequency = 500.0e6 / (double)(1<<(*timebase));
             }
             else
             {
                 fTimebase = ((125.0e6/(desiredFrequency)) + 1.0); // ps3000apg.en r10 p11
                 *timebase = saturation_cast<uint32_t,double>(fTimebase);
                 *timebase = max( *timebase, 2 ); // Guarding against potential of float precision issues leading to divide by 0
-                *actualFrequency = 125.0e6 / ((double)(*timebase - 1)); // ps3000apg.en r10 p11
             }
-        }
-        else
-        {
-            retVal = false;
+            retVal = GetFrequencyFromTimebase(*timebase, *actualFrequency);
         }
     }
-    else
+
+    return retVal;
+}
+
+bool ps3000aImpl::GetFrequencyFromTimebase(uint32_t timebase, double &frequency)
+{
+    bool retVal = false;
+
+    if (timebase >= minTimebase && timebase <= maxTimebase)
     {
-        retVal = false;
+        if (model == PS3204A || model == PS3204B || model == PS3205A || model == PS3205B || model == PS3206A || model == PS3206B)
+        {
+            if (timebase <= 2)
+            {
+                frequency = 500.0e6 / (double)(1<<(timebase));
+            }
+            else
+            {
+                frequency = 62.5e6 / ((double)(timebase - 2)); // ps3000apg.en r10 p11
+            }
+            retVal = true;
+        }
+        else if (model == PS3404A || model == PS3404B || model == PS3405A || model == PS3405B || model == PS3406A || model == PS3406B || model == PS3207A || model == PS3207B ||
+                 model == PS3203D || model == PS3203DMSO || model == PS3204D || model == PS3204DMSO || model == PS3205D || model == PS3205DMSO || model == PS3206D || model == PS3206DMSO ||
+                 model == PS3403D || model == PS3403DMSO || model == PS3404D || model == PS3404DMSO || model == PS3405D || model == PS3405DMSO || model == PS3406D || model == PS3406DMSO)
+        {
+            if (timebase <= 2)
+            {
+                frequency = 1.0e9 / (double)(1<<(timebase));
+            }
+            else
+            {
+                frequency = 125.0e6 / ((double)(timebase - 2)); // ps3000apg.en r10 p11
+            }
+            retVal = true;
+        }
+        else if (model == PS3204MSO || model == PS3205MSO || model == PS3206MSO)
+        {
+            if (timebase <= 1)
+            {
+                frequency = 500.0e6 / (double)(1<<(timebase));
+            }
+            else
+            {
+                frequency = 125.0e6 / ((double)(timebase - 1)); // ps3000apg.en r10 p11
+            }
+            retVal = true;
+        }
     }
 
     return retVal;
@@ -137,22 +175,22 @@ bool ps3000aImpl::InitializeScope(void)
 
     if (model == PS3204A || model == PS3204B || model == PS3205A || model == PS3205B || model == PS3206A || model == PS3206B || model == PS3204MSO || model == PS3205MSO || model == PS3206MSO)
     {
-        timebaseNoiseRejectMode = 1;
-        fSampNoiseRejectMode = 250.0e6;
+        timebaseNoiseRejectMode = defaultTimebaseNoiseRejectMode = 1;
     }
     else if (model == PS3207A || model == PS3207B)
     {
-        timebaseNoiseRejectMode = 1;
-        fSampNoiseRejectMode = 500.0e6;
+        timebaseNoiseRejectMode = defaultTimebaseNoiseRejectMode = 1;
     }
     else if (model == PS3404A || model == PS3404B || model == PS3405A || model == PS3405B || model == PS3406A || model == PS3406B ||
              model == PS3203D || model == PS3203DMSO || model == PS3204D || model == PS3204DMSO || model == PS3205D || model == PS3205DMSO || model == PS3206D || model == PS3206DMSO ||
              model == PS3403D || model == PS3403DMSO || model == PS3404D || model == PS3404DMSO || model == PS3405D || model == PS3405DMSO || model == PS3406D || model == PS3406DMSO)
     {
         // These models have a switchable 20 MHz bandwidth limiter
-        timebaseNoiseRejectMode = 4;
-        fSampNoiseRejectMode = 62500000.0;
+        timebaseNoiseRejectMode = defaultTimebaseNoiseRejectMode = 4;
     }
+
+    minTimebase = 1;
+    maxTimebase = (std::numeric_limits<uint32_t>::max)();
 
     if (model == PS3204A || model == PS3204B || model == PS3205A || model == PS3205B || model == PS3206A || model == PS3206B || model == PS3204MSO || model == PS3205MSO || model == PS3206MSO ||
         model == PS3404A || model == PS3404B || model == PS3405A || model == PS3405B || model == PS3406A || model == PS3406B ||

@@ -98,6 +98,22 @@ typedef enum
     FRA_STATUS_MESSAGE
 } FRA_STATUS_T;
 
+typedef enum
+{
+    SCOPE_ACCESS_DIAGNOSTICS = 0x0001,
+    FRA_PROGRESS = 0x0002,
+    STEP_TRIAL_PROGRESS = 0x0004,
+    SIGNAL_GENERATOR_DIAGNOSTICS = 0x0008,
+    AUTORANGE_DIAGNOSTICS = 0x0010,
+    ADAPTIVE_STIMULUS_DIAGNOSTICS = 0x0020,
+    SAMPLE_PROCESSING_DIAGNOSTICS = 0x0040,
+    DFT_DIAGNOSTICS = 0x0080,
+    SCOPE_POWER_EVENTS = 0x0100,
+    SAVE_EXPORT_STATUS = 0x0200,
+    FRA_WARNING = 0x0400,
+    FRA_ERROR = 0x8000 // Errors are not maskable
+} LOG_MESSAGE_FLAGS_T;
+
 typedef struct
 {
     FRA_STATUS_T status;
@@ -138,6 +154,7 @@ typedef struct
         bool powerState; // false = No Aux DC power
     } statusData;
 
+    LOG_MESSAGE_FLAGS_T messageType;
     std::wstring statusText; // used to encode log or failure messages
 
     struct

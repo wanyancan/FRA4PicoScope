@@ -59,7 +59,9 @@ class PicoScopeFRA
                              bool sweepDescending, double phaseWrappingThreshold );
         void SetFraTuning( double purityLowerLimit, uint16_t extraSettlingTimeMs, uint8_t autorangeTriesPerStep,
                            double autorangeTolerance, double smallSignalResolutionTolerance, double maxAutorangeAmplitude,
-                           uint8_t adaptiveStimulusTriesPerStep, double targetSignalAmplitudeTolerance, uint16_t minCyclesCaptured );
+                           int32_t inputStartRange, int32_t outputStartRange, uint8_t adaptiveStimulusTriesPerStep,
+                           double targetSignalAmplitudeTolerance, uint16_t minCyclesCaptured, uint16_t maxCyclesCaptured,
+                            uint16_t lowNoiseOversampling );
         bool SetupChannels( int inputChannel, int inputChannelCoupling, int inputChannelAttenuation, double inputDcOffset,
                             int outputChannel, int outputChannelCoupling, int outputChannelAttenuation, double outputDcOffset,
                             double initialSignalVpp, double maxSignalVpp );
@@ -132,10 +134,14 @@ class PicoScopeFRA
         int maxAutorangeRetries;            // max number of tries to auto-range before failing
         uint16_t mExtraSettlingTimeMs;      // Extra settling time between auto-range tries
         uint16_t mMinCyclesCaptured;        // Minimum whole stimulus signal cycles to capture
+        uint16_t mMaxCyclesCaptured;        // Maximum whole stimulus signal cycles to capture
+        uint16_t mLowNoiseOversampling;     // Amount to oversample the stimulus frequency in low noise mode
         bool mSweepDescending;              // Whether to sweep frequency from high to low
         bool mAdaptiveStimulus;             // Whether to adjust stimulus Vpp to target an output goal
-        double mTargetResponseAmplitude;      // Target amplitude for measured signals, goal is that both signals be at least this large
+        double mTargetResponseAmplitude;    // Target amplitude for measured signals, goal is that both signals be at least this large
         double mTargetResponseAmplitudeTolerance; // Amount the smallest signal is allowed to exceed target signal amplitude (percent)
+        int32_t mInputStartRange;           // Range to start input channel; -1 means base on stimulus
+        int32_t mOutputStartRange;          // Range to start output channel; -1 means base on stimulus
         double mMaxStimulusVpp;             // Maximum allowed stimulus voltage in adaptive stimulus mode
         int maxAdaptiveStimulusRetries;     // Maximum number of tries to adapt stimulus before failing
         double mPhaseWrappingThreshold;     // Phase value to use as wrapping point (in degrees); absolute value should be less than 360
@@ -190,7 +196,7 @@ class PicoScopeFRA
         PS_RANGE outputMaxRange;
 
         static const double attenInfo[];
-        static const double inputRangeInitialEstimateMargin;
+        static const double stimulusBasedInitialRangeEstimateMargin;
         static const uint32_t timeDomainDiagnosticDataLengthLimit;
 
         HANDLE hCaptureEvent;
@@ -215,6 +221,7 @@ class PicoScopeFRA
         void TransferLatestResults(void);
 
         // Utilities for sending a message via the callback
+        // Power State
         inline bool UpdateStatus(FRA_STATUS_MESSAGE_T &msg, FRA_STATUS_T status, bool powerState)
         {
             msg.status = status;
@@ -231,6 +238,7 @@ class PicoScopeFRA
             }
             return StatusCallback(msg);
         }
+        // Progress Status
         inline bool UpdateStatus( FRA_STATUS_MESSAGE_T &msg, FRA_STATUS_T status, int stepsComplete, int numSteps )
         {
             msg.status = status;
@@ -247,6 +255,7 @@ class PicoScopeFRA
             }
             return StatusCallback( msg );
         }
+        // Retry Limit Reached
         inline bool UpdateStatus( FRA_STATUS_MESSAGE_T &msg, FRA_STATUS_T status, AUTORANGE_STATUS_T inputChannelStatus, AUTORANGE_STATUS_T outputChannelStatus )
         {
             msg.status = status;
@@ -267,12 +276,14 @@ class PicoScopeFRA
             msg.statusData.retryLimit.adaptiveStimulusLimit.outputResponseAmplitudeV = currentOutputAmplitudeVolts;
             return StatusCallback( msg );
         }
-        inline bool UpdateStatus( FRA_STATUS_MESSAGE_T &msg, FRA_STATUS_T status, const wchar_t* statusMessage )
+        // Status Messages
+        inline bool UpdateStatus( FRA_STATUS_MESSAGE_T &msg, FRA_STATUS_T status, const wchar_t* statusMessage, LOG_MESSAGE_FLAGS_T type = FRA_ERROR )
         {
             msg.status = status;
             msg.statusData.progress.numSteps = numSteps;
             msg.statusData.progress.stepsComplete = freqStepCounter;
             msg.statusText = statusMessage;
+            msg.messageType = type;
             return StatusCallback( msg );
         }
 };

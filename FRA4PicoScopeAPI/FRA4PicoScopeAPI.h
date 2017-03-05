@@ -54,7 +54,9 @@ FRA4PICOSCOPE_API void __stdcall SetFraSettings( SamplingMode_T samplingMode, bo
                                                  bool sweepDescending, double phaseWrappingThreshold );
 FRA4PICOSCOPE_API void __stdcall SetFraTuning( double purityLowerLimit, uint16_t extraSettlingTimeMs, uint8_t autorangeTriesPerStep,
                                                double autorangeTolerance, double smallSignalResolutionTolerance, double maxAutorangeAmplitude,
-                                               uint8_t adaptiveStimulusTriesPerStep, double targetResponseAmplitudeTolerance, uint16_t minCyclesCaptured );
+                                               int32_t inputStartRange, int32_t outputStartRange, uint8_t adaptiveStimulusTriesPerStep,
+                                               double targetResponseAmplitudeTolerance, uint16_t minCyclesCaptured, uint16_t maxCyclesCaptured,
+                                               uint16_t lowNoiseOversampling );
 FRA4PICOSCOPE_API bool __stdcall SetupChannels( int inputChannel, int inputChannelCoupling, int inputChannelAttenuation, double inputDcOffset,
                                                 int outputChannel, int outputChannelCoupling, int outputChannelAttenuation, double outputDcOffset,
                                                 double initialStimulusVpp, double maxStimulusVpp );
@@ -64,6 +66,8 @@ FRA4PICOSCOPE_API void __stdcall EnableDiagnostics( wchar_t* baseDataPath );
 FRA4PICOSCOPE_API void __stdcall DisableDiagnostics( void );
 FRA4PICOSCOPE_API void __stdcall AutoClearMessageLog( bool bAutoClear );
 FRA4PICOSCOPE_API void __stdcall EnableMessageLog( bool bEnable );
+FRA4PICOSCOPE_API void __stdcall SetLogVerbosityFlag(LOG_MESSAGE_FLAGS_T flag, bool set);
+FRA4PICOSCOPE_API void __stdcall SetLogVerbosityFlags(LOG_MESSAGE_FLAGS_T flags);
 FRA4PICOSCOPE_API const wchar_t* __stdcall GetMessageLog( void );
 FRA4PICOSCOPE_API void __stdcall ClearMessageLog( void );
 FRA4PICOSCOPE_API void __stdcall SetCallback( FRA_STATUS_CALLBACK fraCb );

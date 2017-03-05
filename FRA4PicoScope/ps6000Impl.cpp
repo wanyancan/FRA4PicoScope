@@ -52,7 +52,7 @@
 
 bool ps6000Impl::GetTimebase( double desiredFrequency, double* actualFrequency, uint32_t* timebase )
 {
-    bool retVal = true;
+    bool retVal = false;
     double fTimebase;
 
     if (desiredFrequency != 0.0 && actualFrequency && timebase)
@@ -72,19 +72,34 @@ bool ps6000Impl::GetTimebase( double desiredFrequency, double* actualFrequency, 
             {
                 *timebase = max(*timebase, 1); // With two channels on, cannot use timebase 0 (5GS/s)
             }
-            *actualFrequency = 5.0e9 / (double)(1<<(*timebase));
         }
         else
         {
             fTimebase = ((156250000.0/(desiredFrequency)) + 4.0); // ps6000pg.en r9 p19
             *timebase = saturation_cast<uint32_t,double>(fTimebase);
             *timebase = max( *timebase, 5 ); // Guarding against potential of float precision issues leading to divide by 0
-            *actualFrequency = 156250000.0 / ((double)(*timebase - 4)); // ps6000pg.en r9 p19
         }
+        retVal = GetFrequencyFromTimebase(*timebase, *actualFrequency);
     }
-    else
+
+    return retVal;
+}
+
+bool ps6000Impl::GetFrequencyFromTimebase(uint32_t timebase, double &frequency)
+{
+    bool retVal = false;
+
+    if (timebase >= minTimebase && timebase <= maxTimebase)
     {
-        retVal = false;
+        if (timebase <= 4)
+        {
+            frequency = 5.0e9 / (double)(1<<(timebase));
+        }
+        else
+        {
+            frequency = 156250000.0 / ((double)(timebase - 4)); // ps6000pg.en r9 p19
+        }
+        retVal = true;
     }
 
     return retVal;
@@ -108,14 +123,16 @@ bool ps6000Impl::InitializeScope(void)
     {
         // Encode for the best case, and we'll adjust in the GetNoiseRejectMode[SampleRate|Timebase] 
         // functions when both channels are from same block.
-        timebaseNoiseRejectMode = 1;
-        fSampNoiseRejectMode = 2.5e9;
+        timebaseNoiseRejectMode = defaultTimebaseNoiseRejectMode = 1;
     }
     else
     {
-        timebaseNoiseRejectMode = 6;
-        fSampNoiseRejectMode = 78125000.0;
+        // A bandwidth limiter is available on these scope and will be used.
+        timebaseNoiseRejectMode = defaultTimebaseNoiseRejectMode = 6;
     }
+
+    minTimebase = 1;
+    maxTimebase = (std::numeric_limits<uint32_t>::max)();
 
     signalGeneratorPrecision = 200.0e6 / (double)UINT32_MAX;
 

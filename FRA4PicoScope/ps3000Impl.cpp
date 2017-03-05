@@ -88,17 +88,35 @@ bool ps3000Impl::GetTimebase( double desiredFrequency, double* actualFrequency, 
             // Bound to minTimebase
             *timebase = max(*timebase, minTimebase);
 
-            *actualFrequency = maxFrequency / (double)(1 << *timebase);
-            retVal = true;
-        }
-        else
-        {
-            retVal = false;
+            retVal = GetFrequencyFromTimebase(*timebase, *actualFrequency);
         }
     }
-    else
+
+    return retVal;
+}
+
+bool ps3000Impl::GetFrequencyFromTimebase(uint32_t timebase, double &frequency)
+{
+    bool retVal = false;
+    double maxFrequency;
+
+    if (timebase >= minTimebase && timebase <= maxTimebase)
     {
-        retVal = false;
+        if (model == PS3205 || model == PS3206)
+        {
+            switch (model)
+            {
+                case PS3205:
+                    maxFrequency = 100e6;
+                    break;
+                case PS3206:
+                    maxFrequency = 200e6;
+                    break;
+            }
+
+            frequency = maxFrequency / (double)(1 << timebase);
+            retVal = true;
+        }
     }
 
     return retVal;
@@ -119,15 +137,17 @@ bool ps3000Impl::InitializeScope(void)
 {
     bool retVal;
 
-    fSampNoiseRejectMode = 100e6; // Both compatible scopes support 100 MS/s with 2 channels enabled
-
     if (model == PS3205)
     {
-        timebaseNoiseRejectMode = 0; // On the PS3205, 100 MS/s is timebase 0
+        timebaseNoiseRejectMode = defaultTimebaseNoiseRejectMode = 0; // On the PS3205, 100 MS/s is timebase 0
+        minTimebase = 0;
+        maxTimebase = PS3205_MAX_TIMEBASE;
     }
     if (model == PS3206)
     {
-        timebaseNoiseRejectMode = 1; // On the PS3206, 100 MS/s is timebase 1
+        timebaseNoiseRejectMode = defaultTimebaseNoiseRejectMode = 1; // On the PS3206, 100 MS/s is timebase 1
+        minTimebase = 1;
+        maxTimebase = PS3206_MAX_TIMEBASE;
     }
 
     signalGeneratorPrecision = 25.0e6 / (1<<28); // Per conversation related to support ticket TS00062849

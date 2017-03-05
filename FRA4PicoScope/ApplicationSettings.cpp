@@ -146,17 +146,18 @@ bool ApplicationSettings::InitializeApplicationSettingsFile( void )
         AppSettingsPropTree.put( L"adaptiveStimulusMode", false );
         AppSettingsPropTree.put( L"targetResponseAmplitude", L"0.1" ); // 100 mV
         AppSettingsPropTree.put( L"sweepDescending", false );
+        AppSettingsPropTree.put( L"extraSettlingTimeMs", L"0" );
 
         AppSettingsPropTree.put( L"plot.freqAxis.autoscale", true );
-        AppSettingsPropTree.put( L"plot.freqAxis.min", 0.0 );
-        AppSettingsPropTree.put( L"plot.freqAxis.max", 0.0 );
+        AppSettingsPropTree.put( L"plot.freqAxis.min", L"1.0" );
+        AppSettingsPropTree.put( L"plot.freqAxis.max", L"10000000.0" );
         AppSettingsPropTree.put( L"plot.freqAxis.majorTickInterval", 0.0 );
         AppSettingsPropTree.put( L"plot.freqAxis.minorTicksPerMajorInterval", 0 );
         AppSettingsPropTree.put( L"plot.freqAxis.majorGrids", true );
         AppSettingsPropTree.put( L"plot.freqAxis.minorGrids", true );
 
         AppSettingsPropTree.put( L"plot.gainAxis.autoscale", true );
-        AppSettingsPropTree.put( L"plot.gainAxis.min", 0.0 );
+        AppSettingsPropTree.put( L"plot.gainAxis.min", L"-60.0" );
         AppSettingsPropTree.put( L"plot.gainAxis.max", 0.0 );
         AppSettingsPropTree.put( L"plot.gainAxis.majorTickInterval", 0.0 );
         AppSettingsPropTree.put( L"plot.gainAxis.minorTicksPerMajorInterval", 0 );
@@ -165,8 +166,8 @@ bool ApplicationSettings::InitializeApplicationSettingsFile( void )
         AppSettingsPropTree.put( L"plot.gainAxis.masterGrids", true );
 
         AppSettingsPropTree.put( L"plot.phaseAxis.autoscale", true );
-        AppSettingsPropTree.put( L"plot.phaseAxis.min", 0.0 );
-        AppSettingsPropTree.put( L"plot.phaseAxis.max", 0.0 );
+        AppSettingsPropTree.put( L"plot.phaseAxis.min", L"-180.0" );
+        AppSettingsPropTree.put( L"plot.phaseAxis.max", L"180.0" );
         AppSettingsPropTree.put( L"plot.phaseAxis.majorTickInterval", 0.0 );
         AppSettingsPropTree.put( L"plot.phaseAxis.minorTicksPerMajorInterval", 0 );
         AppSettingsPropTree.put( L"plot.phaseAxis.majorGrids", false );
@@ -179,8 +180,8 @@ bool ApplicationSettings::InitializeApplicationSettingsFile( void )
         AppSettingsPropTree.put( L"plot.plotGainMargin", false );
         AppSettingsPropTree.put( L"plot.plotPhaseMargin", false );
         AppSettingsPropTree.put( L"plot.plotUnwrappedPhase", false );
-        AppSettingsPropTree.put( L"plot.phaseWrappingThreshold", 180.0 );
-        AppSettingsPropTree.put( L"plot.gainMarginPhaseCrossover", 0.0 );
+        AppSettingsPropTree.put( L"plot.phaseWrappingThreshold", L"180.0" );
+        AppSettingsPropTree.put( L"plot.gainMarginPhaseCrossover", L"0.0" );
 
         AppSettingsPropTree.put( L"plot.screenColor.background.red", 0 );
         AppSettingsPropTree.put( L"plot.screenColor.background.green", 0 );
@@ -207,18 +208,24 @@ bool ApplicationSettings::InitializeApplicationSettingsFile( void )
         AppSettingsPropTree.put( L"plot.savedImageFileColor.phasePlot.green", 0 );
         AppSettingsPropTree.put( L"plot.savedImageFileColor.phasePlot.blue", 0 );
 
-        AppSettingsPropTree.put( L"diagnostics.logVerbosityLevel", 0 );
+        AppSettingsPropTree.put( L"diagnostics.logVerbosityFlags", SCOPE_ACCESS_DIAGNOSTICS | FRA_PROGRESS |
+                                                                   SCOPE_POWER_EVENTS | SAVE_EXPORT_STATUS | FRA_WARNING );
         AppSettingsPropTree.put( L"diagnostics.timeDomainPlots", false );
 
-        AppSettingsPropTree.put( L"expert.purityLowerLimit", L"0.80" ); // 80%
-        AppSettingsPropTree.put( L"expert.extraSettlingTimeMs", L"0" );
-        AppSettingsPropTree.put( L"expert.autorangeTriesPerStep", L"10" );
-        AppSettingsPropTree.put( L"expert.autorangeTolerance", L"10.0" );
-        AppSettingsPropTree.put( L"expert.smallSignalResolutionLimit", L"0.0" );
-        AppSettingsPropTree.put( L"expert.maxAutorangeAmplitude", L"1.0" );
-        AppSettingsPropTree.put( L"expert.adaptiveStimulusTriesPerStep", L"10" );
-        AppSettingsPropTree.put( L"expert.targetResponseAmplitudeTolerance", L"10.0" ); // 10%
-        AppSettingsPropTree.put( L"expert.minCyclesCaptured", L"16" ); // Bin width 6.25% of stimulus frequency
+        AppSettingsPropTree.put( L"autorangeTuning.autorangeTriesPerStep", L"10" );
+        AppSettingsPropTree.put( L"autorangeTuning.autorangeTolerance", L"10.0" );
+        AppSettingsPropTree.put( L"autorangeTuning.maxAutorangeAmplitude", L"1.0" );
+        AppSettingsPropTree.put( L"adaptiveStimulusTuning.adaptiveStimulusTriesPerStep", L"10" );
+        AppSettingsPropTree.put( L"adaptiveStimulusTuning.targetResponseAmplitudeTolerance", L"10.0" ); // 10%
+        AppSettingsPropTree.put( L"sampleParam.minCyclesCaptured", L"16" ); // Bin width 6.25% of stimulus frequency
+        AppSettingsPropTree.put( L"sampleParam.maxCyclesCaptured", L"100" ); // Bin width 1% of stimulus frequency
+        AppSettingsPropTree.put( L"sampleParam.noiseRejectBandwidth", L"100.0" ); // 100 Hz
+        AppSettingsPropTree.put( L"sampleParam.lowNoiseOversampling", L"64" ); // 64x
+
+        AppSettingsPropTree.put( L"qualityLimits.enable", L"false" ); // Quality limits off
+        AppSettingsPropTree.put( L"qualityLimits.amplitudeLowerLimit", L"0.0" );
+        AppSettingsPropTree.put( L"qualityLimits.purityLowerLimit", L"80" ); // 80%
+        AppSettingsPropTree.put( L"qualityLimits.excludeDcFromNoise", L"false" );
 
         settingsFileOutputStream.open( appDataFilename.c_str(), ios::out );
 
@@ -435,10 +442,12 @@ bool ApplicationSettings::InitializeScopeSettingsFile(PicoScope* pScope)
     ScopeSettingsPropTree.put( L"picoScope.inputChannel.attenuation", ATTEN_1X );
     ScopeSettingsPropTree.put( L"picoScope.inputChannel.coupling",PS_AC );
     ScopeSettingsPropTree.put( L"picoScope.inputChannel.dcOffset", L"0.0" );
+    ScopeSettingsPropTree.put( L"picoScope.inputChannel.startingRange", -1 ); // Base on stimulus
     ScopeSettingsPropTree.put( L"picoScope.outputChannel.name", L"B" );
     ScopeSettingsPropTree.put( L"picoScope.outputChannel.attenuation", ATTEN_1X );
     ScopeSettingsPropTree.put( L"picoScope.outputChannel.coupling", PS_AC );
     ScopeSettingsPropTree.put( L"picoScope.outputChannel.dcOffset", L"0.0" );
+    ScopeSettingsPropTree.put( L"picoScope.outputChannel.startingRange", pScope->GetMinRange(PS_AC) );
 
     midSigGenVpp = floor((pScope->GetMinFuncGenVpp() + pScope->GetMaxFuncGenVpp()) / 2.0);
 
@@ -452,6 +461,8 @@ bool ApplicationSettings::InitializeScopeSettingsFile(PicoScope* pScope)
     ScopeSettingsPropTree.put( L"picoScope.fraParam.startFrequency", startFreqSS.str().c_str() );
     ScopeSettingsPropTree.put( L"picoScope.fraParam.stopFrequency", stopFreqSS.str().c_str() );
     ScopeSettingsPropTree.put( L"picoScope.fraParam.stepsPerDecade", 10 );
+
+    ScopeSettingsPropTree.put( L"picoScope.sampleParam.noiseRejectModeTimebase", pScope->GetDefaultNoiseRejectModeTimebase() );
 
     settingsFileOutputStream.open( scopeDataFilename.c_str(), ios::out );
     if (!settingsFileOutputStream)
@@ -502,16 +513,20 @@ void ApplicationSettings::SetNoScopeSettings( void )
     ScopeSettingsPropTree.put( L"picoScope.inputChannel.attenuation", ATTEN_1X );
     ScopeSettingsPropTree.put( L"picoScope.inputChannel.coupling",PS_AC );
     ScopeSettingsPropTree.put( L"picoScope.inputChannel.dcOffset", L"0.0" );
+    ScopeSettingsPropTree.put( L"picoScope.inputChannel.startingRange", -1 );
     ScopeSettingsPropTree.put( L"picoScope.outputChannel.name", L"B" );
     ScopeSettingsPropTree.put( L"picoScope.outputChannel.attenuation", ATTEN_1X );
     ScopeSettingsPropTree.put( L"picoScope.outputChannel.coupling", PS_AC );
     ScopeSettingsPropTree.put( L"picoScope.outputChannel.dcOffset", L"0.0" );
+    ScopeSettingsPropTree.put( L"picoScope.outputChannel.startingRange", -1 );
 
     ScopeSettingsPropTree.put( L"picoScope.fraParam.stimulusVpp", L"0.0" );
     ScopeSettingsPropTree.put( L"picoScope.fraParam.maxStimulusVpp", L"0.0" );
     ScopeSettingsPropTree.put( L"picoScope.fraParam.startFrequency", L"0.0" );
     ScopeSettingsPropTree.put( L"picoScope.fraParam.stopFrequency", L"0.0" );
     ScopeSettingsPropTree.put( L"picoScope.fraParam.stepsPerDecade", 10 );
+
+    ScopeSettingsPropTree.put( L"picoScope.sampleParam.noiseRejectModeTimebase", 0 );
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////

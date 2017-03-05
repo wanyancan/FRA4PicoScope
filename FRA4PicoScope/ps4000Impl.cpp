@@ -68,7 +68,7 @@ const int PS4000_RATIO_MODE_AGGREGATE = RATIO_MODE_AGGREGATE;
 
 bool ps4000Impl::GetTimebase( double desiredFrequency, double* actualFrequency, uint32_t* timebase )
 {
-    bool retVal = true;
+    bool retVal = false;
     double fTimebase;
 
     if (desiredFrequency != 0.0 && actualFrequency && timebase)
@@ -76,9 +76,9 @@ bool ps4000Impl::GetTimebase( double desiredFrequency, double* actualFrequency, 
         if (model == PS4262)
         {
             fTimebase = max(0.0, ((10.0e6/(desiredFrequency)) - 1.0)); // ps4000pg.en r8 p17
-            fTimebase = min(fTimebase, (double)(1<<30)); // limit is 2^30
+            fTimebase = min(fTimebase, (double)((uint32_t)1<<30) - 1.0); // limit is 2^30-1
             *timebase = (uint32_t)fTimebase;
-            *actualFrequency = 10.0e6 / ((double)(*timebase + 1)); // ps4000pg.en r8 p17
+            retVal = GetFrequencyFromTimebase(*timebase, *actualFrequency);
         }
         else if (model == PS4226 || model == PS4227)
         {
@@ -89,29 +89,47 @@ bool ps4000Impl::GetTimebase( double desiredFrequency, double* actualFrequency, 
                 {
                     *timebase = 1; // PS4226 can't use timebase 0
                 }
-                *actualFrequency = 250.0e6 / (double)(1<<(*timebase));
             }
             else
             {
                 fTimebase = ((31250000.0/(desiredFrequency)) + 2.0); // ps4000pg.en r8 p17
-                fTimebase = min(fTimebase, (double)(1<<30)); // limit is 2^30
+                fTimebase = min(fTimebase, (double)((uint32_t)1<<30) - 1.0); // limit is 2^30-1
                 *timebase = (uint32_t)fTimebase;
                 *timebase = max( *timebase, 4 ); // make sure it's at least 4
-                *actualFrequency = 31250000.0 / ((double)(*timebase - 2)); // ps4000pg.en r8 p17
             }
+            retVal = GetFrequencyFromTimebase(*timebase, *actualFrequency);
         }
-        else
-        {
-            retVal = false;
-        }
-    }
-    else
-    {
-        retVal = false;
     }
 
     return retVal;
+}
 
+bool ps4000Impl::GetFrequencyFromTimebase(uint32_t timebase, double &frequency)
+{
+    bool retVal = false;
+    
+    if (timebase >= minTimebase && timebase <= maxTimebase)
+    {
+        if (model == PS4262)
+        {
+            frequency = 10.0e6 / ((double)(timebase + 1)); // ps4000pg.en r8 p17
+            retVal = true;
+        }
+        else if (model == PS4226 || model == PS4227)
+        {
+            if (timebase <= 3)
+            {
+                frequency = 250.0e6 / (double)(1<<(timebase));
+            }
+            else
+            {
+                frequency = 31250000.0 / ((double)(timebase - 2)); // ps4000pg.en r8 p17
+            }
+            retVal = true;
+        }
+    }
+
+    return retVal;
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -133,24 +151,26 @@ bool ps4000Impl::InitializeScope(void)
     if (model == PS4262)
     {
         minRange = (PS_RANGE)PS4000_10MV;
-        timebaseNoiseRejectMode = 15; // for PS4262 => 625 kHz, approximately 3x HW BW limiter
-        fSampNoiseRejectMode = 625.0e3; // for PS4262 - approximately 3x HW BW limiter
+        timebaseNoiseRejectMode = defaultTimebaseNoiseRejectMode = 15; // for PS4262 => 625 kHz, approximately 3x HW BW limiter
+        minTimebase = 0;
         signalGeneratorPrecision = 192.0e3 / (double)UINT32_MAX;
     }
     else if (model == PS4226)
     {
         minRange = (PS_RANGE)PS4000_50MV; // +/- 50mV
-        timebaseNoiseRejectMode = 1; // for PS4226 => 125 MHz
-        fSampNoiseRejectMode = 125.0e6;
+        timebaseNoiseRejectMode = defaultTimebaseNoiseRejectMode = 1; // for PS4226 => 125 MHz
+        minTimebase = 1;
         signalGeneratorPrecision = 20.0e6 / (double)UINT32_MAX;
     }
     else if (model == PS4227)
     {
         minRange = (PS_RANGE)PS4000_50MV; // +/- 50mV
-        timebaseNoiseRejectMode = 0; // for PS4227 => 250 MHz
-        fSampNoiseRejectMode = 250.0e6;
+        timebaseNoiseRejectMode = defaultTimebaseNoiseRejectMode = 0; // for PS4227 => 250 MHz
+        minTimebase = 0;
         signalGeneratorPrecision = 20.0e6 / (double)UINT32_MAX;
     }
+
+    maxTimebase = ((uint32_t)1<<30) - 1;
 
     return true;
 }

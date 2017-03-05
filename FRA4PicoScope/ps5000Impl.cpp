@@ -67,27 +67,42 @@ const int PS5000_RATIO_MODE_AGGREGATE = RATIO_MODE_AGGREGATE;
 
 bool ps5000Impl::GetTimebase( double desiredFrequency, double* actualFrequency, uint32_t* timebase )
 {
-    bool retVal = true;
+    bool retVal = false;
     double fTimebase;
 
     if (desiredFrequency != 0.0 && actualFrequency && timebase)
     {
         if (desiredFrequency > 125.0e6)
-            {
-                *timebase = saturation_cast<uint32_t,double>(log(1.0e9/desiredFrequency) / M_LN2); // ps5000pg.en p16; log2(n) implemented as log(n)/log(2)
-                *actualFrequency = 1.0e9 / (double)(1<<(*timebase));
-            }
-            else
-            {
-                fTimebase = ((125.0e6/(desiredFrequency)) + 2.0); // ps5000pg.en p16
-                *timebase = saturation_cast<uint32_t,double>(fTimebase);
-                *timebase = max( *timebase, 3 ); // Guarding against potential of float precision issues leading to divide by 0
-                *actualFrequency = 125.0e6 / ((double)(*timebase - 2)); // ps5000pg.en p16
-            }
+        {
+            *timebase = saturation_cast<uint32_t,double>(log(1.0e9/desiredFrequency) / M_LN2); // ps5000pg.en p16; log2(n) implemented as log(n)/log(2)
+        }
+        else
+        {
+            fTimebase = ((125.0e6/(desiredFrequency)) + 2.0); // ps5000pg.en p16
+            *timebase = saturation_cast<uint32_t,double>(fTimebase);
+            *timebase = max( *timebase, 3 ); // Guarding against potential of float precision issues leading to divide by 0
+        }
+        retVal = GetFrequencyFromTimebase(*timebase, *actualFrequency);
     }
-    else
+
+    return retVal;
+}
+
+bool ps5000Impl::GetFrequencyFromTimebase(uint32_t timebase, double &frequency)
+{
+    bool retVal = false;
+
+    if (timebase >= minTimebase && timebase <= maxTimebase)
     {
-        retVal = false;
+        if (timebase <= 2)
+        {
+            frequency = 1.0e9 / (double)(1<<(timebase));
+        }
+        else
+        {
+            frequency = 125.0e6 / ((double)(timebase - 2)); // ps5000pg.en p16
+        }
+        retVal = true;
     }
 
     return retVal;
@@ -107,8 +122,10 @@ bool ps5000Impl::GetTimebase( double desiredFrequency, double* actualFrequency, 
 
 bool ps5000Impl::InitializeScope(void)
 {
-    timebaseNoiseRejectMode = 0;
-    fSampNoiseRejectMode = 1.0e9;
+    timebaseNoiseRejectMode = defaultTimebaseNoiseRejectMode = 0;
+
+    minTimebase = 0;
+    maxTimebase = (std::numeric_limits<uint32_t>::max)();
 
     signalGeneratorPrecision = 125.0e6 / (double)UINT32_MAX;
 

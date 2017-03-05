@@ -38,13 +38,17 @@ HANDLE hExecuteFraEvent;
 
 wstring messageLog;
 bool bLogMessages = false;
+uint16_t logVerbosityFlags = SCOPE_ACCESS_DIAGNOSTICS | FRA_PROGRESS | STEP_TRIAL_PROGRESS |
+                             SIGNAL_GENERATOR_DIAGNOSTICS | AUTORANGE_DIAGNOSTICS |
+                             ADAPTIVE_STIMULUS_DIAGNOSTICS | SAMPLE_PROCESSING_DIAGNOSTICS |
+                             SCOPE_POWER_EVENTS | DFT_DIAGNOSTICS | FRA_WARNING;
 bool bAutoClearLog = true;
 static const size_t messageLogSizeLimit = 16777216; // 16MB
 FRA_STATUS_CALLBACK FraStatusCallback = NULL;
 
 static DWORD WINAPI ExecuteFRA(LPVOID lpdwThreadParam);
 static bool LocalFraStatusCallback( FRA_STATUS_MESSAGE_T& fraStatus );
-void LogMessage(const wstring statusMessage);
+void LogMessage(const wstring statusMessage, LOG_MESSAGE_FLAGS_T type = FRA_ERROR );
 
 // Storage for default/initial FRA parameters
 // For basic settings
@@ -60,9 +64,13 @@ static const uint8_t autorangeTriesPerStepDefault = 10;
 static const double autorangeToleranceDefault = 0.10;
 static const double smallSignalResolutionToleranceDefault = 0.0;
 static const double maxAutorangeAmplitudeDefault = 1.0;
+static const int32_t inputStartRangeDefault = -1;
+static const int32_t outputStartRangeDefault = 0;
 static const uint8_t adaptiveStimulusTriesPerStepDefault = 10;
 static const double targetResponseAmplitudeToleranceDefault = 0.1; // 10%
 static const uint16_t minCyclesCapturedDefault = 16;
+static const uint16_t maxCyclesCapturedDefault = 100;
+static const uint16_t lowNoiseOversamplingDefault = 64;
 
 // Parameters used to communicate from API to execution thread
 static double startFreqHz = 0.0;
@@ -111,8 +119,9 @@ bool __stdcall Initialize( void )
                                   sweepDescendingDefault, phaseWrappingThresholdDefault );
 
             pFRA->SetFraTuning( purityLowerLimitDefault, extraSettlingTimeMsDefault, autorangeTriesPerStepDefault, autorangeToleranceDefault,
-                                smallSignalResolutionToleranceDefault, maxAutorangeAmplitudeDefault, adaptiveStimulusTriesPerStepDefault,
-                                targetResponseAmplitudeToleranceDefault, minCyclesCapturedDefault );
+                                smallSignalResolutionToleranceDefault, maxAutorangeAmplitudeDefault, inputStartRangeDefault, inputStartRangeDefault,
+                                adaptiveStimulusTriesPerStepDefault, targetResponseAmplitudeToleranceDefault, minCyclesCapturedDefault, maxCyclesCapturedDefault,
+                                lowNoiseOversamplingDefault );
 
             pFRA->DisableDiagnostics();
 
@@ -175,6 +184,28 @@ void __stdcall Cleanup( void )
     bInitialized = false;
 }
 
+bool GetLogVerbosityFlag(LOG_MESSAGE_FLAGS_T flag)
+{
+    return (((LOG_MESSAGE_FLAGS_T)logVerbosityFlags & flag) == flag);
+}
+
+void __stdcall SetLogVerbosityFlag(LOG_MESSAGE_FLAGS_T flag, bool set)
+{
+    if (set)
+    {
+        logVerbosityFlags  = (logVerbosityFlags | (uint16_t)flag);
+    }
+    else
+    {
+        logVerbosityFlags  = (logVerbosityFlags & ~(uint16_t)flag);
+    }
+}
+
+void __stdcall SetLogVerbosityFlags(LOG_MESSAGE_FLAGS_T flags)
+{
+    logVerbosityFlags = (uint16_t)flags;
+}
+
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 //
 // Name: LogMessage
@@ -182,15 +213,17 @@ void __stdcall Cleanup( void )
 // Purpose: Logs messages to the internal log, which can be retrieved later by the client
 //
 // Parameters: [in] statusMessage - the text to be logged
+//             [in] type - type of message, used to determine whether to log a message based on
+//                         verbosity settings
 //
 // Notes: Limits message log to messageLogSizeLimit.  If it would exceed this it will be cleared
 //        first before adding the new message.
 //
 ///////////////////////////////////////////////////////////////////////////////////////////////////
 
-void LogMessage( const wstring statusMessage )
+void LogMessage( const wstring statusMessage, LOG_MESSAGE_FLAGS_T type )
 {
-    if (bLogMessages)
+    if (bLogMessages && (type == FRA_ERROR || GetLogVerbosityFlag(type)))
     {
         if (messageLog.size() + statusMessage.size() > messageLogSizeLimit)
         {
@@ -400,10 +433,15 @@ void __stdcall SetFraSettings( SamplingMode_T samplingMode, bool adaptiveStimulu
 //             [in] smallSignalResolutionTolerance - Lower limit on signal amplitide before we
 //                                                    take action
 //             [in] maxAutorangeAmplitude - Amplitude before we switch to next higher range
+//             [in] inputStartRange - Range to start input channel; -1 means base on stimulus
+//             [in] outputStartRange - Range to start output channel; -1 means base on stimulus
 //             [in] adaptiveStimulusTriesPerStep - Number of adaptive stimulus tries allowed
 //             [in] targetResponseAmplitudeTolerance - Percent tolerance above target allowed for
 //                                                     the smallest stimulus (input or output)
 //             [in] minCyclesCaptured - Minimum cycles captured for stmulus signal
+//             [in] maxCyclesCaptured - Maximum cycles captured for stmulus signal
+//             [in] lowNoiseOversampling - Amount to oversample the stimulus frequency in low
+//                                         noise mode
 //
 // Notes: None
 //
@@ -411,13 +449,16 @@ void __stdcall SetFraSettings( SamplingMode_T samplingMode, bool adaptiveStimulu
 
 void __stdcall SetFraTuning( double purityLowerLimit, uint16_t extraSettlingTimeMs, uint8_t autorangeTriesPerStep,
                              double autorangeTolerance, double smallSignalResolutionTolerance, double maxAutorangeAmplitude,
-                             uint8_t adaptiveStimulusTriesPerStep, double targetResponseAmplitudeTolerance, uint16_t minCyclesCaptured )
+                             int32_t inputStartRange, int32_t outputStartRange, uint8_t adaptiveStimulusTriesPerStep,
+                             double targetResponseAmplitudeTolerance, uint16_t minCyclesCaptured, uint16_t maxCyclesCaptured,
+                             uint16_t lowNoiseOversampling )
 {
     if (pFRA)
     {
         pFRA->SetFraTuning( purityLowerLimit, extraSettlingTimeMs, autorangeTriesPerStep, autorangeTolerance,
-                            smallSignalResolutionTolerance, maxAutorangeAmplitude, adaptiveStimulusTriesPerStep,
-                            targetResponseAmplitudeTolerance, minCyclesCaptured );
+                            smallSignalResolutionTolerance, maxAutorangeAmplitude, inputStartRange, outputStartRange,
+                            adaptiveStimulusTriesPerStep, targetResponseAmplitudeTolerance, minCyclesCaptured, maxCyclesCaptured,
+                            lowNoiseOversampling );
     }
 }
 
@@ -741,9 +782,13 @@ static bool LocalFraStatusCallback( FRA_STATUS_MESSAGE_T& fraStatus )
         }
     }
 
-    if (FRA_STATUS_MESSAGE == fraStatus.status)
+    if (FRA_STATUS_FATAL_ERROR == fraStatus.status)
     {
         LogMessage(fraStatus.statusText);
+    }
+    else if (FRA_STATUS_MESSAGE == fraStatus.status)
+    {
+        LogMessage(fraStatus.statusText, fraStatus.messageType);
     }
 
     return true;

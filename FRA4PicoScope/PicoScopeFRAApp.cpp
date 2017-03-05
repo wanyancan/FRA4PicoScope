@@ -347,13 +347,24 @@ void SelectNewScope( AvailableScopeDescription_T scope, bool mruScope = false )
         pScope->GetModel(scopeModel);
         pScope->GetSerialNumber(scopeSN);
         statusMessage << L"Status: " << scopeModel.c_str() << L" S/N: " << scopeSN.c_str() << L" successfully initialized.";
-        LogMessage( statusMessage.str() );
+        LogMessage( statusMessage.str(), SCOPE_ACCESS_DIAGNOSTICS );
 
         if (false == pSettings -> ReadScopeSettings( pScope ))
         {
             MessageBox( 0, L"Could not read or initialize device settings file.", L"Fatal Error", MB_OK );
             exit(-1);
         }
+
+        // Set scope's desired timebase
+        pScope->SetDesiredNoiseRejectModeTimebase(pSettings->GetNoiseRejectModeTimebaseAsInt());
+
+        // Propagate new tuning values affected by scope
+        psFRA->SetFraTuning( pSettings->GetPurityLowerLimitAsFraction(), pSettings->GetExtraSettlingTimeMsAsUint16(),
+                             pSettings->GetAutorangeTriesPerStepAsUint8(), pSettings->GetAutorangeToleranceAsFraction(),
+                             pSettings->GetAmplitudeLowerLimitAsFraction(), pSettings->GetMaxAutorangeAmplitude(),
+                             pSettings->GetInputStartingRange(), pSettings->GetOutputStartingRange(),
+                             pSettings->GetAdaptiveStimulusTriesPerStepAsUint8(), pSettings->GetTargetResponseAmplitudeToleranceAsFraction(),
+                             pSettings->GetMinCyclesCapturedAsUint16(), pSettings->GetMaxCyclesCapturedAsUint16(), pSettings->GetLowNoiseOversamplingAsUint16() );
 
         if (!mruScope) // Don't unnecessarily dirty the settings file
         {
@@ -629,14 +640,7 @@ BOOL CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
                 exit(-1);
             }
 #if !defined(TEST_PLOTTING)
-            psFRA->SetFraSettings( pSettings->GetSamplingMode(), pSettings->GetAdaptiveStimulusMode(), pSettings->GetTargetResponseAmplitudeAsDouble(),
-                                   pSettings->GetSweepDescending(), pSettings->GetPhaseWrappingThreshold() );
-
-            psFRA->SetFraTuning( pSettings->GetPurityLowerLimit(), pSettings->GetExtraSettlingTimeMs(),
-                                 pSettings->GetAutorangeTriesPerStep(), pSettings->GetAutorangeTolerance(),
-                                 pSettings->GetSmallSignalResolutionLimit(), pSettings->GetMaxAutorangeAmplitude(),
-                                 pSettings->GetAdaptiveStimulusTriesPerStep(), pSettings->GetTargetResponseAmplitudeTolerance(),
-                                 pSettings->GetMinCyclesCaptured() );
+            InitScope();
 
             if (pSettings->GetTimeDomainPlotsEnabled())
             {
@@ -646,8 +650,6 @@ BOOL CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
             {
                 psFRA->DisableDiagnostics();
             }
-            
-            InitScope();
 #else
             HWND hndCtrl;
             hndCtrl = GetDlgItem(hWnd, IDC_FRA_AUTO_AXES);
@@ -779,11 +781,36 @@ BOOL CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
                 }
                 case IDM_SETTINGS:
                 {
+                    StoreSettings();
                     DWORD dwDlgResp;
-                    dwDlgResp = DialogBoxParam(hInst, MAKEINTRESOURCE(IDD_SETTINGS), hWnd, SettingsDialogHandler, NULL);
+                    dwDlgResp = DialogBoxParam(hInst, MAKEINTRESOURCE(IDD_SETTINGS), hWnd, SettingsDialogHandler, (LPARAM)pScopeSelector->GetSelectedScope());
                     if (LOWORD(dwDlgResp) == IDOK)
                     {
-                        // Propagate and save settings changes
+                        LoadControlsData(hMainWnd);
+
+                        psFRA->SetFraSettings( pSettings->GetSamplingMode(), pSettings->GetAdaptiveStimulusMode(), pSettings->GetTargetResponseAmplitudeAsDouble(),
+                                               pSettings->GetSweepDescending(), pSettings->GetPhaseWrappingThresholdAsDouble() );
+
+                        psFRA->SetFraTuning( pSettings->GetPurityLowerLimitAsFraction(), pSettings->GetExtraSettlingTimeMsAsUint16(),
+                                             pSettings->GetAutorangeTriesPerStepAsUint8(), pSettings->GetAutorangeToleranceAsFraction(),
+                                             pSettings->GetAmplitudeLowerLimitAsFraction(), pSettings->GetMaxAutorangeAmplitude(),
+                                             pSettings->GetInputStartingRange(), pSettings->GetOutputStartingRange(),
+                                             pSettings->GetAdaptiveStimulusTriesPerStepAsUint8(), pSettings->GetTargetResponseAmplitudeToleranceAsFraction(),
+                                             pSettings->GetMinCyclesCapturedAsUint16(), pSettings->GetMaxCyclesCapturedAsUint16(), pSettings->GetLowNoiseOversamplingAsUint16() );
+
+                        if (pScopeSelector->GetSelectedScope())
+                        {
+                            pScopeSelector->GetSelectedScope()->SetDesiredNoiseRejectModeTimebase(pSettings->GetNoiseRejectModeTimebaseAsInt());
+                        }
+
+                        if (pSettings->GetTimeDomainPlotsEnabled())
+                        {
+                            psFRA->EnableDiagnostics(dataDirectoryName);
+                        }
+                        else
+                        {
+                            psFRA->DisableDiagnostics();
+                        }
                     }
                     return TRUE;
                 }
@@ -1227,21 +1254,21 @@ BOOL LoadControlsData(HWND hDlg)
 
     hndCtrl = GetDlgItem( hDlg, IDC_INPUT_DC_OFFS );
     Edit_LimitText( hndCtrl, 16 );
-    Edit_SetText( hndCtrl, pSettings->GetInputDcOffset().c_str() );
+    Edit_SetText( hndCtrl, pSettings->GetInputDcOffsetAsString().c_str() );
 
     hndCtrl = GetDlgItem( hDlg, IDC_OUTPUT_DC_OFFS );
     Edit_LimitText( hndCtrl, 16 );
-    Edit_SetText( hndCtrl, pSettings->GetOutputDcOffset().c_str() );
+    Edit_SetText( hndCtrl, pSettings->GetOutputDcOffsetAsString().c_str() );
 
     hndCtrl = GetDlgItem( hDlg, IDC_STIMULUS_VPP );
     Edit_LimitText( hndCtrl, 16 );
-    Edit_SetText( hndCtrl, pSettings->GetStimulusVpp().c_str() );
+    Edit_SetText( hndCtrl, pSettings->GetStimulusVppAsString().c_str() );
 
     // Always populate these, otherwise store on run/exit won't work as designed
     hndCtrl = GetDlgItem(hDlg, IDC_RESPONSE_TARGET);
-    Edit_SetText( hndCtrl, pSettings->GetTargetResponseAmplitude().c_str() );
+    Edit_SetText( hndCtrl, pSettings->GetTargetResponseAmplitudeAsString().c_str() );
     hndCtrl = GetDlgItem( hDlg, IDC_MAX_STIMULUS_VPP );
-    Edit_SetText( hndCtrl, pSettings->GetMaxStimulusVpp().c_str() );
+    Edit_SetText( hndCtrl, pSettings->GetMaxStimulusVppAsString().c_str() );
 
     if (pSettings->GetAdaptiveStimulusMode())
     {
@@ -1286,15 +1313,15 @@ BOOL LoadControlsData(HWND hDlg)
 
     hndCtrl = GetDlgItem( hDlg, IDC_FRA_START_FREQ );
     Edit_LimitText( hndCtrl, 16 );
-    Edit_SetText( hndCtrl, pSettings->GetStartFreq().c_str() );
+    Edit_SetText( hndCtrl, pSettings->GetStartFreqAsString().c_str() );
 
     hndCtrl = GetDlgItem( hDlg, IDC_FRA_STOP_FREQ );
     Edit_LimitText( hndCtrl, 16 );
-    Edit_SetText( hndCtrl, pSettings->GetStopFreq().c_str() );
+    Edit_SetText( hndCtrl, pSettings->GetStopFreqAsString().c_str() );
 
     hndCtrl = GetDlgItem( hDlg, IDC_FRA_STEPS_PER_DECADE );
     Edit_LimitText( hndCtrl, 3 );
-    Edit_SetText( hndCtrl, pSettings->GetStepsPerDecade().c_str() );
+    Edit_SetText( hndCtrl, pSettings->GetStepsPerDecadeAsString().c_str() );
 
     if (pSettings->GetAutoAxes())
     {
@@ -1479,7 +1506,7 @@ DWORD WINAPI ExecuteFRA(LPVOID lpdwThreadParam)
             stepsPerDecade = pSettings->GetStepsPerDecadeAsInt();
 
             psFRA->SetFraSettings( pSettings->GetSamplingMode(), pSettings->GetAdaptiveStimulusMode(), pSettings->GetTargetResponseAmplitudeAsDouble(),
-                                   pSettings->GetSweepDescending(), pSettings->GetPhaseWrappingThreshold() );
+                                   pSettings->GetSweepDescending(), pSettings->GetPhaseWrappingThresholdAsDouble() );
 
             if (false == psFRA -> SetupChannels( inputChannel, inputChannelCoupling, inputChannelAttenuation, inputDcOffset,
                                                  outputChannel, outputChannelCoupling, outputChannelAttenuation, outputDcOffset,
@@ -1605,7 +1632,7 @@ bool GeneratePlot(bool rescale)
         if (rescale)
         {
             fraPlotter -> SetPlotSettings( pSettings->GetPlotGain(), pSettings->GetPlotPhase(), pSettings->GetPlotGainMargin(), pSettings->GetPlotPhaseMargin(),
-                                           pSettings->GetGainMarginPhaseCrossover(), false );
+                                           pSettings->GetGainMarginPhaseCrossoverAsDouble(), false );
             fraPlotter -> PlotFRA( freqsLogHz, gainsDb, phases, numSteps,
                                    freqAxisScale, gainAxisScale, phaseAxisScale,
                                    freqAxisIntervals, gainAxisIntervals, phaseAxisIntervals,
@@ -1615,7 +1642,7 @@ bool GeneratePlot(bool rescale)
         {
             fraPlotter -> SetPlotData( freqsLogHz, gainsDb, phases, numSteps, false );
             fraPlotter -> SetPlotSettings( pSettings->GetPlotGain(), pSettings->GetPlotPhase(), pSettings->GetPlotGainMargin(), pSettings->GetPlotPhaseMargin(),
-                                           pSettings->GetGainMarginPhaseCrossover(), true );
+                                           pSettings->GetGainMarginPhaseCrossoverAsDouble(), true );
         }
     }
     catch (runtime_error e)
@@ -1819,7 +1846,7 @@ bool ValidateSettings(void)
         if (startFreq < minFreq)
         {
             wstringstream wss;
-            wss << L"Start frequency must be >= " << minFreq;
+            wss << L"Start frequency must be >= " << minFreq << L" Hz";
             LogMessage( wss.str() );
             retVal = false;
         }
@@ -1844,7 +1871,7 @@ bool ValidateSettings(void)
             get<1>(freqScale) = psFRA->GetMinFrequency();
             pSettings->SetFreqScale(freqScale);
             wss << L"Warning: Frequency axis minimum too small; adjusting to: " << get<1>(freqScale);
-            LogMessage( wss.str() );
+            LogMessage( wss.str(), FRA_WARNING );
         }
         if (get<2>(freqScale) < psFRA->GetMinFrequency())
         {
@@ -1852,7 +1879,7 @@ bool ValidateSettings(void)
             get<2>(freqScale) = pScopeSelector->GetSelectedScope()->GetMaxFuncGenFreq();
             pSettings->SetFreqScale(freqScale);
             wss << L"Warning: Frequency axis maximum too small; adjusting to: " << get<2>(freqScale);
-            LogMessage( wss.str() );
+            LogMessage( wss.str(), FRA_WARNING );
         }
     }
 
@@ -2043,24 +2070,11 @@ bool FraStatusCallback( FRA_STATUS_MESSAGE_T& fraStatusMsg )
         hndCtrl = GetDlgItem( hMainWnd, IDC_STATUS_TEXT );
         Edit_SetText( hndCtrl, szStatus );
 
-        hndCtrl = GetDlgItem( hMainWnd, IDC_LOG );
-        int insertPoint = GetWindowTextLength(hndCtrl);
-        Edit_SetSel( hndCtrl, insertPoint, insertPoint );
-        fraStatusMsg.statusText.append(L"\r\n");
-        Edit_ReplaceSel( hndCtrl, fraStatusMsg.statusText.c_str() );
-        Edit_SetSel( hndCtrl, -1, -1 );
-        Edit_ScrollCaret( hndCtrl );
+        LogMessage( fraStatusMsg.statusText );
     }
     else if (fraStatusMsg.status == FRA_STATUS_MESSAGE)
     {
-        HWND hndCtrl;
-        hndCtrl = GetDlgItem( hMainWnd, IDC_LOG );
-        int insertPoint = GetWindowTextLength(hndCtrl);
-        Edit_SetSel( hndCtrl, insertPoint, insertPoint );
-        fraStatusMsg.statusText.append(L"\r\n");
-        Edit_ReplaceSel( hndCtrl, fraStatusMsg.statusText.c_str() );
-        Edit_SetSel( hndCtrl, -1, -1 );
-        Edit_ScrollCaret( hndCtrl );
+        LogMessage( fraStatusMsg.statusText, fraStatusMsg.messageType );
     }
     else if (fraStatusMsg.status == FRA_STATUS_RETRY_LIMIT)
     {
@@ -2091,18 +2105,21 @@ bool FraStatusCallback( FRA_STATUS_MESSAGE_T& fraStatusMsg )
         bScopePowerStateChanged = true;
         if (fraStatusMsg.responseData.proceed == false)
         {
-            (void)MessageBoxEx(hMainWnd, L"DC Power disconnected.  FRA will be stopped because channels other than A and B were selected.", L"Power Changed", MB_OK, 0);
+            LogMessage( L"DC power disconnected; FRA stopped", SCOPE_POWER_EVENTS );
+            (void)MessageBoxEx(hMainWnd, L"DC power disconnected.  FRA will be stopped because channels other than A and B were selected.", L"Power Changed", MB_OK, 0);
         }
         else
         {
             int response;
             if (fraStatusMsg.statusData.powerState)
             {
-                response = MessageBoxEx(hMainWnd, L"DC Power connected.  Continue?", L"Power Changed", MB_OKCANCEL, 0);
+                LogMessage( L"DC power connected", SCOPE_POWER_EVENTS );
+                response = MessageBoxEx(hMainWnd, L"DC power connected.  Continue?", L"Power Changed", MB_OKCANCEL, 0);
             }
             else
             {
-                response = MessageBoxEx(hMainWnd, L"DC Power disconnected.  Continue?", L"Power Changed", MB_OKCANCEL, 0);
+                LogMessage( L"DC power disconnected", SCOPE_POWER_EVENTS );
+                response = MessageBoxEx(hMainWnd, L"DC power disconnected.  Continue?", L"Power Changed", MB_OKCANCEL, 0);
             }
 
             if (IDCANCEL == response)
@@ -2126,23 +2143,28 @@ bool FraStatusCallback( FRA_STATUS_MESSAGE_T& fraStatusMsg )
 // Purpose: Provide a simpler functionality than FraStatusCallback for local needs to simply display 
 //          log messages
 //
-// Parameters: statusMessage: string to log/display
+// Parameters: [in] statusMessage: string to log/display
+//             [in] type: type of message, used to determine whether to log a message based on
+//                         verbosity settings
 //
 // Notes: 
 //
 ///////////////////////////////////////////////////////////////////////////////////////////////////
 
-void LogMessage( const wstring statusMessage )
+void LogMessage( const wstring statusMessage, LOG_MESSAGE_FLAGS_T type )
 {
-    HWND hndCtrl;
-    hndCtrl = GetDlgItem( hMainWnd, IDC_LOG );
-    int insertPoint = GetWindowTextLength(hndCtrl);
-    Edit_SetSel( hndCtrl, insertPoint, insertPoint );
-    wstring msg = statusMessage;
-    msg.append(L"\r\n");
-    Edit_ReplaceSel( hndCtrl, msg.c_str() );
-    Edit_SetSel( hndCtrl, -1, -1 );
-    Edit_ScrollCaret( hndCtrl );
+    if (FRA_ERROR == type || pSettings->GetLogVerbosityFlag(type))
+    {
+        HWND hndCtrl;
+        hndCtrl = GetDlgItem( hMainWnd, IDC_LOG );
+        int insertPoint = GetWindowTextLength(hndCtrl);
+        Edit_SetSel( hndCtrl, insertPoint, insertPoint );
+        wstring msg = statusMessage;
+        msg.append(L"\r\n");
+        Edit_ReplaceSel( hndCtrl, msg.c_str() );
+        Edit_SetSel( hndCtrl, -1, -1 );
+        Edit_ScrollCaret( hndCtrl );
+    }
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -2394,7 +2416,7 @@ void SaveRawData( wstring dataFilePath )
             dataFileOutputStream.close();
 
             wstring message = L"Exported data to file: " + dataFilePath;
-            LogMessage(message);
+            LogMessage(message, SAVE_EXPORT_STATUS);
         }
         else
         {
@@ -2451,7 +2473,7 @@ void SavePlotImageFile( wstring dataFilePath )
                 if (dataFileOutputStream.good())
                 {
                     wstring message = L"Saved plot image to file: " + dataFilePath;
-                    LogMessage(message);
+                    LogMessage(message, SAVE_EXPORT_STATUS);
                 }
                 else
                 {

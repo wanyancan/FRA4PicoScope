@@ -112,17 +112,17 @@ using namespace boost::math;
 
 const RANGE_INFO_T CommonClass(SCOPE_FAMILY_LT)::rangeInfo[] =
 {
-    {0.010, 0.5, 0.0, L"10 mV"},
-    {0.020, 0.4, 2.0, L"20 mV"},
-    {0.050, 0.5, 2.5, L"50 mV"},
-    {0.100, 0.5, 2.0, L"100 mV"},
-    {0.200, 0.4, 2.0, L"200 mV"},
-    {0.500, 0.5, 2.5, L"500 mV"},
-    {1.0, 0.5, 2.0, L"1 V"},
-    {2.0, 0.4, 2.0, L"2 V"},
-    {5.0, 0.5, 2.5, L"5 V"},
-    {10.0, 0.5, 2.0, L"10 V"},
-    {20.0, 0.0, 2.0, L"20 V"}
+    {0.010, 0.5, 0.0, L"± 10 mV"},
+    {0.020, 0.4, 2.0, L"± 20 mV"},
+    {0.050, 0.5, 2.5, L"± 50 mV"},
+    {0.100, 0.5, 2.0, L"± 100 mV"},
+    {0.200, 0.4, 2.0, L"± 200 mV"},
+    {0.500, 0.5, 2.5, L"± 500 mV"},
+    {1.0, 0.5, 2.0, L"± 1 V"},
+    {2.0, 0.4, 2.0, L"± 2 V"},
+    {5.0, 0.5, 2.5, L"± 5 V"},
+    {10.0, 0.5, 2.0, L"± 10 V"},
+    {20.0, 0.0, 2.0, L"± 20 V"}
 };
 
 // It is imperative that this value be greater than (half) the largest buffer in the scope family for
@@ -158,8 +158,10 @@ CommonCtor(SCOPE_FAMILY_LT)( int16_t _handle ) : PicoScope()
 #endif
     minRange = 0;
     maxRange = 0;
+    minTimebase = 0;
+    maxTimebase = 0;
     timebaseNoiseRejectMode = 0;
-    fSampNoiseRejectMode = 0.0;
+    defaultTimebaseNoiseRejectMode = 0;
     signalGeneratorPrecision = 0.0;
     mInputChannel = PS_CHANNEL_INVALID;
     mOutputChannel = PS_CHANNEL_INVALID;
@@ -285,6 +287,26 @@ void CommonMethod(SCOPE_FAMILY_LT,GetAvailableCouplings)( vector<wstring>& coupl
 #endif
 }
 
+uint32_t CommonMethod(SCOPE_FAMILY_LT,GetMinTimebase)( void )
+{
+    return minTimebase;
+}
+
+uint32_t CommonMethod(SCOPE_FAMILY_LT,GetMaxTimebase)( void )
+{
+    return maxTimebase;
+}
+
+void CommonMethod(SCOPE_FAMILY_LT,SetDesiredNoiseRejectModeTimebase)( uint32_t timebase )
+{
+    timebaseNoiseRejectMode = timebase;
+}
+
+uint32_t CommonMethod(SCOPE_FAMILY_LT,GetDefaultNoiseRejectModeTimebase)( void )
+{
+    return defaultTimebaseNoiseRejectMode;
+}
+
 uint32_t CommonMethod(SCOPE_FAMILY_LT,GetNoiseRejectModeTimebase)( void )
 {
     if (model == PS6407)
@@ -294,7 +316,7 @@ uint32_t CommonMethod(SCOPE_FAMILY_LT,GetNoiseRejectModeTimebase)( void )
             ((mInputChannel == PS_CHANNEL_C || mInputChannel == PS_CHANNEL_D) &&
              (mOutputChannel == PS_CHANNEL_C || mOutputChannel == PS_CHANNEL_D)))
         {
-            return 2;
+            return max( 2, timebaseNoiseRejectMode );
         }
     }
 
@@ -303,17 +325,9 @@ uint32_t CommonMethod(SCOPE_FAMILY_LT,GetNoiseRejectModeTimebase)( void )
 
 double CommonMethod(SCOPE_FAMILY_LT,GetNoiseRejectModeSampleRate)( void )
 {
-    if (model == PS6407)
-    {
-        if (((mInputChannel == PS_CHANNEL_A || mInputChannel == PS_CHANNEL_B) &&
-             (mOutputChannel == PS_CHANNEL_A || mOutputChannel == PS_CHANNEL_B)) ||
-            ((mInputChannel == PS_CHANNEL_C || mInputChannel == PS_CHANNEL_D) &&
-             (mOutputChannel == PS_CHANNEL_C || mOutputChannel == PS_CHANNEL_D)))
-        {
-            return 1.25e9;
-        }
-    }
-    return fSampNoiseRejectMode;
+    double sampleRate;
+    GetFrequencyFromTimebase( GetNoiseRejectModeTimebase(), sampleRate );
+    return sampleRate;
 }
 
 double CommonMethod(SCOPE_FAMILY_LT,GetSignalGeneratorPrecision)( void )
@@ -661,7 +675,7 @@ bool CommonMethod(SCOPE_FAMILY_LT, DisableAllDigitalChannels)(void)
         if (PICO_NOT_USED != status) // PICO_NOT_USED is returned when the scope has no digital channels.
         {
             fraStatusText << L"Warning: Failed to disable digital channels 0-7: " << status;
-            LogMessage(fraStatusText.str());
+            LogMessage(fraStatusText.str(), FRA_WARNING);
             retVal = false;
         }
     }
@@ -673,7 +687,7 @@ bool CommonMethod(SCOPE_FAMILY_LT, DisableAllDigitalChannels)(void)
             fraStatusText.clear();
             fraStatusText.str(L"");
             fraStatusText << L"Warning: Failed to disable digital channels 8-15: " << status;
-            LogMessage(fraStatusText.str());
+            LogMessage(fraStatusText.str(), FRA_WARNING);
             retVal = false;
         }
     }

@@ -194,7 +194,11 @@ class PicoScope
         virtual bool Initialized(void) = 0;
         virtual uint8_t GetNumChannels( void ) = 0;
         virtual void GetAvailableCouplings( vector<wstring>& couplingText ) = 0;
+        virtual uint32_t GetMinTimebase( void ) = 0;
+        virtual uint32_t GetMaxTimebase( void ) = 0;
+        virtual void SetDesiredNoiseRejectModeTimebase( uint32_t timebase ) = 0;
         virtual uint32_t GetNoiseRejectModeTimebase( void ) = 0;
+        virtual uint32_t GetDefaultNoiseRejectModeTimebase( void ) = 0;
         virtual double GetNoiseRejectModeSampleRate( void ) = 0;
         virtual double GetSignalGeneratorPrecision( void ) = 0;
         virtual double GetClosestSignalGeneratorFrequency( double requestedFreq ) = 0;
@@ -218,6 +222,7 @@ class PicoScope
         virtual bool DisableChannelTriggers( void ) = 0;
         virtual bool GetMaxSamples( uint32_t* maxSamples ) = 0;
         virtual bool GetTimebase( double desiredFrequency, double* actualFrequency, uint32_t* timebase ) = 0;
+        virtual bool GetFrequencyFromTimebase( uint32_t timebase, double &frequency ) = 0;
         virtual bool RunBlock( int32_t numSamples, uint32_t timebase, int32_t *timeIndisposedMs, psBlockReady lpReady, void *pParameter ) = 0;
         virtual void SetChannelDesignations( PS_CHANNEL inputChannel, PS_CHANNEL outputChannel ) = 0;
         virtual bool GetData( uint32_t numSamples, uint32_t startIndex, vector<int16_t>** inputBuffer, vector<int16_t>** outputBuffer ) = 0;
