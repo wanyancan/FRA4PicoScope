@@ -781,6 +781,7 @@ BOOL CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
                 }
                 case IDM_SETTINGS:
                 {
+                    StoreSettings();
                     DWORD dwDlgResp;
                     dwDlgResp = DialogBoxParam(hInst, MAKEINTRESOURCE(IDD_SETTINGS), hWnd, SettingsDialogHandler, (LPARAM)pScopeSelector->GetSelectedScope());
                     if (LOWORD(dwDlgResp) == IDOK)

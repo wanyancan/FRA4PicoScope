@@ -211,7 +211,6 @@ bool ApplicationSettings::InitializeApplicationSettingsFile( void )
                                                                    SCOPE_POWER_EVENTS | SAVE_EXPORT_STATUS | FRA_WARNING );
         AppSettingsPropTree.put( L"diagnostics.timeDomainPlots", false );
 
-        AppSettingsPropTree.put( L"expert.purityLowerLimit", L"0.80" ); // 80%
         AppSettingsPropTree.put( L"expert.extraSettlingTimeMs", L"0" );
         AppSettingsPropTree.put( L"expert.autorangeTriesPerStep", L"10" );
         AppSettingsPropTree.put( L"expert.autorangeTolerance", L"10.0" );

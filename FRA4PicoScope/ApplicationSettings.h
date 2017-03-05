@@ -311,7 +311,7 @@ class ApplicationSettings
         {
             return AppSettingsPropTree.get<wstring>( L"plot.phaseWrappingThreshold" );
         }
-        inline void SetPhaseWrappingThreshold( double phaseWrappingThreshold )
+        inline void SetPhaseWrappingThreshold( const wstring phaseWrappingThreshold )
         {
             AppSettingsPropTree.put( L"plot.phaseWrappingThreshold", phaseWrappingThreshold );
         }
@@ -324,7 +324,7 @@ class ApplicationSettings
         {
             return AppSettingsPropTree.get<wstring>( L"plot.gainMarginPhaseCrossover" );
         }
-        inline void SetGainMarginPhaseCrossover( double gainMarginPhaseCrossover )
+        inline void SetGainMarginPhaseCrossover( wstring gainMarginPhaseCrossover )
         {
             AppSettingsPropTree.put( L"plot.gainMarginPhaseCrossover", gainMarginPhaseCrossover );
         }
@@ -365,7 +365,7 @@ class ApplicationSettings
         {
             return AppSettingsPropTree.get<wstring>( L"expert.autorangeTolerance" );
         }
-        inline void SetAutorangeTolerance( double autorangeTolerance )
+        inline void SetAutorangeTolerance( wstring autorangeTolerance )
         {
             AppSettingsPropTree.put( L"expert.autorangeTolerance", autorangeTolerance );
         }
@@ -400,7 +400,7 @@ class ApplicationSettings
         {
             return AppSettingsPropTree.get<wstring>( L"expert.targetResponseAmplitudeTolerance" );
         }
-        inline void SetTargetResponseAmplitudeTolerance( double targetResponseAmplitudeTolerance )
+        inline void SetTargetResponseAmplitudeTolerance( wstring targetResponseAmplitudeTolerance )
         {
             AppSettingsPropTree.put( L"expert.targetResponseAmplitudeTolerance", targetResponseAmplitudeTolerance );
         }
@@ -413,7 +413,7 @@ class ApplicationSettings
         {
             return AppSettingsPropTree.get<wstring>( L"expert.minCyclesCaptured" );
         }
-        inline void SetMinCyclesCaptured( double minCyclesCaptured )
+        inline void SetMinCyclesCaptured( uint16_t minCyclesCaptured )
         {
             AppSettingsPropTree.put( L"expert.minCyclesCaptured", minCyclesCaptured );
         }
@@ -426,7 +426,7 @@ class ApplicationSettings
         {
             return AppSettingsPropTree.get<wstring>( L"expert.maxCyclesCaptured" );
         }
-        inline void SetMaxCyclesCaptured( double maxCyclesCaptured )
+        inline void SetMaxCyclesCaptured( uint16_t maxCyclesCaptured )
         {
             AppSettingsPropTree.put( L"expert.maxCyclesCaptured", maxCyclesCaptured );
         }
@@ -439,9 +439,9 @@ class ApplicationSettings
         {
             return AppSettingsPropTree.get<wstring>( L"expert.lowNoiseOversampling" );
         }
-        inline void SetLowNoiseOversampling( double minCyclesCaptured )
+        inline void SetLowNoiseOversampling( uint16_t lowNoiseOversample )
         {
-            AppSettingsPropTree.put( L"expert.lowNoiseOversampling", minCyclesCaptured );
+            AppSettingsPropTree.put( L"expert.lowNoiseOversampling", lowNoiseOversample );
         }
 
         inline double GetNoiseRejectBandwidthAsDouble(void)
@@ -452,7 +452,7 @@ class ApplicationSettings
         {
             return AppSettingsPropTree.get<wstring>( L"expert.noiseRejectBandwidth" );
         }
-        inline void SetNoiseRejectBandwidth( double noiseRejectBandwidth )
+        inline void SetNoiseRejectBandwidth( wstring noiseRejectBandwidth )
         {
             AppSettingsPropTree.put( L"expert.noiseRejectBandwidth", noiseRejectBandwidth );
         }
@@ -475,7 +475,7 @@ class ApplicationSettings
         {
             return AppSettingsPropTree.get<wstring>( L"qualityLimits.amplitudeLowerLimit" );
         }
-        inline void SetAmplitudeLowerLimit( double amplitudeLowerLimit )
+        inline void SetAmplitudeLowerLimit( wstring amplitudeLowerLimit )
         {
             AppSettingsPropTree.put( L"qualityLimits.amplitudeLowerLimit", amplitudeLowerLimit );
         }
@@ -488,7 +488,7 @@ class ApplicationSettings
         {
             return AppSettingsPropTree.get<wstring>( L"qualityLimits.purityLowerLimit" );
         }
-        inline void SetPurityLowerLimit( double purityLowerLimit )
+        inline void SetPurityLowerLimit( wstring purityLowerLimit )
         {
             AppSettingsPropTree.put( L"qualityLimits.purityLowerLimit", purityLowerLimit );
         }

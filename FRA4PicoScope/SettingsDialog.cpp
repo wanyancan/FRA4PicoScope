@@ -138,21 +138,28 @@ bool ValidateAndStoreSettings( HWND hDlg )
     bool adaptiveStimulusMode = false;
     uint8_t adaptiveStimulusTriesPerStep = 0;
     double adaptiveStimulusTargetTolerance = 0.0;
+    wstring adaptiveStimulusTargetToleranceStr;
     bool qualityLimitsEnable = false;
     double amplitudeLowerLimit = 0.0;
+    wstring amplitudeLowerLimitStr;
     double purityLowerLimit = 0.0;
+    wstring purityLowerLimitStr;
     bool excludeDcFromNoise = false;
     int32_t inputStartRange = 0;
     int32_t outputStartRange = 0;
     uint8_t autorangeTriesPerStep = 0;
     double autorangeTolerance = 0.0;
+    wstring autorangeToleranceStr;
     uint16_t minCyclesCaptured = 0;
     uint16_t maxCyclesCaptured = 0;
     uint16_t lowNoiseOversampling = 0;
     double noiseRejectModeBandwidth = 0.0;
+    wstring noiseRejectModeBandwidthStr;
     uint32_t noiseRejectModeTimebase = 0;
     double phaseWrappingThreshold = 0.0;
+    wstring phaseWrappingThresholdStr;
     double gainMarginPhaseCrossover = 0.0;
+    wstring gainMarginPhaseCrossoverStr;
     bool timeDomainDiagnosticPlots = false;
     uint16_t logVerbosityFlags = 0;
 
@@ -199,7 +206,8 @@ bool ValidateAndStoreSettings( HWND hDlg )
 
     hndCtrl = GetDlgItem( hDlg, IDC_EDIT_ADAPTIVE_STIMULUS_RESPONSE_TARGET_TOLERANCE );
     Edit_GetText( hndCtrl, numberStr, sizeof(numberStr)/sizeof(WCHAR) );
-    if (!WStringToDouble( numberStr, adaptiveStimulusTargetTolerance ))
+    adaptiveStimulusTargetToleranceStr = numberStr;
+    if (!WStringToDouble( adaptiveStimulusTargetToleranceStr, adaptiveStimulusTargetTolerance ))
     {
         errorConditions[numErrors++] = L"Adaptive stimulus target tolerance is not a valid number";
         retVal = false;
@@ -247,7 +255,8 @@ bool ValidateAndStoreSettings( HWND hDlg )
 
     hndCtrl = GetDlgItem( hDlg, IDC_EDIT_AUTORANGE_TOLERANCE );
     Edit_GetText( hndCtrl, numberStr, sizeof(numberStr)/sizeof(WCHAR) );
-    if (!WStringToDouble( numberStr, autorangeTolerance ))
+    autorangeToleranceStr = numberStr;
+    if (!WStringToDouble( autorangeToleranceStr, autorangeTolerance ))
     {
         errorConditions[numErrors++] = L"Autorange tolerance is not a valid number";
         retVal = false;
@@ -308,7 +317,8 @@ bool ValidateAndStoreSettings( HWND hDlg )
 
     hndCtrl = GetDlgItem( hDlg, IDC_EDIT_FRA_NOISE_REJECT_BW );
     Edit_GetText( hndCtrl, numberStr, sizeof(numberStr)/sizeof(WCHAR) );
-    if (!WStringToDouble( numberStr, noiseRejectModeBandwidth ))
+    noiseRejectModeBandwidthStr = numberStr;
+    if (!WStringToDouble( noiseRejectModeBandwidthStr, noiseRejectModeBandwidth ))
     {
         errorConditions[numErrors++] = L"Noise reject bandwidth is not a valid number";
         retVal = false;
@@ -341,7 +351,8 @@ bool ValidateAndStoreSettings( HWND hDlg )
 
     hndCtrl = GetDlgItem( hDlg, IDC_EDIT_AMPLITUDE_LOWER_QUALITY_LIMIT );
     Edit_GetText( hndCtrl, numberStr, sizeof(numberStr)/sizeof(WCHAR) );
-    if (!WStringToDouble( numberStr, amplitudeLowerLimit ))
+    amplitudeLowerLimitStr = numberStr;
+    if (!WStringToDouble( amplitudeLowerLimitStr, amplitudeLowerLimit ))
     {
         errorConditions[numErrors++] = L"Amplitude lower quality limit is not a valid number";
         retVal = false;
@@ -354,7 +365,8 @@ bool ValidateAndStoreSettings( HWND hDlg )
 
     hndCtrl = GetDlgItem( hDlg, IDC_EDIT_PURITY_LOWER_QUALITY_LIMIT );
     Edit_GetText( hndCtrl, numberStr, sizeof(numberStr)/sizeof(WCHAR) );
-    if (!WStringToDouble( numberStr, purityLowerLimit ))
+    purityLowerLimitStr = numberStr;
+    if (!WStringToDouble( purityLowerLimitStr, purityLowerLimit ))
     {
         errorConditions[numErrors++] = L"Purity lower quality limit is not a valid number";
         retVal = false;
@@ -371,7 +383,8 @@ bool ValidateAndStoreSettings( HWND hDlg )
     // FRA Bode Plot Options
     hndCtrl = GetDlgItem( hDlg, IDC_EDIT_PHASE_WRAPPING_THRESHOLD );
     Edit_GetText( hndCtrl, numberStr, sizeof(numberStr)/sizeof(WCHAR) );
-    if (!WStringToDouble( numberStr, phaseWrappingThreshold ))
+    phaseWrappingThresholdStr = numberStr;
+    if (!WStringToDouble( phaseWrappingThresholdStr, phaseWrappingThreshold ))
     {
         errorConditions[numErrors++] = L"Phase wrapping threshold is not a valid number";
         retVal = false;
@@ -379,7 +392,8 @@ bool ValidateAndStoreSettings( HWND hDlg )
 
     hndCtrl = GetDlgItem( hDlg, IDC_EDIT_GAIN_MARGIN_PHASE_CROSSOVER );
     Edit_GetText( hndCtrl, numberStr, sizeof(numberStr)/sizeof(WCHAR) );
-    if (!WStringToDouble( numberStr, gainMarginPhaseCrossover ))
+    gainMarginPhaseCrossoverStr = numberStr;
+    if (!WStringToDouble( gainMarginPhaseCrossoverStr, gainMarginPhaseCrossover ))
     {
         errorConditions[numErrors++] = L"Gain margin phase crossover is not a valid number";
         retVal = false;
@@ -423,22 +437,22 @@ bool ValidateAndStoreSettings( HWND hDlg )
         pSettings->SetExtraSettlingTimeMs(extraSettlingTime);
         pSettings->SetAdaptiveStimulusMode(adaptiveStimulusMode);
         pSettings->SetAdaptiveStimulusTriesPerStep(adaptiveStimulusTriesPerStep);
-        pSettings->SetTargetResponseAmplitudeTolerance(adaptiveStimulusTargetTolerance);
+        pSettings->SetTargetResponseAmplitudeTolerance(adaptiveStimulusTargetToleranceStr);
         pSettings->SetInputStartingRange(inputStartRange);
         pSettings->SetOutputStartingRange(outputStartRange);
         pSettings->SetAutorangeTriesPerStep(autorangeTriesPerStep);
-        pSettings->SetAutorangeTolerance(autorangeTolerance);
+        pSettings->SetAutorangeTolerance(autorangeToleranceStr);
         pSettings->SetMinCyclesCaptured(minCyclesCaptured);
         pSettings->SetMaxCyclesCaptured(maxCyclesCaptured);
         pSettings->SetLowNoiseOversampling(lowNoiseOversampling);
-        pSettings->SetNoiseRejectBandwidth(noiseRejectModeBandwidth);
+        pSettings->SetNoiseRejectBandwidth(noiseRejectModeBandwidthStr);
         pSettings->SetNoiseRejectModeTimebase(noiseRejectModeTimebase);
         pSettings->SetQualityLimitsState(qualityLimitsEnable);
-        pSettings->SetAmplitudeLowerLimit(amplitudeLowerLimit);
-        pSettings->SetPurityLowerLimit(purityLowerLimit);
+        pSettings->SetAmplitudeLowerLimit(amplitudeLowerLimitStr);
+        pSettings->SetPurityLowerLimit(purityLowerLimitStr);
         pSettings->SetDcExcludedFromNoiseState(excludeDcFromNoise);
-        pSettings->SetPhaseWrappingThreshold(phaseWrappingThreshold);
-        pSettings->SetGainMarginPhaseCrossover(gainMarginPhaseCrossover);
+        pSettings->SetPhaseWrappingThreshold(phaseWrappingThresholdStr);
+        pSettings->SetGainMarginPhaseCrossover(gainMarginPhaseCrossoverStr);
         pSettings->SetTimeDomainPlotsEnabled(timeDomainDiagnosticPlots);
         pSettings->SetLogVerbosityFlags(logVerbosityFlags);
     }
