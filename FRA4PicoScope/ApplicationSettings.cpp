@@ -218,7 +218,6 @@ bool ApplicationSettings::InitializeApplicationSettingsFile( void )
         AppSettingsPropTree.put( L"adaptiveStimulusTuning.adaptiveStimulusTriesPerStep", L"10" );
         AppSettingsPropTree.put( L"adaptiveStimulusTuning.targetResponseAmplitudeTolerance", L"10.0" ); // 10%
         AppSettingsPropTree.put( L"sampleParam.minCyclesCaptured", L"16" ); // Bin width 6.25% of stimulus frequency
-        AppSettingsPropTree.put( L"sampleParam.maxCyclesCaptured", L"100" ); // Bin width 1% of stimulus frequency
         AppSettingsPropTree.put( L"sampleParam.noiseRejectBandwidth", L"100.0" ); // 100 Hz
         AppSettingsPropTree.put( L"sampleParam.lowNoiseOversampling", L"64" ); // 64x
 

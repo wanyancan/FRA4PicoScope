@@ -122,7 +122,7 @@ PicoScopeFRA::PicoScopeFRA(FRA_STATUS_CALLBACK statusCB)
     mOutputStartRange = 0;
     mExtraSettlingTimeMs = 0;
     mMinCyclesCaptured = 0;
-    mMaxCyclesCaptured = 0;
+    mMaxDftBw = 0.0;
     mLowNoiseOversampling = 0;
     mSweepDescending = false;
     mAdaptiveStimulus = false;
@@ -237,8 +237,8 @@ void PicoScopeFRA::SetFraSettings( SamplingMode_T samplingMode, bool adaptiveSti
 //             [in] adaptiveStimulusTriesPerStep - Number of adaptive stimulus tries allowed
 //             [in] targetResponseAmplitudeTolerance - Percent tolerance above target allowed for
 //                                                     the smallest stimulus (input or output)
-//             [in] minCyclesCaptured - Minimum cycles captured for stmulus signal
-//             [in] maxCyclesCaptured - Maximum cycles captured for stmulus signal
+//             [in] minCyclesCaptured - Minimum cycles captured for stimulus signal
+//             [in] maxDftBw - Maximum bandwidth for DFT in noise reject mode
 //             [in] lowNoiseOversampling - Amount to oversample the stimulus frequency in low
 //                                         noise mode
 //
@@ -249,7 +249,7 @@ void PicoScopeFRA::SetFraSettings( SamplingMode_T samplingMode, bool adaptiveSti
 void PicoScopeFRA::SetFraTuning( double purityLowerLimit, uint16_t extraSettlingTimeMs, uint8_t autorangeTriesPerStep,
                                  double autorangeTolerance, double smallSignalResolutionTolerance, double maxAutorangeAmplitude,
                                  int32_t inputStartRange, int32_t outputStartRange, uint8_t adaptiveStimulusTriesPerStep,
-                                 double targetResponseAmplitudeTolerance, uint16_t minCyclesCaptured, uint16_t maxCyclesCaptured,
+                                 double targetResponseAmplitudeTolerance, uint16_t minCyclesCaptured, double maxDftBw,
                                  uint16_t lowNoiseOversampling )
 {
     mPurityLowerLimit = purityLowerLimit;
@@ -263,7 +263,7 @@ void PicoScopeFRA::SetFraTuning( double purityLowerLimit, uint16_t extraSettling
     maxAdaptiveStimulusRetries = adaptiveStimulusTriesPerStep;
     mTargetResponseAmplitudeTolerance = targetResponseAmplitudeTolerance;
     mMinCyclesCaptured = minCyclesCaptured;
-    mMaxCyclesCaptured = maxCyclesCaptured;
+    mMaxDftBw = maxDftBw;
     mLowNoiseOversampling = lowNoiseOversampling;
 }
 
@@ -1504,15 +1504,30 @@ bool PicoScopeFRA::StartCapture( double measFreqHz )
         double samplesPerCycle = actualSampFreqHz / measFreqHz;
         // Deferring the integer truncation till this point ensures
         // the least inaccuracy in hitting the integer periods criteria
-        numSamples = (int32_t)(samplesPerCycle * (double)numCycles) + 1;
+        numSamples = (uint32_t)(samplesPerCycle * (double)numCycles) + 1;
     }
-    else
+    else // NOISE_REJECT
     {
-        numCycles = min( mMaxCyclesCaptured, (uint32_t)((measFreqHz * (double)maxScopeSamplesPerChannel) / ps->GetNoiseRejectModeSampleRate()) );
-        numSamples = (int32_t)(((double)numCycles * ps->GetNoiseRejectModeSampleRate()) / measFreqHz) + 1;
+        uint32_t minBwSamples;
+        double actualDftBw;
 
         timebase = ps->GetNoiseRejectModeTimebase();
         actualSampFreqHz = ps->GetNoiseRejectModeSampleRate();
+
+        // Calculate minimum number of samples required to stay <= maximum bandwidth
+        minBwSamples = min((uint32_t)ceil(actualSampFreqHz / mMaxDftBw), maxScopeSamplesPerChannel);
+        // Calculate number of whole stimulus cycles required to have at least minBwSamples
+        numCycles = max(mMinCyclesCaptured, (uint32_t)ceil((double)minBwSamples * measFreqHz / actualSampFreqHz));
+        // Calculate actal number of samples to be taken
+        numSamples = min((uint32_t)(((double)numCycles * ps->GetNoiseRejectModeSampleRate()) / measFreqHz) + 1, maxScopeSamplesPerChannel);
+        // Calculate actual DFT bandwidth
+        actualDftBw = actualSampFreqHz / (double)numSamples;
+
+        if (actualDftBw > mMaxDftBw)
+        {
+            swprintf( fraStatusText, 128, L"WARNING: Actual DFT bandwidth (%.3lg Hz) greater than requested (%.3lg Hz)", actualDftBw, mMaxDftBw );
+            UpdateStatus( fraStatusMsg, FRA_STATUS_MESSAGE, fraStatusText, FRA_WARNING );
+        }
     }
 
     if (mDiagnosticsOn)

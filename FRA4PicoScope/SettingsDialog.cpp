@@ -151,7 +151,6 @@ bool ValidateAndStoreSettings( HWND hDlg )
     double autorangeTolerance = 0.0;
     wstring autorangeToleranceStr;
     uint16_t minCyclesCaptured = 0;
-    uint16_t maxCyclesCaptured = 0;
     uint16_t lowNoiseOversampling = 0;
     double noiseRejectModeBandwidth = 0.0;
     wstring noiseRejectModeBandwidthStr;
@@ -162,10 +161,7 @@ bool ValidateAndStoreSettings( HWND hDlg )
     wstring gainMarginPhaseCrossoverStr;
     bool timeDomainDiagnosticPlots = false;
     uint16_t logVerbosityFlags = 0;
-
     int curSel;
-    bool minCyclesValid = false;
-    bool maxCyclesValid = false;
 
     hndCtrl = GetDlgItem( hDlg, IDC_RADIO_NOISE_REJECT_MODE );
     if (Button_GetCheck( hndCtrl ) ==  BST_CHECKED)
@@ -280,27 +276,6 @@ bool ValidateAndStoreSettings( HWND hDlg )
         errorConditions[numErrors++] = L"Minimum cycles captured must be >= 1";
         retVal = false;
     }
-    else
-    {
-        minCyclesValid = true;
-    }
-
-    hndCtrl = GetDlgItem( hDlg, IDC_EDIT_FRA_MAXIMUM_CYCLES_CAPTURED );
-    Edit_GetText( hndCtrl, numberStr, sizeof(numberStr)/sizeof(WCHAR) );
-    if (!WStringToUint16( numberStr, maxCyclesCaptured ))
-    {
-        errorConditions[numErrors++] = L"Maximum cycles captured is not a valid number";
-        retVal = false;
-    }
-    else if (maxCyclesCaptured < 1)
-    {
-        errorConditions[numErrors++] = L"Maximum cycles captured must be >= 1";
-        retVal = false;
-    }
-    else
-    {
-        maxCyclesValid = true;
-    }
 
     hndCtrl = GetDlgItem( hDlg, IDC_EDIT_FRA_LOW_NOISE_OVERSAMPLING );
     Edit_GetText( hndCtrl, numberStr, sizeof(numberStr)/sizeof(WCHAR) );
@@ -399,12 +374,6 @@ bool ValidateAndStoreSettings( HWND hDlg )
         retVal = false;
     }
 
-    if (minCyclesValid && maxCyclesValid && minCyclesCaptured > maxCyclesCaptured)
-    {
-        errorConditions[numErrors++] = L"Minimum cycles captured must be <= maximum cycles captured";
-        retVal = false;
-    }
-
     // Diagnostic settings
     hndCtrl = GetDlgItem( hDlg, IDC_TIME_DOMAIN_DIAGNOSTIC_PLOTS_ENABLE );
     timeDomainDiagnosticPlots = (Button_GetCheck(hndCtrl) == BST_CHECKED);
@@ -443,7 +412,6 @@ bool ValidateAndStoreSettings( HWND hDlg )
         pSettings->SetAutorangeTriesPerStep(autorangeTriesPerStep);
         pSettings->SetAutorangeTolerance(autorangeToleranceStr);
         pSettings->SetMinCyclesCaptured(minCyclesCaptured);
-        pSettings->SetMaxCyclesCaptured(maxCyclesCaptured);
         pSettings->SetLowNoiseOversampling(lowNoiseOversampling);
         pSettings->SetNoiseRejectBandwidth(noiseRejectModeBandwidthStr);
         pSettings->SetNoiseRejectModeTimebase(noiseRejectModeTimebase);
@@ -594,9 +562,6 @@ INT_PTR CALLBACK SettingsDialogHandler(HWND hDlg, UINT message, WPARAM wParam, L
             hndCtrl = GetDlgItem( hDlg, IDC_EDIT_FRA_MINIMUM_CYCLES_CAPTURED );
             Edit_SetText( hndCtrl, pSettings->GetMinCyclesCapturedAsString().c_str() );
 
-            hndCtrl = GetDlgItem( hDlg, IDC_EDIT_FRA_MAXIMUM_CYCLES_CAPTURED );
-            Edit_SetText( hndCtrl, pSettings->GetMaxCyclesCapturedAsString().c_str() );
-
             hndCtrl = GetDlgItem( hDlg, IDC_EDIT_FRA_LOW_NOISE_OVERSAMPLING );
             Edit_SetText( hndCtrl, pSettings->GetLowNoiseOversamplingAsString().c_str() );
 
@@ -625,6 +590,8 @@ INT_PTR CALLBACK SettingsDialogHandler(HWND hDlg, UINT message, WPARAM wParam, L
                 hndCtrl = GetDlgItem( hDlg, IDC_UPDOWN_NOISE_REJECT_TIMEBASE );
                 EnableWindow( hndCtrl, FALSE );
                 hndCtrl = GetDlgItem( hDlg, IDC_STATIC_NOISE_REJECT_SAMPLING_RATE );
+                EnableWindow( hndCtrl, FALSE );
+                hndCtrl = GetDlgItem( hDlg, IDC_STATIC_NOISE_REJECT_MINIMUM_STIMULUS_FREQUENCY );
                 EnableWindow( hndCtrl, FALSE );
             }
 

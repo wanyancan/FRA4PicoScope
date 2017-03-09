@@ -69,7 +69,7 @@ static const int32_t outputStartRangeDefault = 0;
 static const uint8_t adaptiveStimulusTriesPerStepDefault = 10;
 static const double targetResponseAmplitudeToleranceDefault = 0.1; // 10%
 static const uint16_t minCyclesCapturedDefault = 16;
-static const uint16_t maxCyclesCapturedDefault = 100;
+static const double maxDftBwDefault = 100.0;
 static const uint16_t lowNoiseOversamplingDefault = 64;
 
 // Parameters used to communicate from API to execution thread
@@ -120,7 +120,7 @@ bool __stdcall Initialize( void )
 
             pFRA->SetFraTuning( purityLowerLimitDefault, extraSettlingTimeMsDefault, autorangeTriesPerStepDefault, autorangeToleranceDefault,
                                 smallSignalResolutionToleranceDefault, maxAutorangeAmplitudeDefault, inputStartRangeDefault, inputStartRangeDefault,
-                                adaptiveStimulusTriesPerStepDefault, targetResponseAmplitudeToleranceDefault, minCyclesCapturedDefault, maxCyclesCapturedDefault,
+                                adaptiveStimulusTriesPerStepDefault, targetResponseAmplitudeToleranceDefault, minCyclesCapturedDefault, maxDftBwDefault,
                                 lowNoiseOversamplingDefault );
 
             pFRA->DisableDiagnostics();
@@ -438,8 +438,8 @@ void __stdcall SetFraSettings( SamplingMode_T samplingMode, bool adaptiveStimulu
 //             [in] adaptiveStimulusTriesPerStep - Number of adaptive stimulus tries allowed
 //             [in] targetResponseAmplitudeTolerance - Percent tolerance above target allowed for
 //                                                     the smallest stimulus (input or output)
-//             [in] minCyclesCaptured - Minimum cycles captured for stmulus signal
-//             [in] maxCyclesCaptured - Maximum cycles captured for stmulus signal
+//             [in] minCyclesCaptured - Minimum cycles captured for stimulus signal
+//             [in] maxDftBw - Maximum bandwidth for DFT in noise reject mode
 //             [in] lowNoiseOversampling - Amount to oversample the stimulus frequency in low
 //                                         noise mode
 //
@@ -450,14 +450,14 @@ void __stdcall SetFraSettings( SamplingMode_T samplingMode, bool adaptiveStimulu
 void __stdcall SetFraTuning( double purityLowerLimit, uint16_t extraSettlingTimeMs, uint8_t autorangeTriesPerStep,
                              double autorangeTolerance, double smallSignalResolutionTolerance, double maxAutorangeAmplitude,
                              int32_t inputStartRange, int32_t outputStartRange, uint8_t adaptiveStimulusTriesPerStep,
-                             double targetResponseAmplitudeTolerance, uint16_t minCyclesCaptured, uint16_t maxCyclesCaptured,
+                             double targetResponseAmplitudeTolerance, uint16_t minCyclesCaptured, double maxDftBw,
                              uint16_t lowNoiseOversampling )
 {
     if (pFRA)
     {
         pFRA->SetFraTuning( purityLowerLimit, extraSettlingTimeMs, autorangeTriesPerStep, autorangeTolerance,
                             smallSignalResolutionTolerance, maxAutorangeAmplitude, inputStartRange, outputStartRange,
-                            adaptiveStimulusTriesPerStep, targetResponseAmplitudeTolerance, minCyclesCaptured, maxCyclesCaptured,
+                            adaptiveStimulusTriesPerStep, targetResponseAmplitudeTolerance, minCyclesCaptured, maxDftBw,
                             lowNoiseOversampling );
     }
 }
