@@ -767,7 +767,14 @@ INT_PTR CALLBACK SettingsDialogHandler(HWND hDlg, UINT message, WPARAM wParam, L
                         if (wcslen(newMinCyclesText))
                         {
                             currentMinCycles = _wtol(newMinCyclesText);
-                            currentMinCyclesValid = true;
+                            if (currentMinCycles >= 1)
+                            {
+                                currentMinCyclesValid = true;
+                            }
+                            else
+                            {
+                                currentMinCyclesValid = false;
+                            }
                         }
                         else
                         {
