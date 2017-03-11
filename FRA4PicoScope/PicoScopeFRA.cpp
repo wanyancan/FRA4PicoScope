@@ -1897,9 +1897,9 @@ void PicoScopeFRA::UnwrapPhases(void)
 // interested in a single frequency per measurement, and thus Goertzel is faster than FFT.  Also, an FFT requires the
 // full sample buffer to be stored.  Without an additional decimation, storing the whole sample buffer would be highly
 // impractical for some PicoScopes (up to 4GB of RAM needed).  This implementation is a generalized Goertzel algorithm
-// which allows for a non-integer bin (k ∈ R), and thus is really a single point DTFT.  An important advantage of the
-// generalized Goertzel is that we don't have to adjust the number of samples or sampling rate to maintain accuracy of
-// the frequency selection.  These functions also compute other useful parameters such as amplitude and purity, which
+// which allows for a non-integer bin (k ∈ R) [1], and thus is really a single point DTFT.  An important advantage of
+// the generalized Goertzel is that we don't have to adjust the number of samples or sampling rate to maintain accuracy
+// of the frequency selection.  These functions also compute other useful parameters such as amplitude and purity, which
 // can be used for data quality decisions.
 //
 // Parameters: 
@@ -1917,21 +1917,16 @@ void PicoScopeFRA::UnwrapPhases(void)
 //             [output] [in/out]putAmplitude - The measured amplitude of the signal
 //             [output] [in/out]putPurity - The purity of the signal (signal power over total power)
 //
-// Notes: 
-//
-// - The following reference derives the (k ∈ R) generalized Goertzel:
-//          doi:10.1186/1687-6180-2012-56
-//          Sysel and Rajmic:
-//          Goertzel algorithm generalized to non-integer multiples of fundamental frequency.
-//          EURASIP Journal on Advances in Signal Processing 2012 2012:56.
+// Notes:
 //
 // - The standard recurrence used by the original Goertzel is known to have numerical accuracy
-//   issues - i.e. O(N^2) error growth for theta near 0 or PI.  This can start to be a real problem for scopes
-//   with very large sample buffers (e.g. currently up to 1GS on the 6000 series).  The Reinsch modifications
-//   are a well known technique to deal with error at these extremes.  As theta approaches PI/2, the Reinsch
-//   recurrence numerical accuracy becomes worse than Goertzel (Oliver 77).  To achieve the least error, the
-//   technique of Oliver will be used to divide the domain into three regions, applying the best recurrence
-//   to each: (0.0 - 0.305*PI): REINSCH_0; (0.305*PI - 0.705*PI): GOERTZEL; (0.705*PI - PI): REINSCH_PI
+//   issues [2] - i.e. O(N^2) error growth for theta near 0 or PI.  This can start to be a real problem for
+//   scopes with very large sample buffers (e.g. currently up to 1GS on the 6000 series).  The Reinsch
+//   modifications are a well known technique to deal with error at these extremes [3].  As theta approaches
+//   PI/2, the Reinsch recurrence numerical accuracy becomes worse than Goertzel [4].  To achieve the least
+//   error, the technique of Oliver [4] will be used to divide the domain into three regions, applying the
+//   best recurrence to each:
+//  (0.0 - 0.305*PI): REINSCH_0; (0.305*PI - 0.705*PI): GOERTZEL; (0.705*PI - PI): REINSCH_PI
 //
 // - The d.c. energy calculation can be seen as an execution of the Goertzel with Magic Circle Oscillator.
 //   When the tuning frequency is 0Hz, the tuning parameter is 0.  Thus the energy calculation is simplified.
@@ -1946,9 +1941,26 @@ void PicoScopeFRA::UnwrapPhases(void)
 //   not apply the (k ∈ R) phase correction factor.  So, this implementation does not produce a "mathematically
 //   correct" phase, but that's OK for our application.
 //
-// - The benefit of processing the input and output signals together is that we can take advantage of SIMD 
+// - The benefit of processing the input and output signals together is that we can take advantage of SIMD
 //   parallelism (SSE, AVX, etc);  However, since the MSVC auto-vectorizer seems unable to vectorize the core
 //   loop, we're going to code it with intrinsics.
+//
+//   [1] Goertzel algorithm generalized to non-integer multiples of fundamental frequency
+//       Petr Sysel and Pavel Rajmic
+//       EURASIP Journal on Advances in Signal Processing 2012 2012:56.
+//       doi:10.1186/1687-6180-2012-56
+//
+//   [2] An error analysis of Goertzel's (Watt's) method for computing Fourier coefficients
+//       W.M. Gentleman
+//       Comput. J., Vol. 12, 1969, pp. 160-165.
+//       doi:10.1093/comjnl/12.2.160
+//
+//   [3] Stoer, J.; Bulirsch, R. (2002), "Introduction to Numerical Analysis", Springer
+//
+//   [4] On the sensitivity to rounding errors of Chebyshev series approximations
+//       J. Oliver
+//       Journal of Computational and Applied Mathematics
+//       Volume 3, Issue 2, June 1977, Pages 89-98
 //
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
@@ -2006,7 +2018,7 @@ void PicoScopeFRA::InitGoertzel( uint32_t totalSamples, double fSamp, double fDe
         dftRecurrence = REINSCH_PI;
         halfTheta = M_PI * (fDetect / fSamp);
         Kappa = 4.0 * pow( cos( halfTheta ), 2.0 );
-        swprintf( fraStatusText, 128, L"Status: Computing DFT using Reinsch(pi)" );
+        swprintf( fraStatusText, 128, L"Status: Computing DFT using Reinsch(PI)" );
     }
 
     UpdateStatus( fraStatusMsg, FRA_STATUS_MESSAGE, fraStatusText, DFT_DIAGNOSTICS );
