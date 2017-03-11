@@ -2005,20 +2005,20 @@ void PicoScopeFRA::InitGoertzel( uint32_t totalSamples, double fSamp, double fDe
         dftRecurrence = REINSCH_0;
         halfTheta = M_PI * (fDetect / fSamp);
         Kappa = -4.0 * pow( sin( halfTheta ), 2.0 );
-        swprintf( fraStatusText, 128, L"Status: Computing DFT using Reinsch(0)" );
+        swprintf( fraStatusText, 128, L"Status: Computing DFT using Reinsch(0); actual BW: %.3lg Hz", fSamp / N );
     }
     else if (theta < recurrenceThreshold2)
     {
         dftRecurrence = GOERTZEL;
         Kappa = 2.0 * cos( theta );
-        swprintf( fraStatusText, 128, L"Status: Computing DFT using Goertzel" );
+        swprintf( fraStatusText, 128, L"Status: Computing DFT using Goertzel; actual BW: %.3lg Hz", fSamp / N );
     }
     else
     {
         dftRecurrence = REINSCH_PI;
         halfTheta = M_PI * (fDetect / fSamp);
         Kappa = 4.0 * pow( cos( halfTheta ), 2.0 );
-        swprintf( fraStatusText, 128, L"Status: Computing DFT using Reinsch(PI)" );
+        swprintf( fraStatusText, 128, L"Status: Computing DFT using Reinsch(PI); actual BW: %.3lg Hz", fSamp / N );
     }
 
     UpdateStatus( fraStatusMsg, FRA_STATUS_MESSAGE, fraStatusText, DFT_DIAGNOSTICS );
@@ -2030,6 +2030,9 @@ void PicoScopeFRA::FeedGoertzel( int16_t* inputSamples, int16_t* outputSamples, 
 
     // Vectors
     __m128d KappaVec, τVec, aVec, bVec, totalEnergyVec, dcEnergyVec, sampleVec;
+
+    FRA_STATUS_MESSAGE_T fraStatusMsg;
+    wchar_t fraStatusText[1024];
 
     // Determine if this is the last block.  If it is, there is special processing.
     lastBlock = ((samplesProcessed + n) == N);
@@ -2167,6 +2170,15 @@ void PicoScopeFRA::FeedGoertzel( int16_t* inputSamples, int16_t* outputSamples, 
 
         purity[0] = signalEnergy[0] / (totalEnergy[0] - dcEnergy[0]);
         purity[1] = signalEnergy[1] / (totalEnergy[1] - dcEnergy[1]);
+
+        // Output diagnostics
+        swprintf( fraStatusText, 1024, L"Status: DFT results:\r\n"
+                                       L"   Input magnitude: %lg; Input amplitude: %lg; Input phase: %lg; Input purity: %lg; Input DC energy: %lg; Input signal energy: %lg, Input total energy: %lg\r\n"
+                                       L"   Output magnitude: %lg; Output amplitude: %lg; Output phase: %lg; Output purity: %lg; Output DC energy: %lg; Output signal energy: %lg, Output total energy: %lg",
+                                       magnitude[0], amplitude[0], phase[0], purity[0], dcEnergy[0], signalEnergy[0], totalEnergy[0],
+                                       magnitude[1], amplitude[1], phase[1], purity[1], dcEnergy[1], signalEnergy[1], totalEnergy[1] );
+
+        UpdateStatus( fraStatusMsg, FRA_STATUS_MESSAGE, fraStatusText, DFT_DIAGNOSTICS );
     }
     else
     {
