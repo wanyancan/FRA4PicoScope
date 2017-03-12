@@ -1037,6 +1037,16 @@ void PicoScopeFRA::GenerateFrequencyPoints(void)
 {
     double logStartFreqHz, logStopFreqHz;
 
+    FRA_STATUS_MESSAGE_T fraStatusMsg;
+    wchar_t fraStatusText[128];
+
+    if (HIGH_NOISE == mSamplingMode && mStartFreqHz < GetMinFrequency())
+    {
+        swprintf( fraStatusText, 128, L"Fatal error: Start frequency cannot be less than %lg Hz", GetMinFrequency() );
+        UpdateStatus( fraStatusMsg, FRA_STATUS_FATAL_ERROR, fraStatusText );
+        throw FraFault();
+    }
+
     logStartFreqHz = log10(mStartFreqHz);
     logStopFreqHz = log10(mStopFreqHz);
     double logStepSize;
@@ -1922,7 +1932,7 @@ void PicoScopeFRA::UnwrapPhases(void)
 // - The standard recurrence used by the original Goertzel is known to have numerical accuracy
 //   issues [2] - i.e. O(N^2) error growth for theta near 0 or PI.  This can start to be a real problem for
 //   scopes with very large sample buffers (e.g. currently up to 1GS on the 6000 series).  The Reinsch
-//   modifications are a well known technique to deal with error at these extremes [3].  As theta approaches
+//   modifications are a well known technique to deal with error at these extremes [2][3].  As theta approaches
 //   PI/2, the Reinsch recurrence numerical accuracy becomes worse than Goertzel [4].  To achieve the least
 //   error, the technique of Oliver [4] will be used to divide the domain into three regions, applying the
 //   best recurrence to each:

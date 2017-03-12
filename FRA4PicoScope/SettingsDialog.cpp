@@ -177,6 +177,8 @@ bool ValidateAndStoreSettings( HWND hDlg )
     HWND hndCtrl;
     wstring errorConditions[32];
     uint8_t numErrors = 0;
+    bool noiseRejectModeBandwidthValid = false;
+    bool noiseRejectModeTimebaseValid = false;
 
     SamplingMode_T sampleMode = LOW_NOISE;
     bool sweepDescending = false;
@@ -349,6 +351,10 @@ bool ValidateAndStoreSettings( HWND hDlg )
         errorConditions[numErrors++] = L"Noise reject bandwidth must be > 0.0";
         retVal = false;
     }
+    else
+    {
+        noiseRejectModeBandwidthValid = true;
+    }
 
     if (pCurrentScope)
     {
@@ -363,6 +369,25 @@ bool ValidateAndStoreSettings( HWND hDlg )
         {
             errorConditions[numErrors++] = L"Noise reject timebase is not valid";
             retVal = false;
+        }
+        else
+        {
+            noiseRejectModeTimebaseValid = true;
+        }
+    }
+
+    if (noiseRejectModeBandwidthValid && noiseRejectModeTimebaseValid)
+    {
+        double noiseRejectModeSampleRate;
+        uint32_t maxScopeSamplesPerChannel;
+
+        if (pCurrentScope->GetMaxSamples(&maxScopeSamplesPerChannel) && pCurrentScope->GetFrequencyFromTimebase(noiseRejectModeTimebase, noiseRejectModeSampleRate))
+        {
+            if (noiseRejectModeBandwidth < (noiseRejectModeSampleRate / maxScopeSamplesPerChannel))
+            {
+                errorConditions[numErrors++] = L"Bandwidth too low, increase bandwidth or decrease sample rate";
+                retVal = false;
+            }
         }
     }
 
