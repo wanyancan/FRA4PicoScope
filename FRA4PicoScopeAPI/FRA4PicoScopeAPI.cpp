@@ -242,7 +242,7 @@ void LogMessage( const wstring statusMessage, LOG_MESSAGE_FLAGS_T type )
 // Parameters: [in] sn - the serial number of the desired scope
 //             [out] - returns a status indicating whether the operation succeeded
 //
-// Notes: If the string is null or empty, it will try to open the only scope attached
+// Notes: If the string is null or empty, it will try to open the first scope found
 //
 ///////////////////////////////////////////////////////////////////////////////////////////////////
 
@@ -259,10 +259,13 @@ bool __stdcall SetScope( char* sn )
     {
         pScopeSelector->GetAvailableScopes(scopes);
 
-        if ((NULL == sn || sn[0] == 0) && scopes.size() == 1)
+        if (NULL == sn || sn[0] == 0)
         {
-            bScopeFound = true;
-            scopeToOpen = scopes[0];
+            if (scopes.size() >= 1)
+            {
+                bScopeFound = true;
+                scopeToOpen = scopes[0];
+            }
         }
         else
         {
@@ -729,8 +732,8 @@ static DWORD WINAPI ExecuteFRA( LPVOID lpdwThreadParam )
 
             if (false == pFRA->ExecuteFRA(startFreqHz, stopFreqHz, stepsPerDecade))
             {
-                continue;
                 status = FRA_STATUS_FATAL_ERROR;
+                continue;
             }
         }
         else

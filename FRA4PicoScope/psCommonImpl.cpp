@@ -174,6 +174,7 @@ CommonCtor(SCOPE_FAMILY_LT)( int16_t _handle ) : PicoScope()
     mNumSamples = 0;
     buffersDirty = true;
 #if defined(PS3000A) || defined(PS4000A) || defined(PS5000A)
+    numActualChannels = 0;
     initialPowerState = _initialPowerState;
 #endif;
 }
