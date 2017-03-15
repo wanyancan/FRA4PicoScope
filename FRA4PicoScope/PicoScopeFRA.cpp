@@ -1453,7 +1453,7 @@ bool PicoScopeFRA::StartCapture( double measFreqHz )
             CalculateStepInitialStimulusVpp();
             stimulusChanged = true;
         }
-        swprintf( fraStatusText, 128, L"Status: Setting signal generator amplitude to %0.3lf Vpp", currentStimulusVpp );
+        swprintf( fraStatusText, 128, L"Status: Setting signal generator amplitude to %0.6lf Vpp", currentStimulusVpp );
         UpdateStatus( fraStatusMsg, FRA_STATUS_MESSAGE, fraStatusText, ADAPTIVE_STIMULUS_DIAGNOSTICS );
     }
 
@@ -1659,9 +1659,9 @@ bool PicoScopeFRA::ProcessData(void)
                                           rangeInfo[adaptiveStimulusOutputChannelRange].rangeVolts *
                                           attenInfo[mOutputChannelAttenuation];
 
-            swprintf( fraStatusText, 128, L"Status: Measured input amplitude: %0.3lf V", currentInputAmplitudeVolts );
+            swprintf( fraStatusText, 128, L"Status: Measured input amplitude: %0.6lf V", currentInputAmplitudeVolts );
             UpdateStatus( fraStatusMsg, FRA_STATUS_MESSAGE, fraStatusText, ADAPTIVE_STIMULUS_DIAGNOSTICS );
-            swprintf( fraStatusText, 128, L"Status: Measured output amplitude: %0.3lf V", currentOutputAmplitudeVolts );
+            swprintf( fraStatusText, 128, L"Status: Measured output amplitude: %0.6lf V", currentOutputAmplitudeVolts );
             UpdateStatus( fraStatusMsg, FRA_STATUS_MESSAGE, fraStatusText, ADAPTIVE_STIMULUS_DIAGNOSTICS );
 
             if (false == CheckStimulusTarget())
