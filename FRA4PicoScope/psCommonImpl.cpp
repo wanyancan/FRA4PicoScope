@@ -174,6 +174,7 @@ CommonCtor(SCOPE_FAMILY_LT)( int16_t _handle ) : PicoScope()
     mNumSamples = 0;
     buffersDirty = true;
 #if defined(PS3000A) || defined(PS4000A) || defined(PS5000A)
+    numActualChannels = 0;
     initialPowerState = _initialPowerState;
 #endif;
 }
@@ -674,7 +675,7 @@ bool CommonMethod(SCOPE_FAMILY_LT, DisableAllDigitalChannels)(void)
     {
         if (PICO_NOT_USED != status) // PICO_NOT_USED is returned when the scope has no digital channels.
         {
-            fraStatusText << L"Warning: Failed to disable digital channels 0-7: " << status;
+            fraStatusText << L"WARNING: Failed to disable digital channels 0-7: " << status;
             LogMessage(fraStatusText.str(), FRA_WARNING);
             retVal = false;
         }
@@ -686,7 +687,7 @@ bool CommonMethod(SCOPE_FAMILY_LT, DisableAllDigitalChannels)(void)
         {
             fraStatusText.clear();
             fraStatusText.str(L"");
-            fraStatusText << L"Warning: Failed to disable digital channels 8-15: " << status;
+            fraStatusText << L"WARNING: Failed to disable digital channels 8-15: " << status;
             LogMessage(fraStatusText.str(), FRA_WARNING);
             retVal = false;
         }

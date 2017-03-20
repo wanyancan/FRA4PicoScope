@@ -69,6 +69,21 @@ Public Enum FRA_STATUS_T
     FRA_STATUS_MESSAGE
 End Enum
 
+Public Enum LOG_MESSAGE_FLAGS_T
+    SCOPE_ACCESS_DIAGNOSTICS = &H0001
+    FRA_PROGRESS = &H0002
+    STEP_TRIAL_PROGRESS = &H0004
+    SIGNAL_GENERATOR_DIAGNOSTICS = &H0008
+    AUTORANGE_DIAGNOSTICS = &H0010
+    ADAPTIVE_STIMULUS_DIAGNOSTICS = &H0020
+    SAMPLE_PROCESSING_DIAGNOSTICS = &H0040
+    DFT_DIAGNOSTICS = &H0080
+    SCOPE_POWER_EVENTS = &H0100
+    SAVE_EXPORT_STATUS = &H0200
+    FRA_WARNING = &H0400
+    FRA_ERROR = &H8000
+End Enum
+
 Declare Function SetScope Lib "FRA4PicoScope.dll" (ByVal sn As String) As Byte
 Declare Function GetMinFrequency Lib "FRA4PicoScope.dll" () As Double
 Declare Function StartFRA Lib "FRA4PicoScope.dll" (ByVal startFreqHz As Double, ByVal stopFreqHz As Double, ByVal stepsPerDecade As Long) As Byte
@@ -78,7 +93,9 @@ Declare Sub SetFraSettings Lib "FRA4PicoScope.dll" (ByVal samplingMode As Sampli
                                                     ByVal sweepDescending As Byte, ByVal phaseWrappingThreshold As Double)
 Declare Sub SetFraTuning Lib "FRA4PicoScope.dll" (ByVal purityLowerLimit As Double, ByVal extraSettlingTimeMs As Integer, ByVal autorangeTriesPerStep As Byte, _
                                                   ByVal autorangeTolerance As Double, ByVal smallSignalResolutionTolerance As Double, ByVal maxAutorangeAmplitude As Double, _
-                                                  ByVal adaptiveStimulusTriesPerStep As Byte, ByVal targetResponseAmplitudeTolerance As Double, ByVal minCyclesCaptured As Integer)
+                                                  ByVal inputStartRange As Integer, ByVal outputStartRange As Integer, ByVal adaptiveStimulusTriesPerStep As Byte, _
+                                                  ByVal targetResponseAmplitudeTolerance As Double, ByVal minCyclesCaptured As Integer, ByVal maxDftBw As Double, _
+                                                  ByVal lowNoiseOversampling As Integer)
 Declare Function SetupChannels Lib "FRA4PicoScope.dll" (ByVal inputChannel As PS_CHANNEL, ByVal inputChannelCoupling As PS_COUPLING, ByVal inputChannelAttenuation As ATTEN_T, ByVal inputDcOffset As Double, _
                                                         ByVal outputChannel As PS_CHANNEL, ByVal outputChannelCoupling As PS_COUPLING, ByVal outputChannelAttenuation As ATTEN_T, ByVal outputDcOffset As Double, _
                                                         ByVal initialStimulusVpp As Double, ByVal maxStimulusVpp as Double) As Byte
@@ -88,6 +105,8 @@ Declare Sub EnableDiagnostics Lib "FRA4PicoScope.dll" (ByVal baseDataPath As Str
 Declare Sub DisableDiagnostics Lib "FRA4PicoScope.dll" ()
 Declare Sub AutoClearMessageLog Lib "FRA4PicoScope.dll" (ByVal bAutoClear As Byte)
 Declare Sub EnableMessageLog Lib "FRA4PicoScope.dll" (ByVal bEnable As Byte)
+Declare Sub SetLogVerbosityFlag Lib "FRA4PicoScope.dll" (ByVal flag As LOG_MESSAGE_FLAGS_T, ByVal enable As Byte)
+Declare Sub SetLogVerbosityFlags Lib "FRA4PicoScope.dll" (ByVal flags As LOG_MESSAGE_FLAGS_T)
 Declare Function GetMessageLog Lib "FRA4PicoScope.dll" () As String
 Declare Sub ClearMessageLog Lib "FRA4PicoScope.dll" ()
 Declare Function Initialize Lib "FRA4PicoScope.dll" () As Byte

@@ -62,26 +62,30 @@ const wchar_t logVerbosityString[numLogVerbosityFlags][128] =
 
 bool logVerbositySelectorOpen = false;
 PicoScope* pCurrentScope = NULL;
+double currentSampleRate = 0.0;
+uint32_t currentMinCycles = 0;
+bool currentSampleRateValid = false;
+bool currentMinCyclesValid = false;
 
-std::wstring PrintSampleRate(double sampleRate)
+std::wstring PrintFrequency(double freq)
 {
     std::wstring units;
     std::wstringstream valueSS;
     std::wstring valueStr;
 
-    if (sampleRate >= 1.0e9)
+    if (freq >= 1.0e9)
     {
-        sampleRate /= 1.0e9;
+        freq /= 1.0e9;
         units = L" GHz";
     }
-    else if (sampleRate >= 1.0e6)
+    else if (freq >= 1.0e6)
     {
-        sampleRate /= 1.0e6;
+        freq /= 1.0e6;
         units = L" MHz";
     }
-    else if (sampleRate >= 1.0e3)
+    else if (freq >= 1.0e3)
     {
-        sampleRate /= 1.0e3;
+        freq /= 1.0e3;
         units = L" kHz";
     }
     else
@@ -91,7 +95,7 @@ std::wstring PrintSampleRate(double sampleRate)
 
     // Output using fixed precision
     valueSS.precision(3);
-    valueSS << std::fixed << sampleRate;
+    valueSS << std::fixed << freq;
     valueStr = valueSS.str();
 
     // Smash trailing zeros right of a decimal point
@@ -110,6 +114,48 @@ std::wstring PrintSampleRate(double sampleRate)
     valueStr += units;
 
     return (valueStr);
+}
+
+std::wstring GetNoiseRejectModeMinFrequency(uint32_t minCycles, double sampleRate)
+{
+    uint32_t maxScopeSamplesPerChannel;
+    std::wstring retVal;
+
+    if (pCurrentScope)
+    {
+        if (!(pCurrentScope->GetMaxSamples(&maxScopeSamplesPerChannel)))
+        {
+            retVal = L"???";
+        }
+        else
+        {
+            // Add in half the signal generator precision because the frequency could get rounded down
+            retVal = PrintFrequency(((pCurrentScope->GetSignalGeneratorPrecision()) / 2.0) + ((double)minCycles * (sampleRate / (double)maxScopeSamplesPerChannel)));
+        }
+    }
+    else
+    {
+        retVal = L"???";
+    }
+    return retVal;
+}
+
+void UpdateMinStimulusFrequency( HWND hDlg )
+{
+    HWND hndCtrl;
+    wchar_t minStimulusFrequencyString[128];
+
+    if (currentSampleRateValid && currentMinCyclesValid)
+    {
+        swprintf(minStimulusFrequencyString, 128, L"Noise reject mode minimum\nstimulus frequency: %s",
+                 GetNoiseRejectModeMinFrequency(currentMinCycles, currentSampleRate).c_str());
+    }
+    else
+    {
+        swprintf(minStimulusFrequencyString, 128, L"Noise reject mode minimum\nstimulus frequency: INVALID");
+    }
+    hndCtrl = GetDlgItem(hDlg, IDC_STATIC_NOISE_REJECT_MINIMUM_STIMULUS_FREQUENCY);
+    Static_SetText(hndCtrl, minStimulusFrequencyString);
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -131,6 +177,8 @@ bool ValidateAndStoreSettings( HWND hDlg )
     HWND hndCtrl;
     wstring errorConditions[32];
     uint8_t numErrors = 0;
+    bool noiseRejectModeBandwidthValid = false;
+    bool noiseRejectModeTimebaseValid = false;
 
     SamplingMode_T sampleMode = LOW_NOISE;
     bool sweepDescending = false;
@@ -151,7 +199,6 @@ bool ValidateAndStoreSettings( HWND hDlg )
     double autorangeTolerance = 0.0;
     wstring autorangeToleranceStr;
     uint16_t minCyclesCaptured = 0;
-    uint16_t maxCyclesCaptured = 0;
     uint16_t lowNoiseOversampling = 0;
     double noiseRejectModeBandwidth = 0.0;
     wstring noiseRejectModeBandwidthStr;
@@ -162,10 +209,7 @@ bool ValidateAndStoreSettings( HWND hDlg )
     wstring gainMarginPhaseCrossoverStr;
     bool timeDomainDiagnosticPlots = false;
     uint16_t logVerbosityFlags = 0;
-
     int curSel;
-    bool minCyclesValid = false;
-    bool maxCyclesValid = false;
 
     hndCtrl = GetDlgItem( hDlg, IDC_RADIO_NOISE_REJECT_MODE );
     if (Button_GetCheck( hndCtrl ) ==  BST_CHECKED)
@@ -280,27 +324,6 @@ bool ValidateAndStoreSettings( HWND hDlg )
         errorConditions[numErrors++] = L"Minimum cycles captured must be >= 1";
         retVal = false;
     }
-    else
-    {
-        minCyclesValid = true;
-    }
-
-    hndCtrl = GetDlgItem( hDlg, IDC_EDIT_FRA_MAXIMUM_CYCLES_CAPTURED );
-    Edit_GetText( hndCtrl, numberStr, sizeof(numberStr)/sizeof(WCHAR) );
-    if (!WStringToUint16( numberStr, maxCyclesCaptured ))
-    {
-        errorConditions[numErrors++] = L"Maximum cycles captured is not a valid number";
-        retVal = false;
-    }
-    else if (maxCyclesCaptured < 1)
-    {
-        errorConditions[numErrors++] = L"Maximum cycles captured must be >= 1";
-        retVal = false;
-    }
-    else
-    {
-        maxCyclesValid = true;
-    }
 
     hndCtrl = GetDlgItem( hDlg, IDC_EDIT_FRA_LOW_NOISE_OVERSAMPLING );
     Edit_GetText( hndCtrl, numberStr, sizeof(numberStr)/sizeof(WCHAR) );
@@ -328,6 +351,10 @@ bool ValidateAndStoreSettings( HWND hDlg )
         errorConditions[numErrors++] = L"Noise reject bandwidth must be > 0.0";
         retVal = false;
     }
+    else
+    {
+        noiseRejectModeBandwidthValid = true;
+    }
 
     if (pCurrentScope)
     {
@@ -342,6 +369,25 @@ bool ValidateAndStoreSettings( HWND hDlg )
         {
             errorConditions[numErrors++] = L"Noise reject timebase is not valid";
             retVal = false;
+        }
+        else
+        {
+            noiseRejectModeTimebaseValid = true;
+        }
+    }
+
+    if (noiseRejectModeBandwidthValid && noiseRejectModeTimebaseValid)
+    {
+        double noiseRejectModeSampleRate;
+        uint32_t maxScopeSamplesPerChannel;
+
+        if (pCurrentScope->GetMaxSamples(&maxScopeSamplesPerChannel) && pCurrentScope->GetFrequencyFromTimebase(noiseRejectModeTimebase, noiseRejectModeSampleRate))
+        {
+            if (noiseRejectModeBandwidth < (noiseRejectModeSampleRate / maxScopeSamplesPerChannel))
+            {
+                errorConditions[numErrors++] = L"Bandwidth too low, increase bandwidth or decrease sample rate";
+                retVal = false;
+            }
         }
     }
 
@@ -399,12 +445,6 @@ bool ValidateAndStoreSettings( HWND hDlg )
         retVal = false;
     }
 
-    if (minCyclesValid && maxCyclesValid && minCyclesCaptured > maxCyclesCaptured)
-    {
-        errorConditions[numErrors++] = L"Minimum cycles captured must be <= maximum cycles captured";
-        retVal = false;
-    }
-
     // Diagnostic settings
     hndCtrl = GetDlgItem( hDlg, IDC_TIME_DOMAIN_DIAGNOSTIC_PLOTS_ENABLE );
     timeDomainDiagnosticPlots = (Button_GetCheck(hndCtrl) == BST_CHECKED);
@@ -443,7 +483,6 @@ bool ValidateAndStoreSettings( HWND hDlg )
         pSettings->SetAutorangeTriesPerStep(autorangeTriesPerStep);
         pSettings->SetAutorangeTolerance(autorangeToleranceStr);
         pSettings->SetMinCyclesCaptured(minCyclesCaptured);
-        pSettings->SetMaxCyclesCaptured(maxCyclesCaptured);
         pSettings->SetLowNoiseOversampling(lowNoiseOversampling);
         pSettings->SetNoiseRejectBandwidth(noiseRejectModeBandwidthStr);
         pSettings->SetNoiseRejectModeTimebase(noiseRejectModeTimebase);
@@ -590,22 +629,14 @@ INT_PTR CALLBACK SettingsDialogHandler(HWND hDlg, UINT message, WPARAM wParam, L
             Edit_SetText( hndCtrl, pSettings->GetAutorangeToleranceAsString().c_str() );
 
             // FRA Sample Settings
-            // Until issue 63 is implemented, we'll use min/max cycles and not bandwidth
             hndCtrl = GetDlgItem( hDlg, IDC_EDIT_FRA_MINIMUM_CYCLES_CAPTURED );
             Edit_SetText( hndCtrl, pSettings->GetMinCyclesCapturedAsString().c_str() );
-
-            hndCtrl = GetDlgItem( hDlg, IDC_EDIT_FRA_MAXIMUM_CYCLES_CAPTURED );
-            Edit_SetText( hndCtrl, pSettings->GetMaxCyclesCapturedAsString().c_str() );
 
             hndCtrl = GetDlgItem( hDlg, IDC_EDIT_FRA_LOW_NOISE_OVERSAMPLING );
             Edit_SetText( hndCtrl, pSettings->GetLowNoiseOversamplingAsString().c_str() );
 
             hndCtrl = GetDlgItem( hDlg, IDC_EDIT_FRA_NOISE_REJECT_BW );
             Edit_SetText( hndCtrl, pSettings->GetNoiseRejectBandwidthAsString().c_str() );
-            EnableWindow( hndCtrl, FALSE );
-
-            hndCtrl = GetDlgItem( hDlg, IDC_STATIC_FRA_NOISE_REJECT_BW );
-            EnableWindow( hndCtrl, FALSE );
 
             if (pCurrentScope)
             {
@@ -625,6 +656,8 @@ INT_PTR CALLBACK SettingsDialogHandler(HWND hDlg, UINT message, WPARAM wParam, L
                 hndCtrl = GetDlgItem( hDlg, IDC_UPDOWN_NOISE_REJECT_TIMEBASE );
                 EnableWindow( hndCtrl, FALSE );
                 hndCtrl = GetDlgItem( hDlg, IDC_STATIC_NOISE_REJECT_SAMPLING_RATE );
+                EnableWindow( hndCtrl, FALSE );
+                hndCtrl = GetDlgItem( hDlg, IDC_STATIC_NOISE_REJECT_MINIMUM_STIMULUS_FREQUENCY );
                 EnableWindow( hndCtrl, FALSE );
             }
 
@@ -750,6 +783,36 @@ INT_PTR CALLBACK SettingsDialogHandler(HWND hDlg, UINT message, WPARAM wParam, L
                     }
                     break;
                 }
+                case IDC_EDIT_FRA_MINIMUM_CYCLES_CAPTURED:
+                {
+                    if (EN_CHANGE == HIWORD(wParam))
+                    {
+                        wchar_t newMinCyclesText[16];
+                        Edit_GetText((HWND)lParam, newMinCyclesText, 16);
+                        if (wcslen(newMinCyclesText))
+                        {
+                            currentMinCycles = _wtol(newMinCyclesText);
+                            if (currentMinCycles >= 1)
+                            {
+                                currentMinCyclesValid = true;
+                            }
+                            else
+                            {
+                                currentMinCyclesValid = false;
+                            }
+                        }
+                        else
+                        {
+                            currentMinCyclesValid = false;
+                        }
+
+                        if (pCurrentScope)
+                        {
+                            UpdateMinStimulusFrequency( hDlg );
+                        }
+                    }
+                    break;
+                }
                 case IDC_EDIT_NOISE_REJECT_TIMEBASE:
                 {
                     if (EN_CHANGE == HIWORD(wParam))
@@ -764,19 +827,25 @@ INT_PTR CALLBACK SettingsDialogHandler(HWND hDlg, UINT message, WPARAM wParam, L
                             newTimebase = _wtol(newTimebaseText);
                             if (pCurrentScope->GetFrequencyFromTimebase(newTimebase, newFrequency))
                             {
-                                swprintf(sampleRateDisplayString, 128, L"Noise reject sample rate: %s", PrintSampleRate(newFrequency).c_str());
+                                swprintf(sampleRateDisplayString, 128, L"Noise reject sample rate: %s", PrintFrequency(newFrequency).c_str());
+                                currentSampleRate = newFrequency;
+                                currentSampleRateValid = true;
                             }
                             else
                             {
                                 swprintf(sampleRateDisplayString, 128, L"Noise reject sample rate: INVALID");
+                                currentSampleRateValid = false;
                             }
                         }
                         else
                         {
                             swprintf(sampleRateDisplayString, 128, L"Noise reject sample rate: INVALID");
+                            currentSampleRateValid = false;
                         }
                         hndCtrl = GetDlgItem(hDlg, IDC_STATIC_NOISE_REJECT_SAMPLING_RATE);
                         Static_SetText(hndCtrl, sampleRateDisplayString);
+
+                        UpdateMinStimulusFrequency( hDlg );
                     }
                     break;
                 }

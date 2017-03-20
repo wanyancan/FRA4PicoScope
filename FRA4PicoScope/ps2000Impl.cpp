@@ -142,7 +142,7 @@ bool ps2000Impl::InitializeScope(void)
     bool retVal = true;
     // Because two channels are used, the maximum available frequency
     // is half the scope's absolute maximum frequency => timebase=1
-    timebaseNoiseRejectMode = timebaseNoiseRejectMode = defaultTimebaseNoiseRejectMode = 1;
+    timebaseNoiseRejectMode = defaultTimebaseNoiseRejectMode = 1;
 
     minTimebase = 1;
     maxTimebase = PS2000_MAX_TIMEBASE;

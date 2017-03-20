@@ -364,7 +364,7 @@ void SelectNewScope( AvailableScopeDescription_T scope, bool mruScope = false )
                              pSettings->GetAmplitudeLowerLimitAsFraction(), pSettings->GetMaxAutorangeAmplitude(),
                              pSettings->GetInputStartingRange(), pSettings->GetOutputStartingRange(),
                              pSettings->GetAdaptiveStimulusTriesPerStepAsUint8(), pSettings->GetTargetResponseAmplitudeToleranceAsFraction(),
-                             pSettings->GetMinCyclesCapturedAsUint16(), pSettings->GetMaxCyclesCapturedAsUint16(), pSettings->GetLowNoiseOversamplingAsUint16() );
+                             pSettings->GetMinCyclesCapturedAsUint16(), pSettings->GetNoiseRejectBandwidthAsDouble(), pSettings->GetLowNoiseOversamplingAsUint16() );
 
         if (!mruScope) // Don't unnecessarily dirty the settings file
         {
@@ -796,7 +796,7 @@ BOOL CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
                                              pSettings->GetAmplitudeLowerLimitAsFraction(), pSettings->GetMaxAutorangeAmplitude(),
                                              pSettings->GetInputStartingRange(), pSettings->GetOutputStartingRange(),
                                              pSettings->GetAdaptiveStimulusTriesPerStepAsUint8(), pSettings->GetTargetResponseAmplitudeToleranceAsFraction(),
-                                             pSettings->GetMinCyclesCapturedAsUint16(), pSettings->GetMaxCyclesCapturedAsUint16(), pSettings->GetLowNoiseOversamplingAsUint16() );
+                                             pSettings->GetMinCyclesCapturedAsUint16(), pSettings->GetNoiseRejectBandwidthAsDouble(), pSettings->GetLowNoiseOversamplingAsUint16() );
 
                         if (pScopeSelector->GetSelectedScope())
                         {
@@ -1870,7 +1870,7 @@ bool ValidateSettings(void)
             wstringstream wss;
             get<1>(freqScale) = psFRA->GetMinFrequency();
             pSettings->SetFreqScale(freqScale);
-            wss << L"Warning: Frequency axis minimum too small; adjusting to: " << get<1>(freqScale);
+            wss << L"WARNING: Frequency axis minimum too small; adjusting to: " << get<1>(freqScale);
             LogMessage( wss.str(), FRA_WARNING );
         }
         if (get<2>(freqScale) < psFRA->GetMinFrequency())
@@ -1878,7 +1878,7 @@ bool ValidateSettings(void)
             wstringstream wss;
             get<2>(freqScale) = pScopeSelector->GetSelectedScope()->GetMaxFuncGenFreq();
             pSettings->SetFreqScale(freqScale);
-            wss << L"Warning: Frequency axis maximum too small; adjusting to: " << get<2>(freqScale);
+            wss << L"WARNING: Frequency axis maximum too small; adjusting to: " << get<2>(freqScale);
             LogMessage( wss.str(), FRA_WARNING );
         }
     }

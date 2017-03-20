@@ -416,19 +416,6 @@ class ApplicationSettings
             AppSettingsPropTree.put( L"sampleParam.minCyclesCaptured", minCyclesCaptured );
         }
 
-        inline uint16_t GetMaxCyclesCapturedAsUint16( void )
-        {
-            return AppSettingsPropTree.get<uint16_t>( L"sampleParam.maxCyclesCaptured" );
-        }
-        inline const wstring GetMaxCyclesCapturedAsString( void )
-        {
-            return AppSettingsPropTree.get<wstring>( L"sampleParam.maxCyclesCaptured" );
-        }
-        inline void SetMaxCyclesCaptured( uint16_t maxCyclesCaptured )
-        {
-            AppSettingsPropTree.put( L"sampleParam.maxCyclesCaptured", maxCyclesCaptured );
-        }
-
         inline uint16_t GetLowNoiseOversamplingAsUint16( void )
         {
             return AppSettingsPropTree.get<uint16_t>( L"sampleParam.lowNoiseOversampling" );

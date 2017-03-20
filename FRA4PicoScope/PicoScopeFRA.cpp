@@ -122,7 +122,7 @@ PicoScopeFRA::PicoScopeFRA(FRA_STATUS_CALLBACK statusCB)
     mOutputStartRange = 0;
     mExtraSettlingTimeMs = 0;
     mMinCyclesCaptured = 0;
-    mMaxCyclesCaptured = 0;
+    mMaxDftBw = 0.0;
     mLowNoiseOversampling = 0;
     mSweepDescending = false;
     mAdaptiveStimulus = false;
@@ -237,8 +237,8 @@ void PicoScopeFRA::SetFraSettings( SamplingMode_T samplingMode, bool adaptiveSti
 //             [in] adaptiveStimulusTriesPerStep - Number of adaptive stimulus tries allowed
 //             [in] targetResponseAmplitudeTolerance - Percent tolerance above target allowed for
 //                                                     the smallest stimulus (input or output)
-//             [in] minCyclesCaptured - Minimum cycles captured for stmulus signal
-//             [in] maxCyclesCaptured - Maximum cycles captured for stmulus signal
+//             [in] minCyclesCaptured - Minimum cycles captured for stimulus signal
+//             [in] maxDftBw - Maximum bandwidth for DFT in noise reject mode
 //             [in] lowNoiseOversampling - Amount to oversample the stimulus frequency in low
 //                                         noise mode
 //
@@ -249,7 +249,7 @@ void PicoScopeFRA::SetFraSettings( SamplingMode_T samplingMode, bool adaptiveSti
 void PicoScopeFRA::SetFraTuning( double purityLowerLimit, uint16_t extraSettlingTimeMs, uint8_t autorangeTriesPerStep,
                                  double autorangeTolerance, double smallSignalResolutionTolerance, double maxAutorangeAmplitude,
                                  int32_t inputStartRange, int32_t outputStartRange, uint8_t adaptiveStimulusTriesPerStep,
-                                 double targetResponseAmplitudeTolerance, uint16_t minCyclesCaptured, uint16_t maxCyclesCaptured,
+                                 double targetResponseAmplitudeTolerance, uint16_t minCyclesCaptured, double maxDftBw,
                                  uint16_t lowNoiseOversampling )
 {
     mPurityLowerLimit = purityLowerLimit;
@@ -263,7 +263,7 @@ void PicoScopeFRA::SetFraTuning( double purityLowerLimit, uint16_t extraSettling
     maxAdaptiveStimulusRetries = adaptiveStimulusTriesPerStep;
     mTargetResponseAmplitudeTolerance = targetResponseAmplitudeTolerance;
     mMinCyclesCaptured = minCyclesCaptured;
-    mMaxCyclesCaptured = maxCyclesCaptured;
+    mMaxDftBw = maxDftBw;
     mLowNoiseOversampling = lowNoiseOversampling;
 }
 
@@ -1037,6 +1037,16 @@ void PicoScopeFRA::GenerateFrequencyPoints(void)
 {
     double logStartFreqHz, logStopFreqHz;
 
+    FRA_STATUS_MESSAGE_T fraStatusMsg;
+    wchar_t fraStatusText[128];
+
+    if (HIGH_NOISE == mSamplingMode && mStartFreqHz < GetMinFrequency())
+    {
+        swprintf( fraStatusText, 128, L"Fatal error: Start frequency cannot be less than %lg Hz", GetMinFrequency() );
+        UpdateStatus( fraStatusMsg, FRA_STATUS_FATAL_ERROR, fraStatusText );
+        throw FraFault();
+    }
+
     logStartFreqHz = log10(mStartFreqHz);
     logStopFreqHz = log10(mStopFreqHz);
     double logStepSize;
@@ -1443,7 +1453,7 @@ bool PicoScopeFRA::StartCapture( double measFreqHz )
             CalculateStepInitialStimulusVpp();
             stimulusChanged = true;
         }
-        swprintf( fraStatusText, 128, L"Status: Setting signal generator amplitude to %0.3lf Vpp", currentStimulusVpp );
+        swprintf( fraStatusText, 128, L"Status: Setting signal generator amplitude to %0.6lf Vpp", currentStimulusVpp );
         UpdateStatus( fraStatusMsg, FRA_STATUS_MESSAGE, fraStatusText, ADAPTIVE_STIMULUS_DIAGNOSTICS );
     }
 
@@ -1504,15 +1514,30 @@ bool PicoScopeFRA::StartCapture( double measFreqHz )
         double samplesPerCycle = actualSampFreqHz / measFreqHz;
         // Deferring the integer truncation till this point ensures
         // the least inaccuracy in hitting the integer periods criteria
-        numSamples = (int32_t)(samplesPerCycle * (double)numCycles) + 1;
+        numSamples = (uint32_t)(samplesPerCycle * (double)numCycles) + 1;
     }
-    else
+    else // NOISE_REJECT
     {
-        numCycles = min( mMaxCyclesCaptured, (uint32_t)((measFreqHz * (double)maxScopeSamplesPerChannel) / ps->GetNoiseRejectModeSampleRate()) );
-        numSamples = (int32_t)(((double)numCycles * ps->GetNoiseRejectModeSampleRate()) / measFreqHz) + 1;
+        uint32_t minBwSamples;
+        double actualDftBw;
 
         timebase = ps->GetNoiseRejectModeTimebase();
         actualSampFreqHz = ps->GetNoiseRejectModeSampleRate();
+
+        // Calculate minimum number of samples required to stay <= maximum bandwidth
+        minBwSamples = min((uint32_t)ceil(actualSampFreqHz / mMaxDftBw), maxScopeSamplesPerChannel);
+        // Calculate number of whole stimulus cycles required to have at least minBwSamples
+        numCycles = max(mMinCyclesCaptured, (uint32_t)ceil((double)minBwSamples * measFreqHz / actualSampFreqHz));
+        // Calculate actal number of samples to be taken
+        numSamples = min((uint32_t)(((double)numCycles * ps->GetNoiseRejectModeSampleRate()) / measFreqHz) + 1, maxScopeSamplesPerChannel);
+        // Calculate actual DFT bandwidth
+        actualDftBw = actualSampFreqHz / (double)numSamples;
+
+        if (actualDftBw > mMaxDftBw)
+        {
+            swprintf( fraStatusText, 128, L"WARNING: Actual DFT bandwidth (%.3lg Hz) greater than requested (%.3lg Hz)", actualDftBw, mMaxDftBw );
+            UpdateStatus( fraStatusMsg, FRA_STATUS_MESSAGE, fraStatusText, FRA_WARNING );
+        }
     }
 
     if (mDiagnosticsOn)
@@ -1634,9 +1659,9 @@ bool PicoScopeFRA::ProcessData(void)
                                           rangeInfo[adaptiveStimulusOutputChannelRange].rangeVolts *
                                           attenInfo[mOutputChannelAttenuation];
 
-            swprintf( fraStatusText, 128, L"Status: Measured input amplitude: %0.3lf V", currentInputAmplitudeVolts );
+            swprintf( fraStatusText, 128, L"Status: Measured input amplitude: %0.6lf V", currentInputAmplitudeVolts );
             UpdateStatus( fraStatusMsg, FRA_STATUS_MESSAGE, fraStatusText, ADAPTIVE_STIMULUS_DIAGNOSTICS );
-            swprintf( fraStatusText, 128, L"Status: Measured output amplitude: %0.3lf V", currentOutputAmplitudeVolts );
+            swprintf( fraStatusText, 128, L"Status: Measured output amplitude: %0.6lf V", currentOutputAmplitudeVolts );
             UpdateStatus( fraStatusMsg, FRA_STATUS_MESSAGE, fraStatusText, ADAPTIVE_STIMULUS_DIAGNOSTICS );
 
             if (false == CheckStimulusTarget())
@@ -1882,9 +1907,9 @@ void PicoScopeFRA::UnwrapPhases(void)
 // interested in a single frequency per measurement, and thus Goertzel is faster than FFT.  Also, an FFT requires the
 // full sample buffer to be stored.  Without an additional decimation, storing the whole sample buffer would be highly
 // impractical for some PicoScopes (up to 4GB of RAM needed).  This implementation is a generalized Goertzel algorithm
-// which allows for a non-integer bin (k ∈ R), and thus is really a single point DTFT.  An important advantage of the
-// generalized Goertzel is that we don't have to adjust the number of samples or sampling rate to maintain accuracy of
-// the frequency selection.  These functions also compute other useful parameters such as amplitude and purity, which
+// which allows for a non-integer bin (k ∈ R) [1], and thus is really a single point DTFT.  An important advantage of
+// the generalized Goertzel is that we don't have to adjust the number of samples or sampling rate to maintain accuracy
+// of the frequency selection.  These functions also compute other useful parameters such as amplitude and purity, which
 // can be used for data quality decisions.
 //
 // Parameters: 
@@ -1902,32 +1927,23 @@ void PicoScopeFRA::UnwrapPhases(void)
 //             [output] [in/out]putAmplitude - The measured amplitude of the signal
 //             [output] [in/out]putPurity - The purity of the signal (signal power over total power)
 //
-// Notes: 
+// Notes:
 //
-// - The following reference derives the (k ∈ R) generalized Goertzel:
-//          doi:10.1186/1687-6180-2012-56
-//          Sysel and Rajmic:
-//          Goertzel algorithm generalized to non-integer multiples of fundamental frequency.
-//          EURASIP Journal on Advances in Signal Processing 2012 2012:56.
+// - The standard recurrence used by the original Goertzel is known to have numerical accuracy
+//   issues [2] - i.e. O(N^2) error growth for theta near 0 or PI.  This can start to be a real problem for
+//   scopes with very large sample buffers (e.g. currently up to 1GS on the 6000 series).  The Reinsch
+//   modifications are a well known technique to deal with error at these extremes [2][3].  As theta approaches
+//   PI/2, the Reinsch recurrence numerical accuracy becomes worse than Goertzel [4].  To achieve the least
+//   error, the technique of Oliver [4] will be used to divide the domain into three regions, applying the
+//   best recurrence to each:
+//  (0.0 - 0.305*PI): REINSCH_0; (0.305*PI - 0.705*PI): GOERTZEL; (0.705*PI - PI): REINSCH_PI
 //
-// - The standard recurrence used by the original Goertzel is known to have numerical stability
-//   issues - i.e. O(N^2) error growth for small k.  This can start to be a real problem for scopes with very
-//   large sample buffers (e.g. currently up to 1GS on the 6000 series).  The Reinsch modification (recurrence)
-//   is a well known modification to deal with error near k=0.  As k/N approaches pi/2, the Reinsch recurrence
-//   numerical accuracy becomes worse than Goertzel (Oliver 77).  However, for our application when k is
-//   significantly larger than 0, N is also small so as to minimize error concerns.  So, we can use Reinsch
-//   all the time and get good error performance.
-//
-// - The d.c. energy calculation is an execution of the Goertzel with Magic Circle Oscillator.  When the
-//   tuning frequency is 0Hz, the tuning parameter is 0.  Thus the energy calculation is simplified.
+// - The d.c. energy calculation can be seen as an execution of the Goertzel with Magic Circle Oscillator.
+//   When the tuning frequency is 0Hz, the tuning parameter is 0.  Thus the energy calculation is simplified.
 //    - The idea to use alternate oscillators comes from the work of Clay Turner on Oscillator theory and
 //      application to the Goertzel:
 //      Ref. http://www.claysturner.com/dsp/digital_resonators.pdf
 //      Ref. http://www.claysturner.com/dsp/ResonatorTable.pdf
-//
-// - Magic Circle could also be used for the main signal detecting Goertzel, but its speed performance is a little
-//   worse and numerical accuracy only a little better for sample buffers up to 1GS.  Its speed performance might be
-//   able to become on-par with Reinsch on a more modern SIMD unit.
 //
 // - In experimenting with different oscillators, it was found that the (k ∈ R) phase correction factor can
 //   differ from e^j*2pi*k, but it still remains dependent only on k.  However, since this application is only
@@ -1935,17 +1951,44 @@ void PicoScopeFRA::UnwrapPhases(void)
 //   not apply the (k ∈ R) phase correction factor.  So, this implementation does not produce a "mathematically
 //   correct" phase, but that's OK for our application.
 //
-// - The benefit of processing the input and output signals together is that we can take advantage of SIMD 
+// - The benefit of processing the input and output signals together is that we can take advantage of SIMD
 //   parallelism (SSE, AVX, etc);  However, since the MSVC auto-vectorizer seems unable to vectorize the core
 //   loop, we're going to code it with intrinsics.
+//
+//   [1] Goertzel algorithm generalized to non-integer multiples of fundamental frequency
+//       Petr Sysel and Pavel Rajmic
+//       EURASIP Journal on Advances in Signal Processing 2012 2012:56.
+//       doi:10.1186/1687-6180-2012-56
+//
+//   [2] An error analysis of Goertzel's (Watt's) method for computing Fourier coefficients
+//       W.M. Gentleman
+//       Comput. J., Vol. 12, 1969, pp. 160-165.
+//       doi:10.1093/comjnl/12.2.160
+//
+//   [3] Stoer, J.; Bulirsch, R. (2002), "Introduction to Numerical Analysis", Springer
+//
+//   [4] On the sensitivity to rounding errors of Chebyshev series approximations
+//       J. Oliver
+//       Journal of Computational and Applied Mathematics
+//       Volume 3, Issue 2, June 1977, Pages 89-98
 //
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 // Goertzel coefficient and state data
 // Making these non class members to help simplify alignment
+typedef enum
+{
+    REINSCH_0,
+    GOERTZEL,
+    REINSCH_PI
+} DftRecurrence_T;
+
+const double recurrenceThreshold1 = 0.305 * M_PI; // Oliver 77
+const double recurrenceThreshold2 = 0.705 * M_PI; // Oliver 77
+DftRecurrence_T dftRecurrence = REINSCH_0;
 double theta;
 alignas(16) static double Kappa;
-alignas(16) static double a[2], b[2];
+alignas(16) static double a[2], b[2], τ[2];
 alignas(16) static double totalEnergy[2];
 alignas(16) static double dcEnergy[2];
 static uint32_t samplesProcessed;
@@ -1956,16 +1999,39 @@ static array<double,2> magnitude, phase, amplitude, purity;
 void PicoScopeFRA::InitGoertzel( uint32_t totalSamples, double fSamp, double fDetect )
 {
     double halfTheta;
-    a[0] = a[1] = b[0] = b[1] = 0.0;
+    τ[0] = τ[1] = a[0] = a[1] = b[0] = b[1] = 0.0;
     totalEnergy[0] = totalEnergy[1] = 0.0;
     dcEnergy[0] = dcEnergy[1] = 0.0;
     samplesProcessed = 0;
+    FRA_STATUS_MESSAGE_T fraStatusMsg;
+    wchar_t fraStatusText[128];
 
     N = totalSamples;
 
     theta = 2.0 * M_PI * (fDetect / fSamp);
-    halfTheta = M_PI * (fDetect / fSamp);
-    Kappa = 4.0 * pow( sin( halfTheta ), 2.0 );
+
+    if (theta < recurrenceThreshold1)
+    {
+        dftRecurrence = REINSCH_0;
+        halfTheta = M_PI * (fDetect / fSamp);
+        Kappa = -4.0 * pow( sin( halfTheta ), 2.0 );
+        swprintf( fraStatusText, 128, L"Status: Computing DFT using Reinsch(0); actual BW: %.3lg Hz", fSamp / N );
+    }
+    else if (theta < recurrenceThreshold2)
+    {
+        dftRecurrence = GOERTZEL;
+        Kappa = 2.0 * cos( theta );
+        swprintf( fraStatusText, 128, L"Status: Computing DFT using Goertzel; actual BW: %.3lg Hz", fSamp / N );
+    }
+    else
+    {
+        dftRecurrence = REINSCH_PI;
+        halfTheta = M_PI * (fDetect / fSamp);
+        Kappa = 4.0 * pow( cos( halfTheta ), 2.0 );
+        swprintf( fraStatusText, 128, L"Status: Computing DFT using Reinsch(PI); actual BW: %.3lg Hz", fSamp / N );
+    }
+
+    UpdateStatus( fraStatusMsg, FRA_STATUS_MESSAGE, fraStatusText, DFT_DIAGNOSTICS );
 }
 
 void PicoScopeFRA::FeedGoertzel( int16_t* inputSamples, int16_t* outputSamples, uint32_t n )
@@ -1973,34 +2039,81 @@ void PicoScopeFRA::FeedGoertzel( int16_t* inputSamples, int16_t* outputSamples, 
     bool lastBlock = false;
 
     // Vectors
-    __m128d KappaVec, aVec, bVec, totalEnergyVec, dcEnergyVec, sampleVec;
+    __m128d KappaVec, τVec, aVec, bVec, totalEnergyVec, dcEnergyVec, sampleVec;
+
+    FRA_STATUS_MESSAGE_T fraStatusMsg;
+    wchar_t fraStatusText[1024];
 
     // Determine if this is the last block.  If it is, there is special processing.
     lastBlock = ((samplesProcessed + n) == N);
 
     // Load vectors
     KappaVec = _mm_load1_pd(&Kappa);
+    τVec = _mm_load_pd(τ);
     aVec = _mm_load_pd(a);
     bVec = _mm_load_pd(b);
     totalEnergyVec = _mm_load_pd(totalEnergy);
     dcEnergyVec = _mm_load_pd(dcEnergy);
 
     // Execute the filter, d.c. Energy and Parseval energy time domain calculation
-    for (uint32_t i = 0; i < n; i++)
+    if (REINSCH_0 == dftRecurrence)
     {
-        // Load and convert samples to packed doubles
-        sampleVec = _mm_cvtepi32_pd( _mm_set_epi32( 0, 0, outputSamples[i], inputSamples[i] ) );
+        for (uint32_t i = 0; i < n; i++)
+        {
+            // Load and convert samples to packed doubles
+            sampleVec = _mm_cvtepi32_pd( _mm_set_epi32( 0, 0, outputSamples[i], inputSamples[i] ) );
 
-        //totalEnergy += samples[i]*samples[i];
-        totalEnergyVec = _mm_add_pd( totalEnergyVec, _mm_mul_pd( sampleVec, sampleVec ) );
+            //totalEnergy += samples[i]*samples[i];
+            totalEnergyVec = _mm_add_pd( totalEnergyVec, _mm_mul_pd( sampleVec, sampleVec ) );
 
-        //dcEnergy += samples[i];
-        dcEnergyVec = _mm_add_pd( dcEnergyVec, sampleVec );
+            //dcEnergy += samples[i];
+            dcEnergyVec = _mm_add_pd( dcEnergyVec, sampleVec );
 
-        //b = b - K*a + samples[i]
-        //a = a + b
-        bVec = _mm_add_pd( _mm_sub_pd(bVec, _mm_mul_pd(KappaVec, aVec)), sampleVec);
-        aVec = _mm_add_pd(aVec, bVec);
+            //b = b + K*a + samples[i]
+            //a = a + b
+            bVec = _mm_add_pd( _mm_add_pd(bVec, _mm_mul_pd(KappaVec, aVec)), sampleVec);
+            aVec = _mm_add_pd(aVec, bVec);
+        }
+    }
+    else if (GOERTZEL == dftRecurrence)
+    {
+        for (uint32_t i = 0; i < n; i++)
+        {
+            // Load and convert samples to packed doubles
+            sampleVec = _mm_cvtepi32_pd( _mm_set_epi32( 0, 0, outputSamples[i], inputSamples[i] ) );
+
+            //totalEnergy += samples[i]*samples[i];
+            totalEnergyVec = _mm_add_pd( totalEnergyVec, _mm_mul_pd( sampleVec, sampleVec ) );
+
+            //dcEnergy += samples[i];
+            dcEnergyVec = _mm_add_pd( dcEnergyVec, sampleVec );
+
+            //τ = K*a - b + samples[i];
+            //b = a;
+            //a = τ;
+            τVec = _mm_add_pd( _mm_sub_pd( _mm_mul_pd( KappaVec, aVec ), bVec ), sampleVec );
+            bVec = aVec;
+            aVec = τVec;
+        }
+    }
+    else // REINSCH_PI
+    {
+        for (uint32_t i = 0; i < n; i++)
+        {
+            // Load and convert samples to packed doubles
+            sampleVec = _mm_cvtepi32_pd( _mm_set_epi32( 0, 0, outputSamples[i], inputSamples[i] ) );
+
+            //totalEnergy += samples[i]*samples[i];
+            totalEnergyVec = _mm_add_pd( totalEnergyVec, _mm_mul_pd( sampleVec, sampleVec ) );
+
+            //dcEnergy += samples[i];
+            dcEnergyVec = _mm_add_pd( dcEnergyVec, sampleVec );
+
+            //b = K*a - b + samples[i]
+            //a = b - a
+            bVec = _mm_add_pd(_mm_sub_pd(_mm_mul_pd(KappaVec, aVec), bVec), sampleVec);
+            aVec = _mm_sub_pd(bVec, aVec);
+        }
     }
 
     samplesProcessed += n;
@@ -2011,8 +2124,22 @@ void PicoScopeFRA::FeedGoertzel( int16_t* inputSamples, int16_t* outputSamples, 
         array<double, 2> signalEnergy;
 
         // Iterate Goertzel once more with 0 input to get correct phase
-        bVec = _mm_sub_pd(bVec, _mm_mul_pd(KappaVec, aVec));
-        aVec = _mm_add_pd(aVec, bVec);
+        if (REINSCH_0 == dftRecurrence)
+        {
+            bVec = _mm_add_pd(bVec, _mm_mul_pd(KappaVec, aVec));
+            aVec = _mm_add_pd(aVec, bVec);
+        }
+        else if (GOERTZEL == dftRecurrence)
+        {
+            τVec = _mm_sub_pd( _mm_mul_pd( KappaVec, aVec ), bVec );
+            bVec = aVec;
+            aVec = τVec;
+        }
+        else // REINSCH_PI
+        {
+            bVec = _mm_sub_pd(_mm_mul_pd(KappaVec, aVec), bVec);
+            aVec = _mm_sub_pd(bVec, aVec);
+        }
 
         // Unvectorize
         _mm_store_pd(a, aVec);
@@ -2021,8 +2148,21 @@ void PicoScopeFRA::FeedGoertzel( int16_t* inputSamples, int16_t* outputSamples, 
         _mm_store_pd(dcEnergy, dcEnergyVec);
 
         // Compute the complex output
-        y[0] = std::complex<double>(b[0] + a[0] * (cos(theta) - 1.0), a[0] * sin(theta));
-        y[1] = std::complex<double>(b[1] + a[1] * (cos(theta) - 1.0), a[1] * sin(theta));
+        if (REINSCH_0 == dftRecurrence)
+        {
+            y[0] = std::complex<double>(b[0] + a[0] * Kappa/2.0, a[0] * sin(theta));
+            y[1] = std::complex<double>(b[1] + a[1] * Kappa/2.0, a[1] * sin(theta));
+        }
+        else if (GOERTZEL == dftRecurrence)
+        {
+            y[0] = std::complex<double>(a[0] - b[0] * cos(theta), b[0] * sin(theta));
+            y[1] = std::complex<double>(a[1] - b[1] * cos(theta), b[1] * sin(theta));
+        }
+        else // REINSCH_PI
+        {
+            y[0] = std::complex<double>(b[0] - a[0] * Kappa/2.0, -a[0] * sin(theta));
+            y[1] = std::complex<double>(b[1] - a[1] * Kappa/2.0, -a[1] * sin(theta));
+        }
 
         magnitude[0] = abs(y[0]);
         magnitude[1] = abs(y[1]);
@@ -2040,10 +2180,20 @@ void PicoScopeFRA::FeedGoertzel( int16_t* inputSamples, int16_t* outputSamples, 
 
         purity[0] = signalEnergy[0] / (totalEnergy[0] - dcEnergy[0]);
         purity[1] = signalEnergy[1] / (totalEnergy[1] - dcEnergy[1]);
+
+        // Output diagnostics
+        swprintf( fraStatusText, 1024, L"Status: DFT results:\r\n"
+                                       L"   Input magnitude: %lg; Input amplitude: %lg; Input phase: %lg; Input purity: %lg; Input DC energy: %lg; Input signal energy: %lg, Input total energy: %lg\r\n"
+                                       L"   Output magnitude: %lg; Output amplitude: %lg; Output phase: %lg; Output purity: %lg; Output DC energy: %lg; Output signal energy: %lg, Output total energy: %lg",
+                                       magnitude[0], amplitude[0], phase[0], purity[0], dcEnergy[0], signalEnergy[0], totalEnergy[0],
+                                       magnitude[1], amplitude[1], phase[1], purity[1], dcEnergy[1], signalEnergy[1], totalEnergy[1] );
+
+        UpdateStatus( fraStatusMsg, FRA_STATUS_MESSAGE, fraStatusText, DFT_DIAGNOSTICS );
     }
     else
     {
         // Unvectorize
+        _mm_store_pd(τ, τVec);
         _mm_store_pd(a, aVec);
         _mm_store_pd(b, bVec);
         _mm_store_pd(totalEnergy, totalEnergyVec);
