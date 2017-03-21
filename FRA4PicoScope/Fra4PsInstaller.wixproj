@@ -9,6 +9,8 @@
                 <OutputName>FRA4PicoScope</OutputName>
                 <OutputType>Package</OutputType>
                 <WixTargetsPath Condition=" '$(WixTargetsPath)' == '' ">$(MSBuildExtensionsPath)\Microsoft\WiX\v3.x\Wix.targets</WixTargetsPath>
+                <Cultures>en-us</Cultures>
+                <LinkerAdditionalOptions>-ext WixUIExtension</LinkerAdditionalOptions>
         </PropertyGroup>
         <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|x86' ">
                 <OutputPath>bin\$(Configuration)\</OutputPath>
