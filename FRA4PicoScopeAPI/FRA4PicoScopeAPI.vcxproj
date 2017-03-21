@@ -81,6 +81,7 @@
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
     <LinkIncremental>false</LinkIncremental>
     <IncludePath>..\lib\plplot_install_release\include\plplot;$(ProgramFiles)\Pico Technology\SDK\inc;$(IncludePath)</IncludePath>
+    <TargetName>FRA4PicoScope</TargetName>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
     <LinkIncremental>false</LinkIncremental>

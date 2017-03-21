@@ -5,15 +5,26 @@
         <Media Id="1" Cabinet="simple.cab" EmbedCab="yes" CompressionLevel ="high" />
         <Directory Id="TARGETDIR" Name="SourceDir">
             <Directory Id="ProgramFilesFolder" Name="PFiles">
-                <Directory Id="FRA4PicoScope" Name="FRA4PicoScope">
+                <Directory Id="INSTALLDIR" Name="FRA4PicoScope">
                     <Component Id="ApplicationFiles" DiskId="1" KeyPath="no" Guid="36038c11-ec02-4ce1-b9db-da18b2094ad2">
                         <Shortcut Id="ExeShortcut" Directory="ProgramMenuDir" Name="FRA For PicoScope" Advertise="yes" Icon="StartMenuIcon.exe" IconIndex="0" WorkingDirectory="FRA4PicoScope" />
-                        <File Id="FRA4PICOSCOPE.EXE" Name="FRA4PicoScope.exe" Source="..\Release\FRA4PicoScope.exe">
-                        </File>
+                        <File Id="FRA4PICOSCOPE.EXE" Name="FRA4PicoScope.exe" Source="..\Release\FRA4PicoScope.exe" />
+                    </Component>
+                    <Component Id="ApiFiles" DiskId="1" KeyPath="no" Guid="">
+                        <File Id="FRA4PICOSCOPE.DLL" Name="FRA4PicoScope.dll" Source="..\Release\FRA4PicoScope.dll" />
+                        <Environment Id="PATH" Action="set" Name="PATH" Part="last" Permanent="no" System ="yes" Value="[INSTALLDIR]" />
+                    </Component>
+                    <Component Id="SharedFiles" DiskId="1" KeyPath="no" Guid="">
                         <File Id="CMAP0_DEFAULT.PAL" Name="cmap0_default.pal" Source="cmap0_default.pal" />
                         <File Id="CMAP1_DEFAULT.PAL" Name="cmap1_default.pal" Source="cmap1_default.pal" />
                         <File Id="PLXTND5.FNT" Name="plxtnd5.fnt" Source="plxtnd5.fnt" />
                     </Component>
+                    <Directory Id="Examples" Name="Examples">
+                        <Component Id="ApiExampleFiles" DiskId="1" KeyPath="no" Guid="">
+                            <File Id="TESTFRAAPP.CPP" Name="TestFraApp.cpp" Source="..\FRA4PicoScopeAPI\Examples\TestFraApp.cpp" />
+                            <File Id="TESTFRA.XLSM" Name="TestFRA.xlsm" Source="..\FRA4PicoScopeAPI\Examples\TestFRA.xlsm" />
+                        </Component>
+                    </Directory>
                 </Directory>
             </Directory>
             <Directory Id="AppDataFolder">
@@ -51,12 +62,18 @@
                 </Directory>
             </Directory>
         </Directory>
-        <Feature Id="DefaultFeature" Title="Main Feature" Level="1">
+        <Feature Id="FRA4PsAppFeature" Title="FRA for PicoScope Application" Level="1">
             <ComponentRef Id="ApplicationFiles" />
+            <ComponentRef Id="SharedFiles" />
             <ComponentRef Id="StartMenuShortcuts" />
             <ComponentRef Id="ApplicationData" />
             <ComponentRef Id="UserData" />
             <ComponentRef Id="UserDiagData" />
+        </Feature>
+        <Feature Id="FRA4PsApiFeature" Title="FRA for PicoScope API" Level="1">
+            <ComponentRef Id="ApiFiles" />
+            <ComponentRef Id="SharedFiles" />
+            <ComponentRef Id="ApiExampleFiles" />
         </Feature>
         <UI />
         <Icon Id="StartMenuIcon.exe" SourceFile="Fra4PS.ico" />
