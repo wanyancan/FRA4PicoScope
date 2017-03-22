@@ -1,9 +1,10 @@
 <?xml version="1.0" encoding="utf-8"?>
 <Wix xmlns="http://schemas.microsoft.com/wix/2006/wi">
-    <Product Id="29B6E5D9-1CBE-4197-868E-136B80B0FDC1" Name="FRA for PicoScope" Language="1033" Version="1.0" Manufacturer="Aaron Hexamer" UpgradeCode="1E288F95-986A-44C9-BF01-6E6397433F8E">
+    <Product Id="*" Name="FRA for PicoScope" Language="1033" Version="0.6.0.0" Manufacturer="Aaron Hexamer" UpgradeCode="1E288F95-986A-44C9-BF01-6E6397433F8E">
         <Package Description="Simple Installer" Comments="Simple Installer" InstallerVersion="200" Compressed="yes" />
         <Media Id="1" Cabinet="simple.cab" EmbedCab="yes" CompressionLevel ="high" />
         <UIRef Id ="WixUI_FeatureTree" />
+        <MajorUpgrade AllowDowngrades="yes" />
         <Directory Id="TARGETDIR" Name="SourceDir">
             <Directory Id="ProgramFilesFolder" Name="PFiles">
                 <Directory Id="INSTALLDIR" Name="FRA4PicoScope">
@@ -11,17 +12,17 @@
                         <Shortcut Id="ExeShortcut" Directory="ProgramMenuDir" Name="FRA For PicoScope" Advertise="yes" Icon="StartMenuIcon.exe" IconIndex="0" WorkingDirectory="FRA4PicoScope" />
                         <File Id="FRA4PICOSCOPE.EXE" Name="FRA4PicoScope.exe" Source="..\Release\FRA4PicoScope.exe" />
                     </Component>
-                    <Component Id="ApiFiles" DiskId="1" KeyPath="no" Guid="">
+                    <Component Id="ApiFiles" DiskId="1" KeyPath="no" Guid="9178c38f-8a4e-4e4f-b734-6d2560ff1a15">
                         <File Id="FRA4PICOSCOPE.DLL" Name="FRA4PicoScope.dll" Source="..\Release\FRA4PicoScope.dll" />
                         <Environment Id="PATH" Action="set" Name="PATH" Part="last" Permanent="no" System ="yes" Value="[INSTALLDIR]" />
                     </Component>
-                    <Component Id="SharedFiles" DiskId="1" KeyPath="no" Guid="">
-                        <File Id="CMAP0_DEFAULT.PAL" Name="cmap0_default.pal" Source="cmap0_default.pal" />
-                        <File Id="CMAP1_DEFAULT.PAL" Name="cmap1_default.pal" Source="cmap1_default.pal" />
-                        <File Id="PLXTND5.FNT" Name="plxtnd5.fnt" Source="plxtnd5.fnt" />
+                    <Component Id="SharedFiles" DiskId="1" KeyPath="no" Guid="01b0f643-527a-4e00-8af7-cf1941785dc1">
+                        <File Id="CMAP0_DEFAULT.PAL" Name="cmap0_default.pal" Source="..\FRA4PicoScope\cmap0_default.pal" />
+                        <File Id="CMAP1_DEFAULT.PAL" Name="cmap1_default.pal" Source="..\FRA4PicoScope\cmap1_default.pal" />
+                        <File Id="PLXTND5.FNT" Name="plxtnd5.fnt" Source="..\FRA4PicoScope\plxtnd5.fnt" />
                     </Component>
                     <Directory Id="Examples" Name="Examples">
-                        <Component Id="ApiExampleFiles" DiskId="1" KeyPath="no" Guid="">
+                        <Component Id="ApiExampleFiles" DiskId="1" KeyPath="no" Guid="62435cd6-94e2-426e-b5b4-7b704d3b9008">
                             <File Id="TESTFRAAPP.CPP" Name="TestFraApp.cpp" Source="..\FRA4PicoScopeAPI\Examples\TestFraApp.cpp" />
                             <File Id="TESTFRA.XLSM" Name="TestFRA.xlsm" Source="..\FRA4PicoScopeAPI\Examples\TestFRA.xlsm" />
                         </Component>
@@ -30,7 +31,7 @@
             </Directory>
             <Directory Id="AppDataFolder">
                 <Directory Id="FRA4PicoScopeAppFolder" Name="FRA4PicoScope">
-                    <Component Id="ApplicationData" Guid="">
+                    <Component Id="ApplicationData" Guid="781463d8-1981-4db9-9289-5aaebb671616">
                         <RegistryValue Root="HKCU" Key="Software\[Manufacturer]\[ProductName]" Name="installed" Type="integer" Value="1" KeyPath="yes" />
                         <RemoveFolder Id="FRA4PicoScopeAppFolder" On="uninstall" />
                         <CreateFolder />
@@ -39,13 +40,13 @@
             </Directory>
             <Directory Id="PersonalFolder">
                 <Directory Id="FRA4PicoScopeUserDataFolder" Name="FRA4PicoScope">
-                    <Component Id="UserData" Guid="">
+                    <Component Id="UserData" Guid="54637aa2-b0ea-4f5d-8060-b850e4b5320c">
                         <RegistryValue Root="HKCU" Key="Software\[Manufacturer]\[ProductName]" Name="installed" Type="integer" Value="1" KeyPath="yes" />
                         <RemoveFolder Id="FRA4PicoScopeUserDataFolder" On="uninstall" />
                         <CreateFolder />
                     </Component>
                     <Directory Id="FRA4PicoScopeUserDiagDataFolder" Name="diag">
-                        <Component Id="UserDiagData" Guid="">
+                        <Component Id="UserDiagData" Guid="d6d18c87-62ea-4056-a961-a8da6a16c1d7">
                             <RegistryValue Root="HKCU" Key="Software\[Manufacturer]\[ProductName]" Name="installed" Type="integer" Value="1" KeyPath="yes" />
                             <RemoveFolder Id="FRA4PicoScopeUserDiagDataFolder" On="uninstall" />
                             <CreateFolder />
@@ -77,6 +78,6 @@
             <ComponentRef Id="ApiExampleFiles" />
         </Feature>
         <UI />
-        <Icon Id="StartMenuIcon.exe" SourceFile="Fra4PS.ico" />
+        <Icon Id="StartMenuIcon.exe" SourceFile="..\FRA4PicoScope\Fra4PS.ico" />
     </Product>
 </Wix>

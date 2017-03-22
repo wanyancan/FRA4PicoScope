@@ -7,6 +7,12 @@ Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "FRA4PicoScope", "FRA4PicoSc
 EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "FRA4PicoScopeAPI", "FRA4PicoScopeAPI\FRA4PicoScopeAPI.vcxproj", "{19B05956-F1BB-4002-8A2A-E62ABF3B2855}"
 EndProject
+Project("{930C7802-8A8C-48F9-8165-68863BCCD9DD}") = "Fra4PsInstaller", "FRA4PicoScopeInstaller\Fra4PsInstaller.wixproj", "{89C901A8-75F5-438C-AA6D-F697D58FD594}"
+	ProjectSection(ProjectDependencies) = postProject
+		{2E4F9B13-2B41-4132-9B62-B4237FC3F6A9} = {2E4F9B13-2B41-4132-9B62-B4237FC3F6A9}
+		{19B05956-F1BB-4002-8A2A-E62ABF3B2855} = {19B05956-F1BB-4002-8A2A-E62ABF3B2855}
+	EndProjectSection
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Win32 = Debug|Win32
@@ -29,6 +35,12 @@ Global
 		{19B05956-F1BB-4002-8A2A-E62ABF3B2855}.Release|Win32.Build.0 = Release|Win32
 		{19B05956-F1BB-4002-8A2A-E62ABF3B2855}.Release|x64.ActiveCfg = Release|x64
 		{19B05956-F1BB-4002-8A2A-E62ABF3B2855}.Release|x64.Build.0 = Release|x64
+		{89C901A8-75F5-438C-AA6D-F697D58FD594}.Debug|Win32.ActiveCfg = Debug|x86
+		{89C901A8-75F5-438C-AA6D-F697D58FD594}.Debug|Win32.Build.0 = Debug|x86
+		{89C901A8-75F5-438C-AA6D-F697D58FD594}.Debug|x64.ActiveCfg = Debug|x86
+		{89C901A8-75F5-438C-AA6D-F697D58FD594}.Release|Win32.ActiveCfg = Release|x86
+		{89C901A8-75F5-438C-AA6D-F697D58FD594}.Release|Win32.Build.0 = Release|x86
+		{89C901A8-75F5-438C-AA6D-F697D58FD594}.Release|x64.ActiveCfg = Release|x86
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
