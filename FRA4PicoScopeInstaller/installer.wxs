@@ -79,6 +79,8 @@
 
         <Icon Id="StartMenuIcon.exe" SourceFile="..\FRA4PicoScope\Fra4PS.ico" />
 
+        <WixVariable Id="WixUIBannerBmp" Value="installBanner.bmp" />
+        <WixVariable Id="WixUIDialogBmp" Value="installDialog.bmp" />
         <UI Id="WixUI_FeatureTree">
             <TextStyle Id="WixUI_Font_Normal" FaceName="Tahoma" Size="8" />
             <TextStyle Id="WixUI_Font_Bigger" FaceName="Tahoma" Size="12" />

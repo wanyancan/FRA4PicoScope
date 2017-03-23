@@ -376,7 +376,7 @@ bool ValidateAndStoreSettings( HWND hDlg )
         }
     }
 
-    if (noiseRejectModeBandwidthValid && noiseRejectModeTimebaseValid)
+    if (HIGH_NOISE == sampleMode && noiseRejectModeBandwidthValid && noiseRejectModeTimebaseValid)
     {
         double noiseRejectModeSampleRate;
         uint32_t maxScopeSamplesPerChannel;
