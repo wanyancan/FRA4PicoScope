@@ -67,6 +67,19 @@ uint32_t currentMinCycles = 0;
 bool currentSampleRateValid = false;
 bool currentMinCyclesValid = false;
 
+////////////////////////////////////////////////////////////////////////////////////////////////////
+//
+// Name: PrintFrequency
+//
+// Purpose: Prints frequnecy to a string with fixed precision and standard units (GHz, MHz, kHz)
+//
+// Parameters: [in] freq - frequency tp print
+//             [out] return - formatted result
+//
+// Notes: None
+//
+///////////////////////////////////////////////////////////////////////////////////////////////////
+
 std::wstring PrintFrequency(double freq)
 {
     std::wstring units;
@@ -116,6 +129,20 @@ std::wstring PrintFrequency(double freq)
     return (valueStr);
 }
 
+////////////////////////////////////////////////////////////////////////////////////////////////////
+//
+// Name: GetNoiseRejectModeMinFrequency
+//
+// Purpose: Helper function to print the minimum (start) frequency when in noise reject mode
+//
+// Parameters: [in] minCycles - Minimum cycles to capture
+//             [in] sample Rate - Scope sampling rate as determined by timebase setting
+//             [out] return - Formatted minimum start frequency string
+//
+// Notes: Considers the number of samples available by the scope (another input)
+//
+///////////////////////////////////////////////////////////////////////////////////////////////////
+
 std::wstring GetNoiseRejectModeMinFrequency(uint32_t minCycles, double sampleRate)
 {
     uint32_t maxScopeSamplesPerChannel;
@@ -139,6 +166,18 @@ std::wstring GetNoiseRejectModeMinFrequency(uint32_t minCycles, double sampleRat
     }
     return retVal;
 }
+
+////////////////////////////////////////////////////////////////////////////////////////////////////
+//
+// Name: UpdateMinStimulusFrequency
+//
+// Purpose: Updates the noise reject mode minimum stimulus frequency on the screen
+//
+// Parameters: [in] hDlg - Handle to the dialog owning the static text control to be updated
+//
+// Notes: Called in response to the user changing the timebase
+//
+///////////////////////////////////////////////////////////////////////////////////////////////////
 
 void UpdateMinStimulusFrequency( HWND hDlg )
 {

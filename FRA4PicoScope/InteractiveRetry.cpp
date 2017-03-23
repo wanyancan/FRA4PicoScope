@@ -42,6 +42,19 @@
 
 static bool bAdjustSetupOpen = false;
 
+////////////////////////////////////////////////////////////////////////////////////////////////////
+//
+// Name: AdjustDialogHeight
+//
+// Purpose: Adjusts the dialog height to show or hide the retry adjustment controls based on the
+//          toggled state
+//
+// Parameters: [in] hDlg - Handle to the Interactive Retry dialog
+//
+// Notes: None
+//
+///////////////////////////////////////////////////////////////////////////////////////////////////
+
 void AdjustDialogHeight( HWND hDlg )
 {
     RECT dlgExistingRect;
@@ -88,6 +101,19 @@ void AdjustDialogHeight( HWND hDlg )
 
 }
 
+////////////////////////////////////////////////////////////////////////////////////////////////////
+//
+// Name: GetAutorangeStatusString
+//
+// Purpose: Returns a string explaining the auto-range status
+//
+// Parameters: [in] status - the auto-range status
+//             [out] return - the explanatory string
+//
+// Notes: None
+//
+///////////////////////////////////////////////////////////////////////////////////////////////////
+
 static const wchar_t autorangeStatusStrings[NUM_AUTORANGE_STATUS_VALUES+1][128] =
 {
     L"OK",
@@ -111,6 +137,19 @@ const wchar_t* GetAutorangeStatusString(AUTORANGE_STATUS_T status)
         return autorangeStatusStrings[NUM_AUTORANGE_STATUS_VALUES];
     }
 }
+
+////////////////////////////////////////////////////////////////////////////////////////////////////
+//
+// Name: PrintVolts
+//
+// Purpose: Prints a voltage value to six digits precision.
+//
+// Parameters: [in] value - the voltage to print
+//             [out] valueStr - the formatted output string
+//
+// Notes: None
+//
+///////////////////////////////////////////////////////////////////////////////////////////////////
 
 void PrintVolts(double value, std::wstring& valueStr)
 {
@@ -142,6 +181,18 @@ void PrintVolts(double value, std::wstring& valueStr)
         valueStr += L" V";
     }
 }
+
+////////////////////////////////////////////////////////////////////////////////////////////////////
+//
+// Name: InteractiveRetryHandler
+//
+// Purpose: Dialog procedure for the Settings Dialog.  Handles initialization and user actions.
+//
+// Parameters: See Windows API documentation
+//
+// Notes: N/A
+//
+///////////////////////////////////////////////////////////////////////////////////////////////////
 
 INT_PTR CALLBACK InteractiveRetryHandler(HWND hDlg, UINT message, WPARAM wParam, LPARAM lParam)
 {
