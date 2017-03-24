@@ -11,15 +11,24 @@
                         <Shortcut Id="ExeShortcut" Directory="ProgramMenuDir" Name="FRA For PicoScope" Advertise="yes" Icon="StartMenuIcon.exe" IconIndex="0" WorkingDirectory="FRA4PicoScope" />
                         <File Id="FRA4PICOSCOPE.EXE" Name="FRA4PicoScope.exe" Source="..\Release\FRA4PicoScope.exe" />
                     </Component>
-                    <Component Id="ApiFiles" DiskId="1" KeyPath="no" Guid="9178c38f-8a4e-4e4f-b734-6d2560ff1a15">
-                        <File Id="FRA4PICOSCOPE.DLL" Name="FRA4PicoScope.dll" Source="..\Release\FRA4PicoScope.dll" />
-                        <Environment Id="PATH" Action="set" Name="PATH" Part="last" Permanent="no" System ="yes" Value="[INSTALLDIR]" />
-                    </Component>
+                    <Directory Id="LIBDIR" Name="Lib">
+                        <Component Id="ApiLibFiles" DiskId="1" KeyPath="no" Guid="9178c38f-8a4e-4e4f-b734-6d2560ff1a15">
+                            <File Id="FRA4PICOSCOPE.DLL" Name="FRA4PicoScope.dll" Source="..\Release\FRA4PicoScope.dll" />
+                            <Environment Id="PATH" Action="set" Name="PATH" Part="last" Permanent="no" System ="yes" Value="[LIBDIR]" />
+                        </Component>
+                    </Directory>
                     <Component Id="SharedFiles" DiskId="1" KeyPath="no" Guid="01b0f643-527a-4e00-8af7-cf1941785dc1">
                         <File Id="CMAP0_DEFAULT.PAL" Name="cmap0_default.pal" Source="..\FRA4PicoScope\cmap0_default.pal" />
                         <File Id="CMAP1_DEFAULT.PAL" Name="cmap1_default.pal" Source="..\FRA4PicoScope\cmap1_default.pal" />
                         <File Id="PLXTND5.FNT" Name="plxtnd5.fnt" Source="..\FRA4PicoScope\plxtnd5.fnt" />
                     </Component>
+                    <Directory Id="Inc" Name="Inc">
+                        <Component Id="ApiIncFiles" DiskId="1" KeyPath="no" Guid="a264c656-0b02-4fc6-a0e8-adcc83c30df7">
+                            <File Id="FRA4PPICOSCOPEAPI.H" Name="FRA4PicoScopeAPI.h" Source="..\FRA4PicoScopeAPI\FRA4PicoScopeAPI.h" />
+                            <File Id="FRA4PICOSCOPEINTERFACETYPES.H" Name="FRA4PicoScopeInterfaceTypes.h" Source="..\FRA4PicoScope\FRA4PicoScopeInterfaceTypes.h" />
+                            <File Id="FRA4PPICOSCOPEAPI.VBA" Name="FRA4PicoScopeAPI.vba" Source="..\FRA4PicoScopeAPI\FRA4PicoScopeAPI.vba" />
+                        </Component>
+                    </Directory>
                     <Directory Id="Examples" Name="Examples">
                         <Component Id="ApiExampleFiles" DiskId="1" KeyPath="no" Guid="62435cd6-94e2-426e-b5b4-7b704d3b9008">
                             <File Id="TESTFRAAPP.CPP" Name="TestFraApp.cpp" Source="..\FRA4PicoScopeAPI\Examples\TestFraApp.cpp" />
@@ -72,8 +81,9 @@
             <ComponentRef Id="UserDiagData" />
         </Feature>
         <Feature Id="FRA4PsApiFeature" Title="FRA for PicoScope API" Level="1">
-            <ComponentRef Id="ApiFiles" />
+            <ComponentRef Id="ApiLibFiles" />
             <ComponentRef Id="SharedFiles" />
+            <ComponentRef Id="ApiIncFiles" />
             <ComponentRef Id="ApiExampleFiles" />
         </Feature>
 
