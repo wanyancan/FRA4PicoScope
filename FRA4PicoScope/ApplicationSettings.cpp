@@ -96,7 +96,7 @@ bool ApplicationSettings::ReadApplicationSettings( void )
             settingsFileInputStream.imbue(locale(locale::empty(), new codecvt_utf8<wchar_t>));
             read_xml(settingsFileInputStream, AppSettingsPropTree, xml_parser::trim_whitespace);
             AppSettingsPropTreeClean = AppSettingsPropTree;
-            CheckSettingsVersionAndUpgrade();
+            CheckSettingsVersionAndUpgrade(APPLICATION_SETTINGS);
         }
         else
         {
@@ -256,33 +256,57 @@ bool ApplicationSettings::InitializeApplicationSettingsFile( void )
 //
 // Name: ApplicationSettings::CheckSettingsVersionAndUpgrade
 //
-// Purpose: Checks to see if the version of the application settings file matches the current
-//          running application version.  If not, then the file is upgraded.  This may simply mean
+// Purpose: Checks to see if the version of the settings file matches the current running 
+//          application version.  If not, then the file is upgraded.  This may simply mean
 //          re-initialization to the latest format, or it may mean attempting to preserve the user's
 //          settings and tranferring them to a settings file with the most recent format.
 //
-// Parameters: None
+// Parameters: [in] type - which type of setting file to process (application or scope)
+//             [in] pScope - pointer to the scope for case where the settings type is scope
 //
 // Notes: N/A
 //
 ///////////////////////////////////////////////////////////////////////////////////////////////////
 
-void ApplicationSettings::CheckSettingsVersionAndUpgrade(void)
+void ApplicationSettings::CheckSettingsVersionAndUpgrade(Settings_T type, PicoScope* pScope)
 {
     string currentVersionString( appVersionString );
-    string settingsVersionString = GetApplicationVersion();
+    string settingsVersionString;
+
+    if (APPLICATION_SETTINGS == type)
+    {
+        settingsVersionString = GetApplicationSettingsVersion();
+    }
+    else // SCOPE_SETTINGS
+    {
+        settingsVersionString = GetScopeSettingsVersion();
+    }
 
     if (0 != currentVersionString.compare(settingsVersionString))
     {
         if (0 == settingsVersionString.compare("unknown"))
         {
             // There was no settings version in the file, so it must be an older version
-            InitializeApplicationSettingsFile();
+            if (APPLICATION_SETTINGS == type)
+            {
+                InitializeApplicationSettingsFile();
+            }
+            else // SCOPE_SETTINGS
+            {
+                InitializeScopeSettingsFile(pScope);
+            }
         }
         else
         {
             // TBD - In the future, we can handle upgrading the file, rather than re-initializing it
-            InitializeApplicationSettingsFile();
+            if (APPLICATION_SETTINGS == type)
+            {
+                InitializeApplicationSettingsFile();
+            }
+            else // SCOPE_SETTINGS
+            {
+                InitializeScopeSettingsFile(pScope);
+            }
         }
     }
 }
@@ -402,6 +426,7 @@ bool ApplicationSettings::ReadScopeSettings( PicoScope* pScope )
             ScopeSettingsPropTree.clear();
             read_xml(settingsFileInputStream, ScopeSettingsPropTree, xml_parser::trim_whitespace);
             ScopeSettingsPropTreeClean = ScopeSettingsPropTree;
+            CheckSettingsVersionAndUpgrade(SCOPE_SETTINGS, pScope);
         }
         catch( const ptree_error& pte )
         {
@@ -437,6 +462,8 @@ bool ApplicationSettings::InitializeScopeSettingsFile(PicoScope* pScope)
     wofstream settingsFileOutputStream;
 
     ScopeSettingsPropTree.clear();
+    wstring appVersionStringW = wstring_convert<codecvt_utf8<wchar_t>>().from_bytes(appVersionString);
+    ScopeSettingsPropTree.put( L"appVersion", appVersionStringW );
     ScopeSettingsPropTree.put( L"picoScope.inputChannel.name", L"A" );
     ScopeSettingsPropTree.put( L"picoScope.inputChannel.attenuation", ATTEN_1X );
     ScopeSettingsPropTree.put( L"picoScope.inputChannel.coupling",PS_AC );

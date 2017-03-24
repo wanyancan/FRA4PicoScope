@@ -66,13 +66,31 @@ class ApplicationSettings
 
         // Accessors/Mutators for Application Settings
 
-        inline string GetApplicationVersion(void)
+        inline string GetApplicationSettingsVersion(void)
         {
             string versionString;
             wstring versionStringW;
             try
             {
                 versionStringW = AppSettingsPropTree.get<wstring>( L"appVersion" );
+                versionString = wstring_convert<codecvt_utf8<wchar_t>>().to_bytes(versionStringW);
+            }
+            catch ( const ptree_error& pte )
+            {
+                UNREFERENCED_PARAMETER(pte);
+                versionString = "unknown";
+            }
+
+            return versionString;
+        }
+
+        inline string GetScopeSettingsVersion(void)
+        {
+            string versionString;
+            wstring versionStringW;
+            try
+            {
+                versionStringW = ScopeSettingsPropTree.get<wstring>( L"appVersion" );
                 versionString = wstring_convert<codecvt_utf8<wchar_t>>().to_bytes(versionStringW);
             }
             catch ( const ptree_error& pte )
@@ -709,9 +727,15 @@ class ApplicationSettings
 
     private:
 
+        typedef enum
+        {
+            APPLICATION_SETTINGS,
+            SCOPE_SETTINGS
+        } Settings_T;
+
         bool InitializeScopeSettingsFile( PicoScope* pScope );
         bool InitializeApplicationSettingsFile( void );
-        void CheckSettingsVersionAndUpgrade( void );
+        void CheckSettingsVersionAndUpgrade( Settings_T type, PicoScope* pScope = NULL );
 
         wstring appDataFolder;
         wstring appDataFilename;

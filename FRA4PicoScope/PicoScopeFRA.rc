@@ -99,9 +99,9 @@ STYLE DS_SETFONT | DS_MODALFRAME | DS_FIXEDSYS | DS_CENTER | WS_POPUP | WS_CAPTI
 CAPTION "About Frequency Response Analyzer for PicoScope"
 FONT 8, "MS Shell Dlg", 0, 0, 0x1
 BEGIN
-    ICON            IDR_MAINFRAME,IDC_STATIC,14,14,21,20
+    ICON            IDR_MAINFRAME,IDC_STATIC,14,14,20,20
     LTEXT           "",IDC_APPID,10,14,200,8,SS_NOPREFIX
-    LTEXT           "Copyright (C) 2014, 2015 by Aaron Hexamer",IDC_STATIC,10,24,180,8
+    LTEXT           "Copyright (C) 2014-2017 by Aaron Hexamer",IDC_STATIC,10,24,180,8
     LTEXT           "Fra4PicoScope is distributed under the terms of the GPLv3 license.\n\n - This software uses the PLplot Library, licensed \n    under the terms of the LGPLv2 license.\n\n - This software uses the Qt Library, licensed \n    under the terms of the GPLv3 license.",IDC_STATIC,10,44,200,100
     LTEXT           "http://www.gnu.org/licenses/lgpl.html \nhttp://www.gnu.org/licenses/gpl.html",IDC_STATIC,10,122,200,100
     DEFPUSHBUTTON   "OK",IDOK,170,146,50,14,WS_GROUP
