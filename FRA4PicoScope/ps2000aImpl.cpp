@@ -220,14 +220,20 @@ bool ps2000aImpl::InitializeScope(void)
     {
         case PS2206:
         case PS2206A:
-        {
-            signalGeneratorPrecision = 20.0e6 / (double)UINT32_MAX;
-            break;
-        }
+        case PS2206B:
         case PS2207:
         case PS2207A:
+        case PS2207B:
         case PS2208:
         case PS2208A:
+        case PS2208B:
+        case PS2205AMSO:
+        case PS2206BMSO:
+        case PS2207BMSO:
+        case PS2208BMSO:
+        case PS2405A:
+        case PS2406B:
+        case PS2407B:
         case PS2408B:
         {
             signalGeneratorPrecision = 20.0e6 / (double)UINT32_MAX;
@@ -263,6 +269,9 @@ bool ps2000aImpl::InitializeScope(void)
                 minRange = (PS_RANGE)PS2000A_20MV;
                 break;
             }
+            case PS2206:
+            case PS2207:
+            case PS2208:
             case PS2206A:
             case PS2207A:
             case PS2208A:
