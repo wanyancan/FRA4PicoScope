@@ -602,10 +602,17 @@ bool CommonMethod(SCOPE_FAMILY_LT, SetupChannel)( PS_CHANNEL channel, PS_COUPLIN
     }
 #endif
 
+#if defined(PS4000A)
+    if (PICO_ERROR(CommonApi(SCOPE_FAMILY_LT, SetChannel)( handle, (CommonEnum(SCOPE_FAMILY_UT,CHANNEL))channel,
+                                                           TRUE, (CommonEnum(SCOPE_FAMILY_UT,COUPLING))coupling,
+                                                           (PICO_CONNECT_PROBE_RANGE)range ANALOG_OFFSET_ARG
+                                                           BANDWIDTH_LIMITER_ARG )))
+#else
     if (PICO_ERROR(CommonApi(SCOPE_FAMILY_LT, SetChannel)( handle, (CommonEnum(SCOPE_FAMILY_UT,CHANNEL))channel,
                                                            TRUE, (CommonEnum(SCOPE_FAMILY_UT,COUPLING))coupling,
                                                            (CommonEnum(SCOPE_FAMILY_UT,RANGE))range ANALOG_OFFSET_ARG
                                                            BANDWIDTH_LIMITER_ARG )))
+#endif
     {
         fraStatusText << L"Fatal error: Failed to setup input channel: " << status;
         LogMessage( fraStatusText.str() );
@@ -723,10 +730,17 @@ bool CommonMethod(SCOPE_FAMILY_LT, DisableChannel)( PS_CHANNEL channel )
     wstringstream fraStatusText;
     float offset = 0.0;
 
+#if defined(PS4000A)
+    if (PICO_ERROR(CommonApi(SCOPE_FAMILY_LT, SetChannel)( handle, (CommonEnum(SCOPE_FAMILY_UT,CHANNEL))channel,
+                                                           FALSE, (CommonEnum(SCOPE_FAMILY_UT,COUPLING))0,
+                                                           (PICO_CONNECT_PROBE_RANGE)0 ANALOG_OFFSET_ARG
+                                                           BANDWIDTH_LIMITER_ARG )))
+#else
     if (PICO_ERROR(CommonApi(SCOPE_FAMILY_LT, SetChannel)( handle, (CommonEnum(SCOPE_FAMILY_UT,CHANNEL))channel,
                                                            FALSE, (CommonEnum(SCOPE_FAMILY_UT,COUPLING))0,
                                                            (CommonEnum(SCOPE_FAMILY_UT,RANGE))0 ANALOG_OFFSET_ARG
                                                            BANDWIDTH_LIMITER_ARG )))
+#endif
     {
         fraStatusText << L"Fatal error: Failed to disable channel: " << status;
         LogMessage( fraStatusText.str() );
