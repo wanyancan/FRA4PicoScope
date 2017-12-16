@@ -322,7 +322,9 @@ double PicoScopeFRA::GetMinFrequency(void)
     {
         if (mSamplingMode == LOW_NOISE)
         {
-            return (ps->GetSignalGeneratorPrecision());
+            double minSamplingFrequency;
+            ps->GetFrequencyFromTimebase(ps->GetMaxTimebase(), minSamplingFrequency);
+            return (max( (mMinCyclesCaptured * minSamplingFrequency / maxScopeSamplesPerChannel), ps->GetMinFuncGenFreq() ));
         }
         else
         {
@@ -1486,7 +1488,7 @@ bool PicoScopeFRA::StartCapture( double measFreqHz )
         return false;
     }
 
-    // Record these pre-adjustment versions here.  There is code later in step execution that needs
+    // Record these pre-adjustment versions here.  There is code later in step execution that
     // cannot use post-adjusted values.
     adaptiveStimulusInputChannelRange = currentInputChannelRange;
     adaptiveStimulusOutputChannelRange = currentOutputChannelRange;
@@ -1515,6 +1517,15 @@ bool PicoScopeFRA::StartCapture( double measFreqHz )
         // Deferring the integer truncation till this point ensures
         // the least inaccuracy in hitting the integer periods criteria
         numSamples = (uint32_t)(samplesPerCycle * (double)numCycles) + 1;
+
+        // Check whether the request will exceed the scope's buffer size.  It shouldn't becuase we limited
+        // the lowest stimulus frequency.
+        if (numSamples > maxScopeSamplesPerChannel)
+        {
+            swprintf( fraStatusText, 128, L"Error: Request exceeds scope sample buffer.  Try a higher starting frequency." );
+            UpdateStatus( fraStatusMsg, FRA_STATUS_FATAL_ERROR, fraStatusText );
+            return false;
+        }
     }
     else // NOISE_REJECT
     {

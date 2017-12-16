@@ -127,6 +127,10 @@ bool ps5000Impl::InitializeScope(void)
     minTimebase = 0;
     maxTimebase = (std::numeric_limits<uint32_t>::max)();
 
+    // Even though the DDS parameters would suggest that a lower frequency is possible,
+    // the API limits to this value.
+    minFuncGenFreq = PS5000_MIN_FREQUENCY;
+
     signalGeneratorPrecision = 125.0e6 / (double)UINT32_MAX;
 
     minRange = (PS_RANGE)PS5000_100MV;

@@ -173,6 +173,10 @@ bool ps3000aImpl::GetFrequencyFromTimebase(uint32_t timebase, double &frequency)
 bool ps3000aImpl::InitializeScope(void)
 {
 
+    // Even though the DDS parameters would suggest that a lower frequency is possible,
+    // the API limits to this value.
+    minFuncGenFreq = PS3000A_MIN_FREQUENCY;
+
     if (model == PS3204A || model == PS3204B || model == PS3205A || model == PS3205B || model == PS3206A || model == PS3206B || model == PS3204MSO || model == PS3205MSO || model == PS3206MSO)
     {
         timebaseNoiseRejectMode = defaultTimebaseNoiseRejectMode = 1;
@@ -202,7 +206,7 @@ bool ps3000aImpl::InitializeScope(void)
     else if (model == PS3207A || model == PS3207B)
     {
         signalGeneratorPrecision = 100.0e6 / (double)UINT32_MAX;
-    }    
+    }
 
     if (model == PS3203D || model == PS3203DMSO || model == PS3204D || model == PS3204DMSO || model == PS3205D || model == PS3205DMSO || model == PS3206D || model == PS3206DMSO ||
         model == PS3403D || model == PS3403DMSO || model == PS3404D || model == PS3404DMSO || model == PS3405D || model == PS3405DMSO || model == PS3406D || model == PS3406DMSO)

@@ -216,6 +216,10 @@ bool ps2000aImpl::InitializeScope(void)
     minTimebase = 1;
     maxTimebase = (std::numeric_limits<uint32_t>::max)();
 
+    // Even though the DDS parameters would suggest that a lower frequency is possible,
+    // the API limits to this value.
+    minFuncGenFreq = PS2000A_MIN_FREQUENCY;
+
     switch (model)
     {
         case PS2206:

@@ -101,6 +101,9 @@ using namespace boost::math;
 #define CommonSine(FM) xCommonSine(FM)
 #define xCommonSine(FM) PS##FM##_##SINE
 
+#define CommonDC(FM) xCommonDC(FM)
+#define xCommonDC(FM) PS##FM##_##DC_VOLTAGE
+
 #define CommonEsOff(FM) xCommonEsOff(FM)
 #define xCommonEsOff(FM) PS##FM##_##ES_OFF
 
@@ -754,24 +757,31 @@ bool CommonMethod(SCOPE_FAMILY_LT, DisableChannel)( PS_CHANNEL channel )
 //
 // Name: Common method SetSignalGenerator
 //
-// Purpose: Setup the signal generator to generate a sine with the given amplitude and frequency
+// Purpose: Setup the signal generator to generate a signal with the given amplitude and frequency
 //
 // Parameters: [in] vPP - voltage peak-to-peak in microvolts
 //             [in] frequency - frequency to generate in Hz
 //             [out] return - whether the function succeeded
 //
 // Notes: vPP is ignored for PS3000 series scopes
+//        If frequency or vPP is 0.0, sets the generator to 0V DC
 //
 ///////////////////////////////////////////////////////////////////////////////////////////////////
+
+#define PS4000_WAVE_TYPE WAVE_TYPE
+#define PS5000_WAVE_TYPE WAVE_TYPE
 
 bool CommonMethod(SCOPE_FAMILY_LT, SetSignalGenerator)( double vPP, double frequency )
 {
     PICO_STATUS status;
     bool retVal = true;
     wstringstream fraStatusText;
-    
+#if !defined(PS3000)
+    CommonEnum(SCOPE_FAMILY_UT, WAVE_TYPE) waveType;
+    waveType = (vPP == 0.0l || frequency == 0.0l) ? CommonDC(SCOPE_FAMILY_UT) : CommonSine(SCOPE_FAMILY_UT);
+#endif
 #if defined(PS2000)
-    if (PICO_ERROR(CommonApi(SCOPE_FAMILY_LT, SetSigGenBuiltIn)( handle, 0, (uint32_t)(vPP*1.0e6), CommonSine(SCOPE_FAMILY_UT), (float)frequency, (float)frequency,
+    if (PICO_ERROR(CommonApi(SCOPE_FAMILY_LT, SetSigGenBuiltIn)( handle, 0, (uint32_t)(vPP*1.0e6), waveType, (float)frequency, (float)frequency,
                                                                  1.0, 1.0, (CommonEnum(SCOPE_FAMILY_UT,SWEEP_TYPE))0, 0 )))
 #elif defined(PS3000)
     UNREFERENCED_PARAMETER(vPP);
@@ -780,7 +790,7 @@ bool CommonMethod(SCOPE_FAMILY_LT, SetSignalGenerator)( double vPP, double frequ
     int32_t intFreq = saturation_cast<int32_t,double>(frequency);
     if (PICO_ERROR(CommonApi(SCOPE_FAMILY_LT, _set_siggen)( handle, CommonSine(SCOPE_FAMILY_UT), intFreq, intFreq, 1.0, 1, 0, 0 )))
 #else
-    if (PICO_ERROR(CommonApi(SCOPE_FAMILY_LT, SetSigGenBuiltIn)( handle, 0, (uint32_t)(vPP*1.0e6), CommonSine(SCOPE_FAMILY_UT), (float)frequency, (float)frequency,
+    if (PICO_ERROR(CommonApi(SCOPE_FAMILY_LT, SetSigGenBuiltIn)( handle, 0, (uint32_t)(vPP*1.0e6), waveType, (float)frequency, (float)frequency,
                                                                  1.0, 1.0, (CommonEnum(SCOPE_FAMILY_UT,SWEEP_TYPE))0,
                                                                  CommonEsOff(SCOPE_FAMILY_UT), 
                                                                  0, 0, (CommonEnum(SCOPE_FAMILY_UT,SIGGEN_TRIG_TYPE))0,
@@ -821,11 +831,7 @@ bool CommonMethod(SCOPE_FAMILY_LT, DisableSignalGenerator)( void )
 {
     bool retVal = true;
     wstringstream fraStatusText;
-#if defined(PS3000)
-    if (!SetSignalGenerator( 0.0, 0.0 )) // Set to 0.0 Hz, volts peak to peak are ignored
-#else
-    if (!SetSignalGenerator( 0.0, GetMinFuncGenFreq() )) // Set to 0.0 volts and minimum frequency;
-#endif
+    if (!SetSignalGenerator( 0.0, 0.0 ))
     {
         fraStatusText << L"Error: Failed to disable signal generator.";
         LogMessage( fraStatusText.str() );
