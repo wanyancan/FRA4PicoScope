@@ -216,7 +216,7 @@ CommonDtor(SCOPE_FAMILY_LT)()
 //
 // Name: Common method Initialized
 //
-// Purpose: Initialize scope parameters
+// Purpose: Indicate if the scope has been initialized
 //
 // Parameters: N/A
 //
@@ -227,6 +227,24 @@ CommonDtor(SCOPE_FAMILY_LT)()
 bool CommonMethod(SCOPE_FAMILY_LT,Initialized)( void )
 {
     return (handle != -1 && initialized);
+}
+
+////////////////////////////////////////////////////////////////////////////////////////////////////
+//
+// Name: Common method Connected
+//
+// Purpose: Detect if the scope is connected
+//
+// Parameters: N/A
+//
+// Notes: 
+//
+///////////////////////////////////////////////////////////////////////////////////////////////////
+
+bool CommonMethod(SCOPE_FAMILY_LT,Connected)( void )
+{
+    PICO_STATUS status;
+    return !(PICO_ERROR(CommonApi(SCOPE_FAMILY_LT, PingUnit)( handle )));
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////

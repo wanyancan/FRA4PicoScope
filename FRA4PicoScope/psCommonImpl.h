@@ -25,6 +25,7 @@
 
 public:
 bool Initialized( void );
+bool Connected(void);
 uint8_t GetNumChannels( void );
 void GetAvailableCouplings( vector<wstring>& couplingText );
 uint32_t GetMinTimebase( void );

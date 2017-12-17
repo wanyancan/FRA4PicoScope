@@ -504,6 +504,15 @@ bool PicoScopeFRA::ExecuteFRA(double startFreqHz, double stopFreqHz, int stepsPe
 
     try
     {
+        freqStepCounter = 1;
+
+        if (!ps->Connected())
+        {
+            ps->Close();
+            UpdateStatus(fraStatusMsg, FRA_STATUS_FATAL_ERROR, L"Error: Scope not connected.");
+            return false;
+        }
+
         GenerateFrequencyPoints();
         AllocateFraData();
 
@@ -519,7 +528,6 @@ bool PicoScopeFRA::ExecuteFRA(double startFreqHz, double stopFreqHz, int stepsPe
         // Update the status to indicate the FRA has started
         UpdateStatus( fraStatusMsg, FRA_STATUS_IN_PROGRESS, 0, numSteps );
 
-        freqStepCounter = 1;
         freqStepIndex = mSweepDescending ? numSteps-1 : 0;
         while ((mSweepDescending && freqStepIndex >= 0) || (!mSweepDescending && freqStepIndex < numSteps))
         {
@@ -701,6 +709,11 @@ bool PicoScopeFRA::ExecuteFRA(double startFreqHz, double stopFreqHz, int stepsPe
     catch (const FraFault& e)
     {
         UNREFERENCED_PARAMETER(e);
+        if (!ps->Connected())
+        {
+            ps->Close();
+            UpdateStatus(fraStatusMsg, FRA_STATUS_FATAL_ERROR, L"Error: Scope not connected.");
+        }
         retVal = false;
     }
     catch (const runtime_error& e)
@@ -719,14 +732,18 @@ bool PicoScopeFRA::ExecuteFRA(double startFreqHz, double stopFreqHz, int stepsPe
         retVal = false;
     }
 
+    // Don't let failure to disable the signal generator be fatal
     try
     {
-        (void)ps->DisableSignalGenerator();
+        if (!(ps->DisableSignalGenerator()))
+        {
+            throw FraFault();
+        }
     }
     catch (const exception& e)
     {
         UNREFERENCED_PARAMETER(e);
-        retVal = false;
+        retVal = true;
     }
 
     return retVal;

@@ -192,6 +192,7 @@ class PicoScope
         };
 
         virtual bool Initialized(void) = 0;
+        virtual bool Connected(void) = 0;
         virtual uint8_t GetNumChannels( void ) = 0;
         virtual void GetAvailableCouplings( vector<wstring>& couplingText ) = 0;
         virtual uint32_t GetMinTimebase( void ) = 0;

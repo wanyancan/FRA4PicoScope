@@ -195,13 +195,20 @@ bool ScopeSelector::GetAvailableScopes( vector<AvailableScopeDescription_T>& _av
         // Native enumeration functions don't find scopes already open, so add that one
         if (selectedScope)
         {
-            desc.connected = true;
-            // No need to set desc.compatible since this scope can't be "re-opened"
-            desc.driverFamily = selectedScope->family;
-            // No need to set desc.serialNumber since this scope can't be "re-opened"
-            desc.wFamilyName = wFamilyNames[selectedScope->family];
-            selectedScope->GetSerialNumber(desc.wSerialNumber);
-            availableScopes.push_back(desc);
+            if (selectedScope->Connected())
+            {
+                desc.connected = true;
+                // No need to set desc.compatible since this scope can't be "re-opened"
+                desc.driverFamily = selectedScope->family;
+                // No need to set desc.serialNumber since this scope can't be "re-opened"
+                desc.wFamilyName = wFamilyNames[selectedScope->family];
+                selectedScope->GetSerialNumber(desc.wSerialNumber);
+                availableScopes.push_back(desc);
+            }
+            else
+            {
+                selectedScope->Close();
+            }
         }
 #ifdef TEST_SCOPE_SELECTION
         else
