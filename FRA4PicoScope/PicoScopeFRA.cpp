@@ -732,10 +732,10 @@ bool PicoScopeFRA::ExecuteFRA(double startFreqHz, double stopFreqHz, int stepsPe
         retVal = false;
     }
 
-    // Don't let failure to disable the signal generator be fatal
+    // Finally, disable the signal generator, but don't let failure be fatal
     try
     {
-        if (!(ps->DisableSignalGenerator()))
+        if (ps->Connected() && !(ps->DisableSignalGenerator()))
         {
             throw FraFault();
         }
