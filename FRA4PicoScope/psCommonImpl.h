@@ -51,7 +51,7 @@ bool GetSerialNumber( wstring &sn );
 bool SetupChannel( PS_CHANNEL channel, PS_COUPLING coupling, PS_RANGE range, float offset );
 bool DisableAllDigitalChannels( void );
 bool DisableChannel( PS_CHANNEL channel );
-bool SetSignalGenerator( double vPP, double frequency );
+bool SetSignalGenerator( double vPP, double offset, double frequency );
 bool DisableSignalGenerator( void );
 bool DisableChannelTriggers( void );
 bool GetMaxSamples( uint32_t* maxSamples );
@@ -65,6 +65,7 @@ bool GetCompressedData( uint32_t numSamples,
                         vector<int16_t>& inputCompressedMaxBuffer, vector<int16_t>& outputCompressedMaxBuffer );
 bool GetPeakValues( uint16_t& inputPeak, uint16_t& outputPeak, bool& inputOv, bool& outputOv );
 bool ChangePower(PICO_STATUS powerState);
+bool CancelCapture( void );
 bool Close( void );
 const RANGE_INFO_T* GetRangeCaps( void );
 private:

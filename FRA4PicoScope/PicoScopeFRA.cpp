@@ -427,6 +427,7 @@ bool PicoScopeFRA::SetupChannels( int inputChannel, int inputChannelCoupling, in
 
     mMaxStimulusVpp = maxStimulusVpp;
     currentStimulusVpp = initialStimulusVpp;
+    currentStimulusOffset = stimulusDcOffset;
 
     if (!(ps->Initialized()))
     {
@@ -564,6 +565,7 @@ bool PicoScopeFRA::ExecuteFRA(double startFreqHz, double stopFreqHz, int stepsPe
                     {
                         // Notify of cancellation
                         UpdateStatus(fraStatusMsg, FRA_STATUS_CANCELED, freqStepCounter, numSteps);
+                        ps->CancelCapture();
                         throw FraFault();
                     }
 
@@ -744,7 +746,6 @@ bool PicoScopeFRA::ExecuteFRA(double startFreqHz, double stopFreqHz, int stepsPe
     catch (const exception& e)
     {
         UNREFERENCED_PARAMETER(e);
-        retVal = true;
     }
 
     return retVal;
@@ -1479,7 +1480,7 @@ bool PicoScopeFRA::StartCapture( double measFreqHz )
 
     if (autorangeRetryCounter == 0 || (mAdaptiveStimulus && stimulusChanged))
     {
-        if (!(ps->SetSignalGenerator((float)currentStimulusVpp, (float)measFreqHz)))
+        if (!(ps->SetSignalGenerator((float)currentStimulusVpp, mAdaptiveStimulus ? 0.0 : currentStimulusOffset, (float)measFreqHz)))
         {
             return false;
         }

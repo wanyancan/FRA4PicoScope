@@ -79,6 +79,7 @@ class PicoScopeFRA
 
         double currentFreqHz;
         double currentStimulusVpp;
+        double currentStimulusOffset;
         double stepStimulusVpp;
 
         double mStartFreqHz;

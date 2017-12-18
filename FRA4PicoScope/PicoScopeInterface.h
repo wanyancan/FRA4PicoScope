@@ -218,7 +218,7 @@ class PicoScope
         virtual bool SetupChannel( PS_CHANNEL channel, PS_COUPLING coupling, PS_RANGE range, float offset ) = 0;
         virtual bool DisableAllDigitalChannels( void ) = 0;
         virtual bool DisableChannel( PS_CHANNEL channel ) = 0;
-        virtual bool SetSignalGenerator( double vPP, double frequency ) = 0;
+        virtual bool SetSignalGenerator( double vPP, double offset, double frequency ) = 0;
         virtual bool DisableSignalGenerator( void ) = 0;
         virtual bool DisableChannelTriggers( void ) = 0;
         virtual bool GetMaxSamples( uint32_t* maxSamples ) = 0;
@@ -232,6 +232,7 @@ class PicoScope
                                         vector<int16_t>& inputCompressedMaxBuffer, vector<int16_t>& outputCompressedMaxBuffer ) = 0;
         virtual bool GetPeakValues( uint16_t& inputPeak, uint16_t& outputPeak, bool& inputOv, bool& outputOv ) = 0;
         virtual bool ChangePower( PICO_STATUS powerState ) = 0;
+        virtual bool CancelCapture( void ) = 0;
         virtual bool Close( void ) = 0;
 
         virtual const RANGE_INFO_T* GetRangeCaps( void ) = 0;

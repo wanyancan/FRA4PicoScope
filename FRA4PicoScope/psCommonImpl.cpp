@@ -71,13 +71,16 @@ using namespace boost::math;
 // 3) Normally uses CamelCase identifiers
 #if defined(NEW_PS_DRIVER_MODEL)
 #define PICO_ERROR(x) (status = x) == PICO_OK ? 0 : (PICO_POWER_SUPPLY_CONNECTED == status || PICO_POWER_SUPPLY_NOT_CONNECTED == status) ? throw PicoPowerChange(status) : 1
+#define PICO_CONNECTION_ERROR(x) (status = x) == PICO_OK ? 0 : (PICO_BUSY == status) ? 0 : 1
 #else
 #define PICO_ERROR(x) 0 == (status = x)
+#define PICO_CONNECTION_ERROR(x) 0 == (status = x)
 #define GetUnitInfo _get_unit_info
 #define SetChannel _set_channel
 #define SetSigGenBuiltIn _set_sig_gen_built_in
 #define GetTimebase _get_timebase
 #define SetTriggerChannelConditions _set_trigger
+#define Stop _stop
 #define CloseUnit _close_unit
 #endif
 
@@ -244,7 +247,8 @@ bool CommonMethod(SCOPE_FAMILY_LT,Initialized)( void )
 bool CommonMethod(SCOPE_FAMILY_LT,Connected)( void )
 {
     PICO_STATUS status;
-    return !(PICO_ERROR(CommonApi(SCOPE_FAMILY_LT, PingUnit)( handle )));
+    status = CommonApi(SCOPE_FAMILY_LT, PingUnit)( handle );
+    return !(PICO_CONNECTION_ERROR(status));
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -781,7 +785,7 @@ bool CommonMethod(SCOPE_FAMILY_LT, DisableChannel)( PS_CHANNEL channel )
 //             [in] frequency - frequency to generate in Hz
 //             [out] return - whether the function succeeded
 //
-// Notes: vPP is ignored for PS3000 series scopes
+// Notes: vPP and offset are ignored for PS3000 series scopes
 //        If frequency or vPP is 0.0, sets the generator to 0V DC
 //
 ///////////////////////////////////////////////////////////////////////////////////////////////////
@@ -789,26 +793,35 @@ bool CommonMethod(SCOPE_FAMILY_LT, DisableChannel)( PS_CHANNEL channel )
 #define PS4000_WAVE_TYPE WAVE_TYPE
 #define PS5000_WAVE_TYPE WAVE_TYPE
 
-bool CommonMethod(SCOPE_FAMILY_LT, SetSignalGenerator)( double vPP, double frequency )
+bool CommonMethod(SCOPE_FAMILY_LT, SetSignalGenerator)( double vPP, double offset, double frequency )
 {
     PICO_STATUS status;
     bool retVal = true;
     wstringstream fraStatusText;
 #if !defined(PS3000)
     CommonEnum(SCOPE_FAMILY_UT, WAVE_TYPE) waveType;
-    waveType = (vPP == 0.0l || frequency == 0.0l) ? CommonDC(SCOPE_FAMILY_UT) : CommonSine(SCOPE_FAMILY_UT);
+    if (vPP == 0.0 || frequency == 0.0) // To disable the frequency generator
+    {
+        waveType = CommonDC(SCOPE_FAMILY_UT);
+        offset = 0.0;
+    }
+    else
+    {
+        waveType = CommonSine(SCOPE_FAMILY_UT);
+    }
 #endif
 #if defined(PS2000)
-    if (PICO_ERROR(CommonApi(SCOPE_FAMILY_LT, SetSigGenBuiltIn)( handle, 0, (uint32_t)(vPP*1.0e6), waveType, (float)frequency, (float)frequency,
+    if (PICO_ERROR(CommonApi(SCOPE_FAMILY_LT, SetSigGenBuiltIn)( handle, (int32_t)(offset*1.0e6), (uint32_t)(vPP*1.0e6), waveType, (float)frequency, (float)frequency,
                                                                  1.0, 1.0, (CommonEnum(SCOPE_FAMILY_UT,SWEEP_TYPE))0, 0 )))
 #elif defined(PS3000)
     UNREFERENCED_PARAMETER(vPP);
+    UNREFERENCED_PARAMETER(offset);
     // Truncation of frequency to 0 will disable the generator.  However, for PS3000 this function should never be called with values less than 100 Hz, unless
     // actually attempting to disable.
     int32_t intFreq = saturation_cast<int32_t,double>(frequency);
     if (PICO_ERROR(CommonApi(SCOPE_FAMILY_LT, _set_siggen)( handle, CommonSine(SCOPE_FAMILY_UT), intFreq, intFreq, 1.0, 1, 0, 0 )))
 #else
-    if (PICO_ERROR(CommonApi(SCOPE_FAMILY_LT, SetSigGenBuiltIn)( handle, 0, (uint32_t)(vPP*1.0e6), waveType, (float)frequency, (float)frequency,
+    if (PICO_ERROR(CommonApi(SCOPE_FAMILY_LT, SetSigGenBuiltIn)( handle, (int32_t)(offset*1.0e6), (uint32_t)(vPP*1.0e6), waveType, (float)frequency, (float)frequency,
                                                                  1.0, 1.0, (CommonEnum(SCOPE_FAMILY_UT,SWEEP_TYPE))0,
                                                                  CommonEsOff(SCOPE_FAMILY_UT), 
                                                                  0, 0, (CommonEnum(SCOPE_FAMILY_UT,SIGGEN_TRIG_TYPE))0,
@@ -849,7 +862,7 @@ bool CommonMethod(SCOPE_FAMILY_LT, DisableSignalGenerator)( void )
 {
     bool retVal = true;
     wstringstream fraStatusText;
-    if (!SetSignalGenerator( 0.0, 0.0 ))
+    if (!SetSignalGenerator( 0.0, 0.0, 0.0 ))
     {
         fraStatusText << L"Error: Failed to disable signal generator.";
         LogMessage( fraStatusText.str() );
@@ -1526,6 +1539,25 @@ bool CommonMethod(SCOPE_FAMILY_LT, ChangePower)( PICO_STATUS powerState )
 #else
     return false;
 #endif
+}
+
+////////////////////////////////////////////////////////////////////////////////////////////////////
+//
+// Name: Common method CancelCapture
+//
+// Purpose: Cancel the current capture
+//
+// Parameters: [out] return - whether the function succeeded
+//
+// Notes:
+//
+///////////////////////////////////////////////////////////////////////////////////////////////////
+
+bool CommonMethod(SCOPE_FAMILY_LT, CancelCapture)(void)
+{
+    PICO_STATUS status;
+    status = CommonApi(SCOPE_FAMILY_LT, Stop)( handle );
+    return !(PICO_ERROR(status));
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////

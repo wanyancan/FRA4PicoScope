@@ -1457,6 +1457,7 @@ DWORD WINAPI ExecuteFRA(LPVOID lpdwThreadParam)
     int outputChannelAttenuation = 0;
     double outputDcOffset = 0.0;
     double stimulusVpp = 0.0;
+    double stimulusOffset = 0.0;
     double maxStimulusVpp = 0.0;
     double startFreq = 0;
     double stopFreq = 0;
@@ -1517,6 +1518,7 @@ DWORD WINAPI ExecuteFRA(LPVOID lpdwThreadParam)
             inputDcOffset = pSettings->GetInputDcOffsetAsDouble();
             outputDcOffset = pSettings->GetOutputDcOffsetAsDouble();
             stimulusVpp = pSettings->GetStimulusVppAsDouble();
+            stimulusOffset = pSettings->GetStimulusOffsetAsDouble();
             maxStimulusVpp = pSettings->GetMaxStimulusVppAsDouble();
             startFreq = pSettings->GetStartFreqAsDouble();
             stopFreq = pSettings->GetStopFreqAsDouble();
@@ -1527,7 +1529,7 @@ DWORD WINAPI ExecuteFRA(LPVOID lpdwThreadParam)
 
             if (false == psFRA -> SetupChannels( inputChannel, inputChannelCoupling, inputChannelAttenuation, inputDcOffset,
                                                  outputChannel, outputChannelCoupling, outputChannelAttenuation, outputDcOffset,
-                                                 stimulusVpp, maxStimulusVpp, 0.0 ))
+                                                 stimulusVpp, maxStimulusVpp, stimulusOffset ))
             {
                 continue;
             }
@@ -2012,6 +2014,10 @@ bool StoreSettings(void)
     hndCtrl = GetDlgItem( hMainWnd, IDC_STIMULUS_VPP );
     Edit_GetText( hndCtrl, editText, 16 );
     pSettings -> SetStimulusVpp( editText );
+
+    hndCtrl = GetDlgItem( hMainWnd, IDC_STIMULUS_OFFSET );
+    Edit_GetText( hndCtrl, editText, 16 );
+    pSettings -> SetStimulusOffset( editText );
 
     hndCtrl = GetDlgItem( hMainWnd, IDC_RESPONSE_TARGET );
     Edit_GetText( hndCtrl, editText, 16 );
