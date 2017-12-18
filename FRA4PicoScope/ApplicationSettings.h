@@ -660,6 +660,19 @@ class ApplicationSettings
             ScopeSettingsPropTree.put(L"picoScope.fraParam.stimulusVpp", wstring(stimulusVpp));
         }
 
+        inline const wstring GetStimulusOffsetAsString()
+        {
+            return ScopeSettingsPropTree.get<wstring>(L"picoScope.fraParam.stimulusOffset");
+        }
+        inline double GetStimulusOffsetAsDouble()
+        {
+            return ScopeSettingsPropTree.get<double>(L"picoScope.fraParam.stimulusOffset");
+        }
+        inline void SetStimulusOffset(const wchar_t* stimulusOffset)
+        {
+            ScopeSettingsPropTree.put(L"picoScope.fraParam.stimulusOffset", wstring(stimulusOffset));
+        }
+
         inline const wstring GetMaxStimulusVppAsString()
         {
             return ScopeSettingsPropTree.get<wstring>(L"picoScope.fraParam.maxStimulusVpp");

@@ -64,7 +64,7 @@ class PicoScopeFRA
                            uint16_t lowNoiseOversampling );
         bool SetupChannels( int inputChannel, int inputChannelCoupling, int inputChannelAttenuation, double inputDcOffset,
                             int outputChannel, int outputChannelCoupling, int outputChannelAttenuation, double outputDcOffset,
-                            double initialSignalVpp, double maxSignalVpp );
+                            double initialSignalVpp, double maxSignalVpp, double stimulusDcOffset );
         void GetResults( int* numSteps, double** freqsLogHz, double** gainsDb, double** phasesDeg, double** unwrappedPhasesDeg );
         void EnableDiagnostics( wstring baseDataPath );
         void DisableDiagnostics( void );

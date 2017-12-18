@@ -489,13 +489,13 @@ void __stdcall SetFraTuning( double purityLowerLimit, uint16_t extraSettlingTime
 
 bool __stdcall SetupChannels( int inputChannel, int inputChannelCoupling, int inputChannelAttenuation, double inputDcOffset,
                               int outputChannel, int outputChannelCoupling, int outputChannelAttenuation, double outputDcOffset,
-                              double initialStimulusVpp, double maxStimulusVpp )
+                              double initialStimulusVpp, double maxStimulusVpp, double stimulusDcOffset )
 {
     if (pFRA)
     {
         return (pFRA->SetupChannels( inputChannel, inputChannelCoupling, inputChannelAttenuation, inputDcOffset,
                                      outputChannel, outputChannelCoupling, outputChannelAttenuation, outputDcOffset,
-                                     initialStimulusVpp, maxStimulusVpp ));
+                                     initialStimulusVpp, maxStimulusVpp, stimulusDcOffset ));
     }
     else
     {

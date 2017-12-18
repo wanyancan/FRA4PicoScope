@@ -59,7 +59,7 @@ FRA4PICOSCOPE_API void __stdcall SetFraTuning( double purityLowerLimit, uint16_t
                                                uint16_t lowNoiseOversampling );
 FRA4PICOSCOPE_API bool __stdcall SetupChannels( int inputChannel, int inputChannelCoupling, int inputChannelAttenuation, double inputDcOffset,
                                                 int outputChannel, int outputChannelCoupling, int outputChannelAttenuation, double outputDcOffset,
-                                                double initialStimulusVpp, double maxStimulusVpp );
+                                                double initialStimulusVpp, double maxStimulusVpp, double stimulusDcOffset );
 FRA4PICOSCOPE_API int __stdcall GetNumSteps( void );
 FRA4PICOSCOPE_API void __stdcall GetResults( double* freqsLogHz, double* gainsDb, double* phasesDeg, double* unwrappedPhasesDeg );
 FRA4PICOSCOPE_API void __stdcall EnableDiagnostics( wchar_t* baseDataPath );

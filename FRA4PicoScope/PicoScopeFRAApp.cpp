@@ -1263,6 +1263,9 @@ BOOL LoadControlsData(HWND hDlg)
     hndCtrl = GetDlgItem( hDlg, IDC_STIMULUS_VPP );
     Edit_LimitText( hndCtrl, 16 );
     Edit_SetText( hndCtrl, pSettings->GetStimulusVppAsString().c_str() );
+    hndCtrl = GetDlgItem( hDlg, IDC_STIMULUS_OFFSET );
+    Edit_LimitText( hndCtrl, 16 );
+    Edit_SetText( hndCtrl, pSettings->GetStimulusOffsetAsString().c_str() );
 
     // Always populate these, otherwise store on run/exit won't work as designed
     hndCtrl = GetDlgItem(hDlg, IDC_RESPONSE_TARGET);
@@ -1274,6 +1277,13 @@ BOOL LoadControlsData(HWND hDlg)
     {
         hndCtrl = GetDlgItem(hDlg, IDC_TEXT_STIMULUS_TITLE);
         Static_SetText(hndCtrl, L"Initial Stimulus");
+
+        hndCtrl = GetDlgItem(hDlg, IDC_STIMULUS_OFFSET);
+        ShowWindow( hndCtrl, SW_HIDE );
+        hndCtrl = GetDlgItem(hDlg, IDC_TEXT_STIMULUS_OFFSET_TITLE);
+        ShowWindow( hndCtrl, SW_HIDE );
+        hndCtrl = GetDlgItem(hDlg, IDC_TEXT_STIMULUS_OFFSET_UNITS);
+        ShowWindow( hndCtrl, SW_HIDE );
 
         hndCtrl = GetDlgItem(hDlg, IDC_RESPONSE_TARGET);
         ShowWindow( hndCtrl, SW_SHOW );
@@ -1294,7 +1304,14 @@ BOOL LoadControlsData(HWND hDlg)
     else
     {
         hndCtrl = GetDlgItem(hDlg, IDC_TEXT_STIMULUS_TITLE);
-        Static_SetText(hndCtrl, L"Stimulus");
+        Static_SetText(hndCtrl, L"Stimulus Amplitude");
+
+        hndCtrl = GetDlgItem(hDlg, IDC_STIMULUS_OFFSET);
+        ShowWindow( hndCtrl, SW_SHOW );
+        hndCtrl = GetDlgItem(hDlg, IDC_TEXT_STIMULUS_OFFSET_TITLE);
+        ShowWindow( hndCtrl, SW_SHOW );
+        hndCtrl = GetDlgItem(hDlg, IDC_TEXT_STIMULUS_OFFSET_UNITS);
+        ShowWindow( hndCtrl, SW_SHOW );
 
         hndCtrl = GetDlgItem(hDlg, IDC_RESPONSE_TARGET);
         ShowWindow( hndCtrl, SW_HIDE );
@@ -1510,7 +1527,7 @@ DWORD WINAPI ExecuteFRA(LPVOID lpdwThreadParam)
 
             if (false == psFRA -> SetupChannels( inputChannel, inputChannelCoupling, inputChannelAttenuation, inputDcOffset,
                                                  outputChannel, outputChannelCoupling, outputChannelAttenuation, outputDcOffset,
-                                                 stimulusVpp, maxStimulusVpp ))
+                                                 stimulusVpp, maxStimulusVpp, 0.0 ))
             {
                 continue;
             }
@@ -1732,6 +1749,7 @@ bool ValidateSettings(void)
     double inputDcOffset;
     double outputDcOffset;
     double stimulusVpp;
+    double stimulusOffset;
     double responseTarget;
     double startFreq;
     double stopFreq;
@@ -1739,6 +1757,8 @@ bool ValidateSettings(void)
     int16_t stepsPerDecade;
     bool validStartFreq = false;
     bool validStopFreq = false;
+    bool validStimulusVpp = false;
+    bool validStimulusOffset = false;
 
     // These need to be checked in case the user switched from 4 channels to 2 (due to Flexible Power)
     // and the prior selection was channel C/D
@@ -1776,21 +1796,38 @@ bool ValidateSettings(void)
     Edit_GetText( hndCtrl, editText, 16 );
     if (!WStringToDouble(editText, stimulusVpp))
     {
-        LogMessage( L"Stimulus Vpp is not a valid number." );
+        LogMessage( L"Stimulus amplitude is not a valid number." );
         retVal = false;
     }
     else if (stimulusVpp <= 0.0)
     {
-        LogMessage( L"Stimulus Vpp must be > 0.0" );
+        LogMessage( L"Stimulus amplitude must be > 0.0" );
         retVal = false;
     }
     else
     {
-        double maxSignalVpp = pScopeSelector->GetSelectedScope()->GetMaxFuncGenVpp();
-        if (stimulusVpp > maxSignalVpp)
+        validStimulusVpp = true;
+    }
+
+    hndCtrl = GetDlgItem( hMainWnd, IDC_STIMULUS_OFFSET );
+    Edit_GetText( hndCtrl, editText, 16 );
+    if (!WStringToDouble(editText, stimulusOffset))
+    {
+        LogMessage( L"Stimulus offset is not a valid number." );
+        retVal = false;
+    }
+    else
+    {
+        validStimulusOffset = true;
+    }
+
+    if (validStimulusVpp && validStimulusOffset)
+    {
+        double maxSignalAbs = pScopeSelector->GetSelectedScope()->GetMaxFuncGenVpp() / 2.0;
+        if ((fabs(stimulusOffset) + stimulusVpp / 2.0) > maxSignalAbs)
         {
             wstringstream wss;
-            wss << L"Stimulus Vpp must be <= " << fixed << setprecision(1) << maxSignalVpp;
+            wss << L"Stimulus exceeds signal generator limit of +/-" << fixed << setprecision(1) << maxSignalAbs << L" V";
             LogMessage( wss.str() );
             retVal = false;
         }

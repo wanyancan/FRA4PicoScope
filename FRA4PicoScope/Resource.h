@@ -54,6 +54,7 @@
 #define IDC_AUTOCLEAR                   530
 #define IDC_RESPONSE_TARGET             531
 #define IDC_MAX_STIMULUS_VPP            532
+#define IDC_STIMULUS_OFFSET             533
 #define IDC_SCOPE_SELECT_LIST           535
 #define IDC_FREQ_AXIS_AUTOSCALE         540
 #define IDC_GAIN_AXIS_AUTOSCALE         541
@@ -80,6 +81,8 @@
 #define IDC_PHASE_AXIS_MASTER_GRIDS     562
 #define IDC_APPID                       563
 #define IDC_STORE                       564
+#define IDC_TEXT_STIMULUS_OFFSET_TITLE  568
+#define IDC_TEXT_STIMULUS_OFFSET_UNITS  569
 #define IDC_TEXT_1                      570
 #define IDC_TEXT_2                      571
 #define IDC_TEXT_3                      572

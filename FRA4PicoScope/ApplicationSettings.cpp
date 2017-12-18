@@ -483,6 +483,7 @@ bool ApplicationSettings::InitializeScopeSettingsFile(PicoScope* pScope)
     stopFreqSS << fixed << setprecision(1) << (pScope->GetMaxFuncGenFreq());
 
     ScopeSettingsPropTree.put( L"picoScope.fraParam.stimulusVpp", stimulusVppSS.str().c_str() );
+    ScopeSettingsPropTree.put( L"picoScope.fraParam.stimulusOffset", L"0.0" );
     ScopeSettingsPropTree.put( L"picoScope.fraParam.maxStimulusVpp", maxStimulusVppSS.str().c_str() );
     ScopeSettingsPropTree.put( L"picoScope.fraParam.startFrequency", startFreqSS.str().c_str() );
     ScopeSettingsPropTree.put( L"picoScope.fraParam.stopFrequency", stopFreqSS.str().c_str() );
@@ -547,6 +548,7 @@ void ApplicationSettings::SetNoScopeSettings( void )
     ScopeSettingsPropTree.put( L"picoScope.outputChannel.startingRange", -1 );
 
     ScopeSettingsPropTree.put( L"picoScope.fraParam.stimulusVpp", L"0.0" );
+    ScopeSettingsPropTree.put( L"picoScope.fraParam.stimulusOffset", L"0.0" );
     ScopeSettingsPropTree.put( L"picoScope.fraParam.maxStimulusVpp", L"0.0" );
     ScopeSettingsPropTree.put( L"picoScope.fraParam.startFrequency", L"0.0" );
     ScopeSettingsPropTree.put( L"picoScope.fraParam.stopFrequency", L"0.0" );

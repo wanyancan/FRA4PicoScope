@@ -186,7 +186,7 @@ void PicoScopeFRA::SetInstrument( PicoScope* _ps )
         rangeCounts = ps->GetMaxValue();
 
         // Setup arbitrary initial settings to force a calculation of maxScopeSamplesPerChannel
-        SetupChannels( PS_CHANNEL_A, PS_AC, ATTEN_1X, 0.0, PS_CHANNEL_B, PS_AC, ATTEN_1X, 0.0, 0.0, 0.0 );
+        SetupChannels( PS_CHANNEL_A, PS_AC, ATTEN_1X, 0.0, PS_CHANNEL_B, PS_AC, ATTEN_1X, 0.0, 0.0, 0.0, 0.0 );
     }
 }
 
@@ -356,6 +356,7 @@ double PicoScopeFRA::GetMinFrequency(void)
 //                                       adaptive stimulus mode, constant otherwise
 //             [in] maxStimulusVpp - Maximum volts peak to peak of the stimulus signal; used
 //                                   in adaptive stimulus mode.
+//             [in] stimulusDcOffset - d.c. offset of the stimulus signal
 //             [out] return - Whether the function was successful.
 //
 // Notes: None
@@ -364,7 +365,7 @@ double PicoScopeFRA::GetMinFrequency(void)
 
 bool PicoScopeFRA::SetupChannels( int inputChannel, int inputChannelCoupling, int inputChannelAttenuation, double inputDcOffset,
                                   int outputChannel, int outputChannelCoupling, int outputChannelAttenuation, double outputDcOffset,
-                                  double initialStimulusVpp, double maxStimulusVpp )
+                                  double initialStimulusVpp, double maxStimulusVpp, double stimulusDcOffset )
 {
     FRA_STATUS_MESSAGE_T fraStatusMsg;
 
