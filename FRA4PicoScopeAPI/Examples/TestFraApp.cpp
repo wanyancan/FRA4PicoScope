@@ -48,7 +48,7 @@ int main()
     }
 
     if (!SetupChannels( PS_CHANNEL_A, PS_AC, ATTEN_1X, 0.0,
-                        PS_CHANNEL_B, PS_AC, ATTEN_1X, 0.0, 4.0, 0.0 ))
+                        PS_CHANNEL_B, PS_AC, ATTEN_1X, 0.0, 4.0, 0.0, 0.0 ))
     {
         std::cout << "Error setting channels" << std::endl;
         return -1;

@@ -98,7 +98,7 @@ Declare Sub SetFraTuning Lib "FRA4PicoScope.dll" (ByVal purityLowerLimit As Doub
                                                   ByVal lowNoiseOversampling As Integer)
 Declare Function SetupChannels Lib "FRA4PicoScope.dll" (ByVal inputChannel As PS_CHANNEL, ByVal inputChannelCoupling As PS_COUPLING, ByVal inputChannelAttenuation As ATTEN_T, ByVal inputDcOffset As Double, _
                                                         ByVal outputChannel As PS_CHANNEL, ByVal outputChannelCoupling As PS_COUPLING, ByVal outputChannelAttenuation As ATTEN_T, ByVal outputDcOffset As Double, _
-                                                        ByVal initialStimulusVpp As Double, ByVal maxStimulusVpp as Double) As Byte
+                                                        ByVal initialStimulusVpp As Double, ByVal maxStimulusVpp as Double, ByVal stimulusDcOffset As Double) As Byte
 Declare Function GetNumSteps Lib "FRA4PicoScope.dll" () As Long
 Declare Sub GetResults Lib "FRA4PicoScope.dll" (ByRef freqsLogHz As Double, ByRef gainsDb As Double, ByRef phasesDeg As Double, ByRef unwrappedPhasesDeg As Double)
 Declare Sub EnableDiagnostics Lib "FRA4PicoScope.dll" (ByVal baseDataPath As String)
