@@ -481,6 +481,7 @@ void __stdcall SetFraTuning( double purityLowerLimit, uint16_t extraSettlingTime
 //             [in] outputDcOffset - DC Offset for output channel
 //             [in] initialStimulusVpp - Volts peak to peak of the stimulus signal
 //             [in] maxStimulusVpp - Maximum volts peak to peak of the stimulus signal
+//             [in] stimulusDcOffset - d.c. offset of the stimulus signal
 //             [out] return - Whether the function was successful.
 //
 // Notes: None
