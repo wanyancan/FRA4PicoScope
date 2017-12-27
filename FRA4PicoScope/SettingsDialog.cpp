@@ -43,7 +43,7 @@
 #include "PicoScopeInterface.h"
 #include "Resource.h"
 
-const uint8_t numLogVerbosityFlags = 11;
+const uint8_t numLogVerbosityFlags = 12;
 
 const wchar_t logVerbosityString[numLogVerbosityFlags][128] =
 {
@@ -57,7 +57,8 @@ const wchar_t logVerbosityString[numLogVerbosityFlags][128] =
     L"DFT Diagnostics",
     L"Scope Power Events",
     L"Save/Export Status",
-    L"FRA Warnings"
+    L"FRA Warnings",
+    L"PicoScope API Calls"
 };
 
 bool logVerbositySelectorOpen = false;

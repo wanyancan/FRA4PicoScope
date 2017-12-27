@@ -1148,8 +1148,8 @@ void Cleanup( HWND hWnd )
     pSettings->WriteApplicationSettings();
     delete fraPlotter;
     delete psFRA;
-    delete pSettings;
     delete pScopeSelector;
+    delete pSettings;
     DestroyWindow (hWnd);
 }
 

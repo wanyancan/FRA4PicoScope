@@ -111,6 +111,7 @@ typedef enum
     SCOPE_POWER_EVENTS = 0x0100,
     SAVE_EXPORT_STATUS = 0x0200,
     FRA_WARNING = 0x0400,
+    PICO_API_CALL = 0x0800,
     FRA_ERROR = 0x8000 // Errors are not maskable
 } LOG_MESSAGE_FLAGS_T;
 

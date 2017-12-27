@@ -65,6 +65,11 @@ using namespace boost::math;
 #define NEW_PS_DRIVER_MODEL
 #endif
 
+#define LOG_PICO_API_CALL(...) \
+fraStatusText.clear(); \
+fraStatusText.str(L""); \
+LogPicoApiCall(fraStatusText, __VA_ARGS__);
+
 // NEW_PS_DRIVER_MODEL means that the driver API:
 // 1) Supports capture completion callbacks
 // 2) Returns status with PICO_OK indicating success
@@ -252,7 +257,7 @@ bool CommonMethod(SCOPE_FAMILY_LT,Connected)( void )
     PICO_STATUS status;
     wstringstream fraStatusText;
 
-    LogPicoApiCall( fraStatusText, BOOST_PP_STRINGIZE(CommonApi(SCOPE_FAMILY_LT, PingUnit)), handle );
+    LOG_PICO_API_CALL( BOOST_PP_STRINGIZE(CommonApi(SCOPE_FAMILY_LT, PingUnit)), handle );
     status = CommonApi(SCOPE_FAMILY_LT, PingUnit)( handle );
 #if defined(NEW_PS_DRIVER_MODEL)
     return !(PICO_CONNECTION_ERROR(status));
@@ -261,6 +266,7 @@ bool CommonMethod(SCOPE_FAMILY_LT,Connected)( void )
     if (PICO_CONNECTION_ERROR(status))
     {
         int8_t lastError[16];
+        LOG_PICO_API_CALL( BOOST_PP_STRINGIZE(CommonApi(SCOPE_FAMILY_LT, GetUnitInfo)), handle, lastError, sizeof(lastError), CommonErrorCode(SCOPE_FAMILY_UT) );
         CommonApi(SCOPE_FAMILY_LT, GetUnitInfo)( handle, lastError, sizeof(lastError), CommonErrorCode(SCOPE_FAMILY_UT) );
         return false;
     }
@@ -289,6 +295,8 @@ uint8_t CommonMethod(SCOPE_FAMILY_LT,GetNumChannels)( void )
     if (numActualChannels > 2)
     {
         PICO_STATUS currentPowerState;
+        wstringstream fraStatusText;
+        LOG_PICO_API_CALL( BOOST_PP_STRINGIZE(CommonApi(SCOPE_FAMILY_LT, CurrentPowerSource)), handle );
         currentPowerState = CommonApi(SCOPE_FAMILY_LT, CurrentPowerSource)(handle);
 
         if (IsUSB3_0Connection() || PICO_POWER_SUPPLY_CONNECTED == currentPowerState )
@@ -412,6 +420,7 @@ PS_RANGE CommonMethod(SCOPE_FAMILY_LT,GetMaxRange)( PS_COUPLING coupling )
 int16_t CommonMethod(SCOPE_FAMILY_LT,GetMaxValue)(void)
 {
     short maxValue = 0;
+    wstringstream fraStatusText;
 
 #if defined(PS4000)
     if (model == PS4262)
@@ -431,6 +440,7 @@ int16_t CommonMethod(SCOPE_FAMILY_LT,GetMaxValue)(void)
 #elif defined(PS6000)
     maxValue = PS6000_MAX_VALUE;
 #else
+    LOG_PICO_API_CALL( BOOST_PP_STRINGIZE(CommonApi(SCOPE_FAMILY_LT,MaximumValue)), handle, &maxValue );
     (void)CommonApi(SCOPE_FAMILY_LT,MaximumValue)( handle, &maxValue );
 #endif
     return maxValue;
@@ -547,7 +557,7 @@ bool CommonMethod(SCOPE_FAMILY_LT,GetModel)( wstring &model )
     int16_t infoStringLength;
 #endif
     int8_t scopeModel[32];
-    LogPicoApiCall( fraStatusText, BOOST_PP_STRINGIZE(CommonApi(SCOPE_FAMILY_LT, GetUnitInfo)), handle, scopeModel, sizeof(scopeModel) INFO_STRING_LENGTH_ARG, PICO_VARIANT_INFO );
+    LOG_PICO_API_CALL( BOOST_PP_STRINGIZE(CommonApi(SCOPE_FAMILY_LT, GetUnitInfo)), handle, scopeModel, sizeof(scopeModel) INFO_STRING_LENGTH_ARG, PICO_VARIANT_INFO );
     if( PICO_ERROR(CommonApi(SCOPE_FAMILY_LT, GetUnitInfo)( handle, scopeModel, sizeof(scopeModel) INFO_STRING_LENGTH_ARG, PICO_VARIANT_INFO )) )
     {
         model = L"???";
@@ -585,7 +595,7 @@ bool CommonMethod(SCOPE_FAMILY_LT,GetSerialNumber)( wstring &sn )
     int16_t infoStringLength;
 #endif
     int8_t scopeSN[32];
-    LogPicoApiCall( fraStatusText, BOOST_PP_STRINGIZE(CommonApi(SCOPE_FAMILY_LT, GetUnitInfo)), handle, scopeSN, sizeof(scopeSN) INFO_STRING_LENGTH_ARG, PICO_BATCH_AND_SERIAL );
+    LOG_PICO_API_CALL( BOOST_PP_STRINGIZE(CommonApi(SCOPE_FAMILY_LT, GetUnitInfo)), handle, scopeSN, sizeof(scopeSN) INFO_STRING_LENGTH_ARG, PICO_BATCH_AND_SERIAL );
     if( PICO_ERROR(CommonApi(SCOPE_FAMILY_LT, GetUnitInfo)( handle, scopeSN, sizeof(scopeSN) INFO_STRING_LENGTH_ARG, PICO_BATCH_AND_SERIAL )) )
     {
         sn = L"???";
@@ -652,15 +662,19 @@ bool CommonMethod(SCOPE_FAMILY_LT, SetupChannel)( PS_CHANNEL channel, PS_COUPLIN
 #endif
 
 #if defined(PS4000A)
+    LOG_PICO_API_CALL( BOOST_PP_STRINGIZE(CommonApi(SCOPE_FAMILY_LT, SetChannel)), handle, (CommonEnum(SCOPE_FAMILY_UT,CHANNEL))channel,
+                                                                                   TRUE, (CommonEnum(SCOPE_FAMILY_UT,COUPLING))coupling,
+                                                                                   (PICO_CONNECT_PROBE_RANGE)range ANALOG_OFFSET_ARG
+                                                                                   BANDWIDTH_LIMITER_ARG );
     if (PICO_ERROR(CommonApi(SCOPE_FAMILY_LT, SetChannel)( handle, (CommonEnum(SCOPE_FAMILY_UT,CHANNEL))channel,
                                                            TRUE, (CommonEnum(SCOPE_FAMILY_UT,COUPLING))coupling,
                                                            (PICO_CONNECT_PROBE_RANGE)range ANALOG_OFFSET_ARG
                                                            BANDWIDTH_LIMITER_ARG )))
 #else
-    LogPicoApiCall( fraStatusText, BOOST_PP_STRINGIZE(CommonApi(SCOPE_FAMILY_LT, SetChannel)), handle, (CommonEnum(SCOPE_FAMILY_UT,CHANNEL))channel,
-                                                                                               TRUE, (CommonEnum(SCOPE_FAMILY_UT,COUPLING))coupling,
-                                                                                               (CommonEnum(SCOPE_FAMILY_UT,RANGE))range ANALOG_OFFSET_ARG
-                                                                                               BANDWIDTH_LIMITER_ARG );
+    LOG_PICO_API_CALL( BOOST_PP_STRINGIZE(CommonApi(SCOPE_FAMILY_LT, SetChannel)), handle, (CommonEnum(SCOPE_FAMILY_UT,CHANNEL))channel,
+                                                                                   TRUE, (CommonEnum(SCOPE_FAMILY_UT,COUPLING))coupling,
+                                                                                   (CommonEnum(SCOPE_FAMILY_UT,RANGE))range ANALOG_OFFSET_ARG
+                                                                                   BANDWIDTH_LIMITER_ARG );
     if (PICO_ERROR(CommonApi(SCOPE_FAMILY_LT, SetChannel)( handle, (CommonEnum(SCOPE_FAMILY_UT,CHANNEL))channel,
                                                            TRUE, (CommonEnum(SCOPE_FAMILY_UT,COUPLING))coupling,
                                                            (CommonEnum(SCOPE_FAMILY_UT,RANGE))range ANALOG_OFFSET_ARG
@@ -673,18 +687,10 @@ bool CommonMethod(SCOPE_FAMILY_LT, SetupChannel)( PS_CHANNEL channel, PS_COUPLIN
     }
 
 #if defined(PS5000A)
-    if (retVal && 0 != (status = ps5000aSetBandwidthFilter( handle, (PS5000A_CHANNEL)channel, PS5000A_BW_20MHZ )))
+    if (retVal)
     {
-        fraStatusText.clear();
-        fraStatusText.str(L"");
-        fraStatusText << L"Fatal error: Failed to setup input channel bandwidth limiter: " << status;
-        LogMessage( fraStatusText.str() );
-        retVal = false;
-    }
-#elif defined(PS4000)
-    if (model == PS4262)
-    {
-        if (retVal && 0 != (status = ps4000SetBwFilter( handle, (PS4000_CHANNEL)channel, TRUE )))
+        LOG_PICO_API_CALL( L"ps5000aSetBandwidthFilter", handle, (PS5000A_CHANNEL)channel, PS5000A_BW_20MHZ );
+        if (0 != (status = ps5000aSetBandwidthFilter( handle, (PS5000A_CHANNEL)channel, PS5000A_BW_20MHZ )))
         {
             fraStatusText.clear();
             fraStatusText.str(L"");
@@ -693,18 +699,38 @@ bool CommonMethod(SCOPE_FAMILY_LT, SetupChannel)( PS_CHANNEL channel, PS_COUPLIN
             retVal = false;
         }
     }
+#elif defined(PS4000)
+    if (model == PS4262)
+    {
+        if (retVal)
+        {
+            LOG_PICO_API_CALL( L"ps4000SetBwFilter", handle, (PS4000_CHANNEL)channel, TRUE );
+            if (0 != (status = ps4000SetBwFilter( handle, (PS4000_CHANNEL)channel, TRUE )))
+            {
+                fraStatusText.clear();
+                fraStatusText.str(L"");
+                fraStatusText << L"Fatal error: Failed to setup input channel bandwidth limiter: " << status;
+                LogMessage( fraStatusText.str() );
+                retVal = false;
+            }
+        }
+    }
 #elif defined(PS3000A)
     if (model == PS3404A || model == PS3404B || model == PS3405A || model == PS3405B || model == PS3406A || model == PS3406B ||
         model == PS3203D || model == PS3203DMSO || model == PS3204D || model == PS3204DMSO || model == PS3205D || model == PS3205DMSO || model == PS3206D || model == PS3206DMSO ||
         model == PS3403D || model == PS3403DMSO || model == PS3404D || model == PS3404DMSO || model == PS3405D || model == PS3405DMSO || model == PS3406D || model == PS3406DMSO)
     {
-        if (retVal && 0 != (status = ps3000aSetBandwidthFilter( handle, (PS3000A_CHANNEL)channel, PS3000A_BW_20MHZ )))
+        if (retVal)
         {
-            fraStatusText.clear();
-            fraStatusText.str(L"");
-            fraStatusText << L"Fatal error: Failed to setup input channel bandwidth limiter: " << status;
-            LogMessage( fraStatusText.str() );
-            retVal = false;
+            LOG_PICO_API_CALL( L"ps3000aSetBandwidthFilter", handle, (PS3000A_CHANNEL)channel, PS3000A_BW_20MHZ );
+            if(0 != (status = ps3000aSetBandwidthFilter( handle, (PS3000A_CHANNEL)channel, PS3000A_BW_20MHZ )))
+            {
+                fraStatusText.clear();
+                fraStatusText.str(L"");
+                fraStatusText << L"Fatal error: Failed to setup input channel bandwidth limiter: " << status;
+                LogMessage( fraStatusText.str() );
+                retVal = false;
+            }
         }
     }
 #endif
@@ -731,6 +757,7 @@ bool CommonMethod(SCOPE_FAMILY_LT, DisableAllDigitalChannels)(void)
     PICO_STATUS status;
     wstringstream fraStatusText;
 
+    LOG_PICO_API_CALL( BOOST_PP_STRINGIZE(CommonApi(SCOPE_FAMILY_LT, SetDigitalPort)), handle, CommonEnum(SCOPE_FAMILY_UT,DIGITAL_PORT0), 0, 0 );
     if (PICO_ERROR(CommonApi(SCOPE_FAMILY_LT, SetDigitalPort)( handle, CommonEnum(SCOPE_FAMILY_UT,DIGITAL_PORT0), 0, 0 )))
     {
         if (PICO_NOT_USED != status) // PICO_NOT_USED is returned when the scope has no digital channels.
@@ -741,6 +768,7 @@ bool CommonMethod(SCOPE_FAMILY_LT, DisableAllDigitalChannels)(void)
         }
     }
 
+    LOG_PICO_API_CALL( BOOST_PP_STRINGIZE(CommonApi(SCOPE_FAMILY_LT, SetDigitalPort)), handle, CommonEnum(SCOPE_FAMILY_UT,DIGITAL_PORT1), 0, 0 );
     if (PICO_ERROR(CommonApi(SCOPE_FAMILY_LT, SetDigitalPort)( handle, CommonEnum(SCOPE_FAMILY_UT,DIGITAL_PORT1), 0, 0 )))
     {
         if (PICO_NOT_USED != status) // PICO_NOT_USED is returned when the scope has no digital channels.
@@ -784,11 +812,19 @@ bool CommonMethod(SCOPE_FAMILY_LT, DisableChannel)( PS_CHANNEL channel )
     float offset = 0.0;
 
 #if defined(PS4000A)
+    LOG_PICO_API_CALL( BOOST_PP_STRINGIZE(CommonApi(SCOPE_FAMILY_LT, SetChannel)), handle, (CommonEnum(SCOPE_FAMILY_UT,CHANNEL))channel,
+                                                                                   FALSE, (CommonEnum(SCOPE_FAMILY_UT,COUPLING))0,
+                                                                                   (PICO_CONNECT_PROBE_RANGE)0 ANALOG_OFFSET_ARG
+                                                                                   BANDWIDTH_LIMITER_ARG );
     if (PICO_ERROR(CommonApi(SCOPE_FAMILY_LT, SetChannel)( handle, (CommonEnum(SCOPE_FAMILY_UT,CHANNEL))channel,
                                                            FALSE, (CommonEnum(SCOPE_FAMILY_UT,COUPLING))0,
                                                            (PICO_CONNECT_PROBE_RANGE)0 ANALOG_OFFSET_ARG
                                                            BANDWIDTH_LIMITER_ARG )))
 #else
+    LOG_PICO_API_CALL( BOOST_PP_STRINGIZE(CommonApi(SCOPE_FAMILY_LT, SetChannel)), handle, (CommonEnum(SCOPE_FAMILY_UT,CHANNEL))channel,
+                                                                                   FALSE, (CommonEnum(SCOPE_FAMILY_UT,COUPLING))0,
+                                                                                   (CommonEnum(SCOPE_FAMILY_UT,RANGE))0 ANALOG_OFFSET_ARG
+                                                                                   BANDWIDTH_LIMITER_ARG );
     if (PICO_ERROR(CommonApi(SCOPE_FAMILY_LT, SetChannel)( handle, (CommonEnum(SCOPE_FAMILY_UT,CHANNEL))channel,
                                                            FALSE, (CommonEnum(SCOPE_FAMILY_UT,COUPLING))0,
                                                            (CommonEnum(SCOPE_FAMILY_UT,RANGE))0 ANALOG_OFFSET_ARG
@@ -839,6 +875,8 @@ bool CommonMethod(SCOPE_FAMILY_LT, SetSignalGenerator)( double vPP, double offse
     }
 #endif
 #if defined(PS2000)
+    LOG_PICO_API_CALL( BOOST_PP_STRINGIZE(CommonApi(SCOPE_FAMILY_LT, SetSigGenBuiltIn)), handle, (int32_t)(offset*1.0e6), (uint32_t)(vPP*1.0e6), waveType, (float)frequency, (float)frequency,
+                                                                                         1.0, 1.0, (CommonEnum(SCOPE_FAMILY_UT,SWEEP_TYPE))0, 0 );
     if (PICO_ERROR(CommonApi(SCOPE_FAMILY_LT, SetSigGenBuiltIn)( handle, (int32_t)(offset*1.0e6), (uint32_t)(vPP*1.0e6), waveType, (float)frequency, (float)frequency,
                                                                  1.0, 1.0, (CommonEnum(SCOPE_FAMILY_UT,SWEEP_TYPE))0, 0 )))
 #elif defined(PS3000)
@@ -847,8 +885,14 @@ bool CommonMethod(SCOPE_FAMILY_LT, SetSignalGenerator)( double vPP, double offse
     // Truncation of frequency to 0 will disable the generator.  However, for PS3000 this function should never be called with values less than 100 Hz, unless
     // actually attempting to disable.
     int32_t intFreq = saturation_cast<int32_t,double>(frequency);
+    LOG_PICO_API_CALL( BOOST_PP_STRINGIZE(CommonApi(SCOPE_FAMILY_LT, _set_siggen)), handle, CommonSine(SCOPE_FAMILY_UT), intFreq, intFreq, 1.0, 1, 0, 0 );
     if (PICO_ERROR(CommonApi(SCOPE_FAMILY_LT, _set_siggen)( handle, CommonSine(SCOPE_FAMILY_UT), intFreq, intFreq, 1.0, 1, 0, 0 )))
 #else
+    LOG_PICO_API_CALL( BOOST_PP_STRINGIZE(CommonApi(SCOPE_FAMILY_LT, SetSigGenBuiltIn)), handle, (int32_t)(offset*1.0e6), (uint32_t)(vPP*1.0e6), waveType, (float)frequency, (float)frequency,
+                                                                                         1.0, 1.0, (CommonEnum(SCOPE_FAMILY_UT,SWEEP_TYPE))0,
+                                                                                         CommonEsOff(SCOPE_FAMILY_UT), 
+                                                                                         0, 0, (CommonEnum(SCOPE_FAMILY_UT,SIGGEN_TRIG_TYPE))0,
+                                                                                         (CommonEnum(SCOPE_FAMILY_UT,SIGGEN_TRIG_SOURCE))CommonSigGenNone(SCOPE_FAMILY_UT), 0 );
     if (PICO_ERROR(CommonApi(SCOPE_FAMILY_LT, SetSigGenBuiltIn)( handle, (int32_t)(offset*1.0e6), (uint32_t)(vPP*1.0e6), waveType, (float)frequency, (float)frequency,
                                                                  1.0, 1.0, (CommonEnum(SCOPE_FAMILY_UT,SWEEP_TYPE))0,
                                                                  CommonEsOff(SCOPE_FAMILY_UT), 
@@ -941,6 +985,7 @@ bool CommonMethod(SCOPE_FAMILY_LT, GetMaxSamples)( uint32_t* pMaxSamples )
 #endif
 
     // timebase should not affect number of samples, so just set to lowest possible value common to all scopes/modes
+    LOG_PICO_API_CALL( BOOST_PP_STRINGIZE(CommonApi(SCOPE_FAMILY_LT, GetTimebase)), handle, 3, 0, NULL, TIME_UNITS_ARG OVERSAMPLE_ARG &maxSamples SEGMENT_INDEX_ARG );
     if (PICO_ERROR(CommonApi(SCOPE_FAMILY_LT, GetTimebase)( handle, 3, 0, NULL, TIME_UNITS_ARG OVERSAMPLE_ARG &maxSamples SEGMENT_INDEX_ARG )))
     {
         fraStatusText << L"Fatal error: Failed to determine sample buffer size: " << status;
@@ -982,6 +1027,7 @@ bool CommonMethod(SCOPE_FAMILY_LT, DisableChannelTriggers)( void )
 #if defined(NEW_PS_DRIVER_MODEL)
     // It's possible that only one of these is necessary.  But it's probably good practice to take some action to disable
     // triggers rather than rely on a scopes default state.
+    LOG_PICO_API_CALL( BOOST_PP_STRINGIZE(CommonApi(SCOPE_FAMILY_LT, SetTriggerChannelConditions)), handle, NULL, 0 CONDITIONS_INFO );
     if (PICO_ERROR(CommonApi(SCOPE_FAMILY_LT, SetTriggerChannelConditions)( handle, NULL, 0 CONDITIONS_INFO)))
     {
         fraStatusText << L"Fatal error: Failed to setup channel trigger conditions: " << status;
@@ -989,6 +1035,7 @@ bool CommonMethod(SCOPE_FAMILY_LT, DisableChannelTriggers)( void )
         retVal = false;
     }
 
+    LOG_PICO_API_CALL( BOOST_PP_STRINGIZE(CommonApi(SCOPE_FAMILY_LT, SetTriggerChannelProperties)), handle, NULL, 0, 0, 0 );
     if (PICO_ERROR(CommonApi(SCOPE_FAMILY_LT, SetTriggerChannelProperties)( handle, NULL, 0, 0, 0 )))
     {
         fraStatusText.clear();
@@ -998,6 +1045,7 @@ bool CommonMethod(SCOPE_FAMILY_LT, DisableChannelTriggers)( void )
         retVal = false;
     }
 #else
+    LOG_PICO_API_CALL( BOOST_PP_STRINGIZE(CommonApi(SCOPE_FAMILY_LT, _set_trigger)), handle, CommonEnum(SCOPE_FAMILY_UT, NONE), 0, CommonEnum(SCOPE_FAMILY_UT, RISING), 0, 0 );
     if (PICO_ERROR(CommonApi(SCOPE_FAMILY_LT, _set_trigger)( handle, CommonEnum(SCOPE_FAMILY_UT, NONE), 0, CommonEnum(SCOPE_FAMILY_UT, RISING), 0, 0 )))
     {
         fraStatusText << L"Fatal error: Failed to setup channel trigger properties: " << status;
@@ -1036,9 +1084,12 @@ bool CommonMethod(SCOPE_FAMILY_LT, RunBlock)( int32_t numSamples, uint32_t timeb
 
     // Setup block mode
 #if defined(NEW_PS_DRIVER_MODEL)
+    LOG_PICO_API_CALL( BOOST_PP_STRINGIZE(CommonApi(SCOPE_FAMILY_LT, RunBlock)), handle, 0, numSamples, timebase, OVERSAMPLE_ARG timeIndisposedMs, 0,
+                                                                                 (CommonReadyCB(SCOPE_FAMILY_LT))lpReady, pParameter );
     if (PICO_ERROR(CommonApi(SCOPE_FAMILY_LT, RunBlock)( handle, 0, numSamples, timebase, OVERSAMPLE_ARG timeIndisposedMs, 0,
                                                          (CommonReadyCB(SCOPE_FAMILY_LT))lpReady, pParameter)))
 #else
+    LOG_PICO_API_CALL( BOOST_PP_STRINGIZE(CommonApi(SCOPE_FAMILY_LT, _run_block)), handle, numSamples, timebase, 1, timeIndisposedMs );
     if (PICO_ERROR(CommonApi(SCOPE_FAMILY_LT, _run_block)( handle, numSamples, timebase, 1, timeIndisposedMs )))
 #endif
     {
@@ -1089,6 +1140,7 @@ DWORD WINAPI CommonMethod(SCOPE_FAMILY_LT, CheckStatus)(LPVOID lpThreadParameter
 {
     int16_t readyStatus;
     PICO_STATUS status;
+    wstringstream fraStatusText;
     int32_t delayCounter;
     CommonClass(SCOPE_FAMILY_LT)* inst = (CommonClass(SCOPE_FAMILY_LT)*)lpThreadParameter;
     do
@@ -1100,6 +1152,9 @@ DWORD WINAPI CommonMethod(SCOPE_FAMILY_LT, CheckStatus)(LPVOID lpThreadParameter
             if (inst->handle > 0)
             {
                 delayCounter = 0;
+                fraStatusText.clear();
+                fraStatusText.str(L"");
+                inst->LogPicoApiCall( fraStatusText, L"while 0 == " BOOST_PP_STRINGIZE(CommonApi(SCOPE_FAMILY_LT, _ready)), inst->handle );
                 while (0 == (readyStatus = CommonApi(SCOPE_FAMILY_LT, _ready)(inst->handle)))
                 {
                     Sleep(100);
@@ -1134,7 +1189,6 @@ DWORD WINAPI CommonMethod(SCOPE_FAMILY_LT, CheckStatus)(LPVOID lpThreadParameter
         {
             // Soemthing has gone catastrophically wrong, so just exit the thread.  At this point no callbacks will work
             // and the upper level code should detect the failure by timing out.
-            wstringstream fraStatusText;
             fraStatusText << L"Fatal error: Invalid result from waiting on status checking start event";
             LogMessage( fraStatusText.str() );
             return -1;
@@ -1251,6 +1305,8 @@ bool CommonMethod(SCOPE_FAMILY_LT, GetData)( uint32_t numSamples, uint32_t start
 #if defined(NEW_PS_DRIVER_MODEL)
     uint32_t numSamplesInOut;
 
+    LOG_PICO_API_CALL( BOOST_PP_STRINGIZE(CommonApi(SCOPE_FAMILY_LT,SetDataBuffer)), handle, (CommonEnum(SCOPE_FAMILY_UT,CHANNEL))mInputChannel, mInputBuffer.data(),
+                                                                                     numSamples SEGMENT_ARG RATIO_MODE_NONE_ARG );
     if (PICO_ERROR(CommonApi(SCOPE_FAMILY_LT,SetDataBuffer)( handle, (CommonEnum(SCOPE_FAMILY_UT,CHANNEL))mInputChannel, mInputBuffer.data(),
                                                              numSamples SEGMENT_ARG RATIO_MODE_NONE_ARG )))
     {
@@ -1261,6 +1317,8 @@ bool CommonMethod(SCOPE_FAMILY_LT, GetData)( uint32_t numSamples, uint32_t start
         retVal = false;
     }
 
+    LOG_PICO_API_CALL( BOOST_PP_STRINGIZE(CommonApi(SCOPE_FAMILY_LT,SetDataBuffer)), handle, (CommonEnum(SCOPE_FAMILY_UT,CHANNEL))mOutputChannel, mOutputBuffer.data(),
+                                                                                     numSamples SEGMENT_ARG RATIO_MODE_NONE_ARG );
     if (PICO_ERROR(CommonApi(SCOPE_FAMILY_LT,SetDataBuffer)( handle, (CommonEnum(SCOPE_FAMILY_UT,CHANNEL))mOutputChannel, mOutputBuffer.data(),
                                                                 numSamples SEGMENT_ARG RATIO_MODE_NONE_ARG )))
     {
@@ -1272,6 +1330,7 @@ bool CommonMethod(SCOPE_FAMILY_LT, GetData)( uint32_t numSamples, uint32_t start
     }
 
     numSamplesInOut = numSamples;
+    LOG_PICO_API_CALL( BOOST_PP_STRINGIZE(CommonApi(SCOPE_FAMILY_LT, GetValues)), handle, startIndex, &numSamplesInOut, 1, CommonEnum(SCOPE_FAMILY_UT, RATIO_MODE_NONE), 0, &overflow );
     if (PICO_ERROR(CommonApi(SCOPE_FAMILY_LT, GetValues)( handle, startIndex, &numSamplesInOut, 1, CommonEnum(SCOPE_FAMILY_UT, RATIO_MODE_NONE), 0, &overflow )))
     {
         fraStatusText.clear();
@@ -1290,6 +1349,7 @@ bool CommonMethod(SCOPE_FAMILY_LT, GetData)( uint32_t numSamples, uint32_t start
         buffer[mInputChannel] = mInputBuffer.data();
         buffer[mOutputChannel] = mOutputBuffer.data();
 
+        LOG_PICO_API_CALL( BOOST_PP_STRINGIZE(CommonApi(SCOPE_FAMILY_LT, _get_values)), handle, buffer[PS_CHANNEL_A], buffer[PS_CHANNEL_B], buffer[PS_CHANNEL_C], buffer[PS_CHANNEL_D], &overflow, numSamples );
         if (PICO_ERROR(CommonApi(SCOPE_FAMILY_LT, _get_values)( handle, buffer[PS_CHANNEL_A], buffer[PS_CHANNEL_B], buffer[PS_CHANNEL_C], buffer[PS_CHANNEL_D], &overflow, numSamples )))
         {
             fraStatusText.clear();
@@ -1369,6 +1429,9 @@ bool CommonMethod(SCOPE_FAMILY_LT, GetCompressedData)( uint32_t downsampleTo,
     uint32_t numSamplesInOut;
     int16_t overflow;
 
+    LOG_PICO_API_CALL( BOOST_PP_STRINGIZE(CommonApi(SCOPE_FAMILY_LT, SetDataBuffers)), handle, (CommonEnum(SCOPE_FAMILY_UT,CHANNEL))mInputChannel,
+                                                                                       inputCompressedMaxBuffer.data(), inputCompressedMinBuffer.data(), 
+                                                                                       compressedBufferSize SEGMENT_ARG RATIO_MODE_AGGREGATE_ARG );
     if (PICO_ERROR(CommonApi(SCOPE_FAMILY_LT, SetDataBuffers)( handle, (CommonEnum(SCOPE_FAMILY_UT,CHANNEL))mInputChannel,
                                                                inputCompressedMaxBuffer.data(), inputCompressedMinBuffer.data(), 
                                                                compressedBufferSize SEGMENT_ARG RATIO_MODE_AGGREGATE_ARG )))
@@ -1380,6 +1443,9 @@ bool CommonMethod(SCOPE_FAMILY_LT, GetCompressedData)( uint32_t downsampleTo,
         retVal = false;
     }
 
+    LOG_PICO_API_CALL( BOOST_PP_STRINGIZE(CommonApi(SCOPE_FAMILY_LT, SetDataBuffers)), handle, (CommonEnum(SCOPE_FAMILY_UT,CHANNEL))mOutputChannel,
+                                                                                       outputCompressedMaxBuffer.data(), outputCompressedMinBuffer.data(),
+                                                                                       compressedBufferSize SEGMENT_ARG RATIO_MODE_AGGREGATE_ARG );
     if (PICO_ERROR(CommonApi(SCOPE_FAMILY_LT, SetDataBuffers)( handle, (CommonEnum(SCOPE_FAMILY_UT,CHANNEL))mOutputChannel,
                                                                outputCompressedMaxBuffer.data(), outputCompressedMinBuffer.data(), 
                                                                compressedBufferSize SEGMENT_ARG RATIO_MODE_AGGREGATE_ARG )))
@@ -1392,6 +1458,7 @@ bool CommonMethod(SCOPE_FAMILY_LT, GetCompressedData)( uint32_t downsampleTo,
     }
 
     numSamplesInOut = compressedBufferSize;
+    LOG_PICO_API_CALL( BOOST_PP_STRINGIZE(CommonApi(SCOPE_FAMILY_LT, GetValues)), handle, 0, &numSamplesInOut, initialAggregation, CommonEnum(SCOPE_FAMILY_UT, RATIO_MODE_AGGREGATE), 0, &overflow );
     if (PICO_ERROR(CommonApi(SCOPE_FAMILY_LT, GetValues)( handle, 0, &numSamplesInOut, initialAggregation, CommonEnum(SCOPE_FAMILY_UT, RATIO_MODE_AGGREGATE), 0, &overflow )))
     {
         fraStatusText.clear();
@@ -1476,6 +1543,8 @@ bool CommonMethod(SCOPE_FAMILY_LT, GetPeakValues)( uint16_t& inputPeak, uint16_t
     int16_t outputDataMin;
     int16_t outputDataMax;
 
+    LOG_PICO_API_CALL( BOOST_PP_STRINGIZE(CommonApi(SCOPE_FAMILY_LT, SetDataBuffers)), handle, (CommonEnum(SCOPE_FAMILY_UT,CHANNEL))mInputChannel,
+                                                                                       &inputDataMax, &inputDataMin, 1 SEGMENT_ARG RATIO_MODE_AGGREGATE_ARG );
     if (PICO_ERROR(CommonApi(SCOPE_FAMILY_LT, SetDataBuffers)( handle, (CommonEnum(SCOPE_FAMILY_UT,CHANNEL))mInputChannel,
                                                                &inputDataMax, &inputDataMin, 1 SEGMENT_ARG RATIO_MODE_AGGREGATE_ARG )))
     {
@@ -1486,6 +1555,8 @@ bool CommonMethod(SCOPE_FAMILY_LT, GetPeakValues)( uint16_t& inputPeak, uint16_t
         retVal = false;
     }
 
+    LOG_PICO_API_CALL( BOOST_PP_STRINGIZE(CommonApi(SCOPE_FAMILY_LT, SetDataBuffers)), handle, (CommonEnum(SCOPE_FAMILY_UT,CHANNEL))mOutputChannel,
+                                                                                       &outputDataMax, &outputDataMin, 1 SEGMENT_ARG RATIO_MODE_AGGREGATE_ARG );
     if (PICO_ERROR(CommonApi(SCOPE_FAMILY_LT, SetDataBuffers)( handle, (CommonEnum(SCOPE_FAMILY_UT,CHANNEL))mOutputChannel,
                                                                &outputDataMax, &outputDataMin, 1 SEGMENT_ARG RATIO_MODE_AGGREGATE_ARG )))
     {
@@ -1497,6 +1568,7 @@ bool CommonMethod(SCOPE_FAMILY_LT, GetPeakValues)( uint16_t& inputPeak, uint16_t
     }
 
     numSamplesInOut = 1;
+    LOG_PICO_API_CALL( BOOST_PP_STRINGIZE(CommonApi(SCOPE_FAMILY_LT, GetValues)), handle, 0, &numSamplesInOut, mNumSamples, CommonEnum(SCOPE_FAMILY_UT, RATIO_MODE_AGGREGATE), 0, &overflow );
     if (PICO_ERROR(CommonApi(SCOPE_FAMILY_LT, GetValues)( handle, 0, &numSamplesInOut, mNumSamples, CommonEnum(SCOPE_FAMILY_UT, RATIO_MODE_AGGREGATE), 0, &overflow )))
     {
         fraStatusText.clear();
@@ -1518,6 +1590,7 @@ bool CommonMethod(SCOPE_FAMILY_LT, GetPeakValues)( uint16_t& inputPeak, uint16_t
     buffer[mInputChannel] = mInputBuffer.data();
     buffer[mOutputChannel] = mOutputBuffer.data();
 
+    LOG_PICO_API_CALL( BOOST_PP_STRINGIZE(CommonApi(SCOPE_FAMILY_LT, _get_values)), handle, buffer[PS_CHANNEL_A], buffer[PS_CHANNEL_B], buffer[PS_CHANNEL_C], buffer[PS_CHANNEL_D], &overflow, mNumSamples );
     if (PICO_ERROR(CommonApi(SCOPE_FAMILY_LT, _get_values)( handle, buffer[PS_CHANNEL_A], buffer[PS_CHANNEL_B], buffer[PS_CHANNEL_C], buffer[PS_CHANNEL_D], &overflow, mNumSamples )))
     {
         fraStatusText.clear();
@@ -1562,6 +1635,8 @@ bool CommonMethod(SCOPE_FAMILY_LT, ChangePower)( PICO_STATUS powerState )
 {
 #if defined(PS3000A) || defined(PS5000A)
     PICO_STATUS status;
+    wstringstream fraStatusText;
+    LOG_PICO_API_CALL( BOOST_PP_STRINGIZE(CommonApi(SCOPE_FAMILY_LT, ChangePowerSource)), handle, powerState );
     status = CommonApi(SCOPE_FAMILY_LT, ChangePowerSource)( handle, powerState );
     return (status==PICO_OK);
 #else
@@ -1584,6 +1659,8 @@ bool CommonMethod(SCOPE_FAMILY_LT, ChangePower)( PICO_STATUS powerState )
 bool CommonMethod(SCOPE_FAMILY_LT, CancelCapture)(void)
 {
     PICO_STATUS status;
+    wstringstream fraStatusText;
+    LOG_PICO_API_CALL( BOOST_PP_STRINGIZE(CommonApi(SCOPE_FAMILY_LT, Stop)), handle );
     status = CommonApi(SCOPE_FAMILY_LT, Stop)( handle );
     return !(PICO_ERROR(status));
 }
@@ -1603,6 +1680,8 @@ bool CommonMethod(SCOPE_FAMILY_LT, CancelCapture)(void)
 bool CommonMethod(SCOPE_FAMILY_LT, Close)(void)
 {
     PICO_STATUS status;
+    wstringstream fraStatusText;
+    LOG_PICO_API_CALL( BOOST_PP_STRINGIZE(CommonApi(SCOPE_FAMILY_LT, CloseUnit)), handle );
     status = CommonApi(SCOPE_FAMILY_LT, CloseUnit)( handle );
     handle = -1;
     return (PICO_OK == status);
@@ -1624,10 +1703,12 @@ bool CommonMethod(SCOPE_FAMILY_LT, IsUSB3_0Connection)(void)
 {
     bool retVal;
     PICO_STATUS status;
+    wstringstream fraStatusText;
 #if defined(NEW_PS_DRIVER_MODEL)
     int16_t infoStringLength;
 #endif
     int8_t usbVersion[16];
+    LOG_PICO_API_CALL( BOOST_PP_STRINGIZE(CommonApi(SCOPE_FAMILY_LT, GetUnitInfo)), handle, usbVersion, sizeof(usbVersion) INFO_STRING_LENGTH_ARG, PICO_USB_VERSION );
     if (PICO_ERROR(CommonApi(SCOPE_FAMILY_LT, GetUnitInfo)(handle, usbVersion, sizeof(usbVersion) INFO_STRING_LENGTH_ARG, PICO_USB_VERSION)))
     {
         retVal = false;
@@ -1656,7 +1737,7 @@ void CommonMethod(SCOPE_FAMILY_LT, LogPicoApiCall)(wstringstream& fraStatusText)
     }
 
     fraStatusText << L" );";
-    LogMessage( fraStatusText.str() );
+    LogMessage( fraStatusText.str(), PICO_API_CALL );
 }
 
 template <typename First, typename... Rest> void CommonMethod(SCOPE_FAMILY_LT, LogPicoApiCall)( wstringstream& fraStatusText, First first, Rest... rest)
