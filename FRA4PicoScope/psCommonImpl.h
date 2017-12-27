@@ -95,3 +95,5 @@ void* cbParam;
 #endif
 bool InitializeScope( void );
 bool IsUSB3_0Connection();
+void LogPicoApiCall( wstringstream& fraStatusText );
+template <typename First, typename... Rest> void LogPicoApiCall( wstringstream& fraStatusText, First first, Rest... rest );

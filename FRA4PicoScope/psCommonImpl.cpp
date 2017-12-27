@@ -116,6 +116,9 @@ using namespace boost::math;
 #define CommonReadyCB(FM) xCommonReadyCB(FM)
 #define xCommonReadyCB(FM) ps##FM##BlockReady
 
+#define CommonErrorCode(FM) xCommonErrorCode(FM)
+#define xCommonErrorCode(FM) PS##FM##_ERROR_CODE
+
 const RANGE_INFO_T CommonClass(SCOPE_FAMILY_LT)::rangeInfo[] =
 {
     {0.010, 0.5, 0.0, L"± 10 mV"},
@@ -247,8 +250,25 @@ bool CommonMethod(SCOPE_FAMILY_LT,Initialized)( void )
 bool CommonMethod(SCOPE_FAMILY_LT,Connected)( void )
 {
     PICO_STATUS status;
+    wstringstream fraStatusText;
+
+    LogPicoApiCall( fraStatusText, BOOST_PP_STRINGIZE(CommonApi(SCOPE_FAMILY_LT, PingUnit)), handle );
     status = CommonApi(SCOPE_FAMILY_LT, PingUnit)( handle );
+#if defined(NEW_PS_DRIVER_MODEL)
     return !(PICO_CONNECTION_ERROR(status));
+#else
+    // TODO: finalize this code.  Right now it's just here to diagnose issues with user initiated cancel on PS2000
+    if (PICO_CONNECTION_ERROR(status))
+    {
+        int8_t lastError[16];
+        CommonApi(SCOPE_FAMILY_LT, GetUnitInfo)( handle, lastError, sizeof(lastError), CommonErrorCode(SCOPE_FAMILY_UT) );
+        return false;
+    }
+    else
+    {
+        return true;
+    }
+#endif
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -522,10 +542,12 @@ bool CommonMethod(SCOPE_FAMILY_LT,GetModel)( wstring &model )
 {
     bool retVal;
     PICO_STATUS status;
+    wstringstream fraStatusText;
 #if defined(NEW_PS_DRIVER_MODEL)
     int16_t infoStringLength;
 #endif
     int8_t scopeModel[32];
+    LogPicoApiCall( fraStatusText, BOOST_PP_STRINGIZE(CommonApi(SCOPE_FAMILY_LT, GetUnitInfo)), handle, scopeModel, sizeof(scopeModel) INFO_STRING_LENGTH_ARG, PICO_VARIANT_INFO );
     if( PICO_ERROR(CommonApi(SCOPE_FAMILY_LT, GetUnitInfo)( handle, scopeModel, sizeof(scopeModel) INFO_STRING_LENGTH_ARG, PICO_VARIANT_INFO )) )
     {
         model = L"???";
@@ -558,10 +580,12 @@ bool CommonMethod(SCOPE_FAMILY_LT,GetSerialNumber)( wstring &sn )
 {
     bool retVal;
     PICO_STATUS status;
+    wstringstream fraStatusText;
 #if defined(NEW_PS_DRIVER_MODEL)
     int16_t infoStringLength;
 #endif
     int8_t scopeSN[32];
+    LogPicoApiCall( fraStatusText, BOOST_PP_STRINGIZE(CommonApi(SCOPE_FAMILY_LT, GetUnitInfo)), handle, scopeSN, sizeof(scopeSN) INFO_STRING_LENGTH_ARG, PICO_BATCH_AND_SERIAL );
     if( PICO_ERROR(CommonApi(SCOPE_FAMILY_LT, GetUnitInfo)( handle, scopeSN, sizeof(scopeSN) INFO_STRING_LENGTH_ARG, PICO_BATCH_AND_SERIAL )) )
     {
         sn = L"???";
@@ -633,6 +657,10 @@ bool CommonMethod(SCOPE_FAMILY_LT, SetupChannel)( PS_CHANNEL channel, PS_COUPLIN
                                                            (PICO_CONNECT_PROBE_RANGE)range ANALOG_OFFSET_ARG
                                                            BANDWIDTH_LIMITER_ARG )))
 #else
+    LogPicoApiCall( fraStatusText, BOOST_PP_STRINGIZE(CommonApi(SCOPE_FAMILY_LT, SetChannel)), handle, (CommonEnum(SCOPE_FAMILY_UT,CHANNEL))channel,
+                                                                                               TRUE, (CommonEnum(SCOPE_FAMILY_UT,COUPLING))coupling,
+                                                                                               (CommonEnum(SCOPE_FAMILY_UT,RANGE))range ANALOG_OFFSET_ARG
+                                                                                               BANDWIDTH_LIMITER_ARG );
     if (PICO_ERROR(CommonApi(SCOPE_FAMILY_LT, SetChannel)( handle, (CommonEnum(SCOPE_FAMILY_UT,CHANNEL))channel,
                                                            TRUE, (CommonEnum(SCOPE_FAMILY_UT,COUPLING))coupling,
                                                            (CommonEnum(SCOPE_FAMILY_UT,RANGE))range ANALOG_OFFSET_ARG
@@ -1616,6 +1644,32 @@ bool CommonMethod(SCOPE_FAMILY_LT, IsUSB3_0Connection)(void)
         }
     }
     return retVal;
+}
+
+void CommonMethod(SCOPE_FAMILY_LT, LogPicoApiCall)(wstringstream& fraStatusText)
+{
+    // If there is a trailing ", " remove it
+    size_t length = fraStatusText.str().length();
+    if (!fraStatusText.str().compare(length-2, 2, L", "))
+    {
+        fraStatusText.seekp( -2, ios_base::end );
+    }
+
+    fraStatusText << L" );";
+    LogMessage( fraStatusText.str() );
+}
+
+template <typename First, typename... Rest> void CommonMethod(SCOPE_FAMILY_LT, LogPicoApiCall)( wstringstream& fraStatusText, First first, Rest... rest)
+{
+    if (fraStatusText.str().empty()) // first is the function name
+    {
+        fraStatusText << first << L"( ";
+    }
+    else // first is a parameter
+    {
+        fraStatusText << first << L", ";
+    }
+    LogPicoApiCall( fraStatusText, rest... );
 }
 
 #undef GetUnitInfo
