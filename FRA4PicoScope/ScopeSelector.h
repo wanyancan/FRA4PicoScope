@@ -111,4 +111,8 @@ class ScopeSelector
         static unordered_map<string, int16_t> ps2000Scopes;
         static unordered_map<string, int16_t> ps3000Scopes;
         static unordered_map<string, int16_t> ps5000Scopes;
+
+        static void LogPicoApiCall( wstringstream& scopeStatusText );
+        template <typename First, typename... Rest> static void LogPicoApiCall( wstringstream& scopeStatusText, First first, Rest... rest );
+        void LogEnumerationCall( uint8_t idx, int16_t* count, int8_t* serials, int16_t* serialLth );
 };

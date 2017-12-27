@@ -43,6 +43,11 @@
 #pragma warning(disable: 4996)
 #endif
 
+#define LOG_PICO_API_CALL(...) \
+scopeStatusText.clear(); \
+scopeStatusText.str(L""); \
+LogPicoApiCall(scopeStatusText, __VA_ARGS__);
+
 // Functions and types from the PicoScope SDKs that we'll define locally since the PS headers are incompatible with each other.
 extern "C" __declspec(dllimport) PICO_STATUS __stdcall ps2000aEnumerateUnits( int16_t *count, int8_t  *serials, int16_t *serialLth );
 extern "C" __declspec(dllimport) PICO_STATUS __stdcall ps3000aEnumerateUnits( int16_t *count, int8_t  *serials, int16_t *serialLth );
@@ -165,6 +170,7 @@ bool ScopeSelector::GetAvailableScopes( vector<AvailableScopeDescription_T>& _av
         for (int idx = 0; idx < sizeof(EnumerationFuncs)/sizeof(psEnumerateUnits); idx++)
         {
             serialLength = 1024;
+            LogEnumerationCall(idx, &count, (int8_t*)serials, &serialLength);
             status = EnumerationFuncs[idx]( &count, (int8_t*)serials, &serialLength );
             if (count > 0)
             {
@@ -255,6 +261,7 @@ PicoScope* ScopeSelector::OpenScope( AvailableScopeDescription_T scope )
 {
     PICO_STATUS status;
     int16_t handle = -1;
+    wstringstream scopeStatusText;
 
     // Close any scopes that may be open from a simulated enumeration, except the one we're trying to open
     CloseScopesFromSimulatedEnumeration( &scope );
@@ -281,6 +288,7 @@ PicoScope* ScopeSelector::OpenScope( AvailableScopeDescription_T scope )
     }
     else if (scope.driverFamily == PS2000A)
     {
+        LOG_PICO_API_CALL( L"ps2000aOpenUnit", &handle, (int8_t*)scope.serialNumber.c_str() );
         status = ps2000aOpenUnit( &handle, (int8_t*)scope.serialNumber.c_str() );
         if (status != PICO_OK || handle <= 0)
         {
@@ -319,6 +327,7 @@ PicoScope* ScopeSelector::OpenScope( AvailableScopeDescription_T scope )
     }
     else if (scope.driverFamily == PS3000A)
     {
+        LOG_PICO_API_CALL( L"ps3000aOpenUnit", &handle, (int8_t*)scope.serialNumber.c_str() );
         status = ps3000aOpenUnit( &handle, (int8_t*)scope.serialNumber.c_str() );
         if ((status != PICO_OK && status != PICO_POWER_SUPPLY_NOT_CONNECTED &&
              status != PICO_USB3_0_DEVICE_NON_USB3_0_PORT) || handle <= 0)
@@ -338,6 +347,7 @@ PicoScope* ScopeSelector::OpenScope( AvailableScopeDescription_T scope )
     }
     else if (scope.driverFamily == PS4000)
     {
+        LOG_PICO_API_CALL( L"ps4000OpenUnitEx", &handle, (int8_t*)scope.serialNumber.c_str() );
         status = ps4000OpenUnitEx( &handle, (int8_t*)scope.serialNumber.c_str() );
         if (status != PICO_OK || handle <= 0)
         {
@@ -356,6 +366,7 @@ PicoScope* ScopeSelector::OpenScope( AvailableScopeDescription_T scope )
     }
     else if (scope.driverFamily == PS4000A)
     {
+        LOG_PICO_API_CALL( L"ps4000aOpenUnit", &handle, (int8_t*)scope.serialNumber.c_str() );
         status = ps4000aOpenUnit( &handle, (int8_t*)scope.serialNumber.c_str() );
         if ((status != PICO_OK && status != PICO_USB3_0_DEVICE_NON_USB3_0_PORT) || handle <= 0)
         {
@@ -394,6 +405,7 @@ PicoScope* ScopeSelector::OpenScope( AvailableScopeDescription_T scope )
     }
     else if (scope.driverFamily == PS5000A)
     {
+        LOG_PICO_API_CALL( L"ps5000aOpenUnit", &handle, (int8_t*)scope.serialNumber.c_str(), PS5000A_DR_15BIT );
         status = ps5000aOpenUnit( &handle, (int8_t*)scope.serialNumber.c_str(), PS5000A_DR_15BIT );
         if ((status != PICO_OK && status != PICO_POWER_SUPPLY_NOT_CONNECTED) || handle <= 0)
         {
@@ -412,6 +424,7 @@ PicoScope* ScopeSelector::OpenScope( AvailableScopeDescription_T scope )
     }
     else if (scope.driverFamily == PS6000)
     {
+        LOG_PICO_API_CALL( L"ps6000OpenUnit", &handle, (char*)scope.serialNumber.c_str() );
         status = ps6000OpenUnit( &handle, (char*)scope.serialNumber.c_str() );
         if (status != PICO_OK || handle <= 0)
         {
@@ -585,6 +598,7 @@ PICO_STATUS ScopeSelector::ps2000EnumerateUnits( int16_t *count, int8_t *serials
     int16_t _serialLth = 0;
     char _serials[32];
     int16_t totalSerialLth = 0;
+    wstringstream scopeStatusText;
     
     *count = 0;
     serials[0] = '\0';
@@ -593,6 +607,7 @@ PICO_STATUS ScopeSelector::ps2000EnumerateUnits( int16_t *count, int8_t *serials
     while (it != ps2000Scopes.end())
     {
         // See if it's still open
+        LOG_PICO_API_CALL( L"ps2000_get_unit_info", it->second, (int8_t*)_serials, sizeof(_serials), PS_BATCH_AND_SERIAL );
         _serialLth = ps2000_get_unit_info( it->second, _serials, sizeof(_serials), PS_BATCH_AND_SERIAL );
         if (0 != _serialLth)
         {
@@ -620,8 +635,10 @@ PICO_STATUS ScopeSelector::ps2000EnumerateUnits( int16_t *count, int8_t *serials
         }
     }
 
+    LOG_PICO_API_CALL( L"while (0 < ps2000_open_unit" );
     while (0 < (handle = ps2000_open_unit()))
     {
+        LOG_PICO_API_CALL( L"ps2000_get_unit_info", handle, (int8_t*)_serials, sizeof(_serials), PS_BATCH_AND_SERIAL );
         _serialLth = ps2000_get_unit_info( handle, _serials, sizeof(_serials), PS_BATCH_AND_SERIAL );
         if (0 != _serialLth)
         {
@@ -686,6 +703,7 @@ PICO_STATUS ScopeSelector::ps3000EnumerateUnits( int16_t *count, int8_t *serials
     int16_t _serialLth = 0;
     char _serials[32];
     int16_t totalSerialLth = 0;
+    wstringstream scopeStatusText;
     
     *count = 0;
     serials[0] = '\0';
@@ -694,6 +712,7 @@ PICO_STATUS ScopeSelector::ps3000EnumerateUnits( int16_t *count, int8_t *serials
     while (it != ps3000Scopes.end())
     {
         // See if it's still open
+        LOG_PICO_API_CALL( L"ps3000_get_unit_info", it->second, (int8_t*)_serials, sizeof(_serials), PS_BATCH_AND_SERIAL );
         _serialLth = ps3000_get_unit_info( it->second, (int8_t*)_serials, sizeof(_serials), PS_BATCH_AND_SERIAL );
         if (0 != _serialLth)
         {
@@ -721,8 +740,10 @@ PICO_STATUS ScopeSelector::ps3000EnumerateUnits( int16_t *count, int8_t *serials
         }
     }
 
+    LOG_PICO_API_CALL( L"while (0 < ps3000_open_unit" );
     while (0 < (handle = ps3000_open_unit()))
     {
+        LOG_PICO_API_CALL( L"ps3000_get_unit_info", handle, (int8_t*)_serials, sizeof(_serials), PS_BATCH_AND_SERIAL );
         _serialLth = ps3000_get_unit_info( handle, (int8_t*)_serials, sizeof(_serials), PS_BATCH_AND_SERIAL );
         if (0 != _serialLth)
         {
@@ -787,6 +808,7 @@ PICO_STATUS ScopeSelector::ps5000EnumerateUnits( int16_t *count, int8_t *serials
     int16_t _serialLth = 0;
     char _serials[32];
     int16_t totalSerialLth = 0;
+    wstringstream scopeStatusText;
     
     *count = 0;
     serials[0] = '\0';
@@ -795,6 +817,7 @@ PICO_STATUS ScopeSelector::ps5000EnumerateUnits( int16_t *count, int8_t *serials
     while (it != ps5000Scopes.end())
     {
         // See if it's still open
+        LOG_PICO_API_CALL( L"ps5000GetUnitInfo", it->second, (int8_t*)_serials, sizeof(_serials), NULL, PS_BATCH_AND_SERIAL );
         status = ps5000GetUnitInfo( it->second, (int8_t*)_serials, sizeof(_serials), NULL, PS_BATCH_AND_SERIAL );
         if (PICO_OK == status)
         {
@@ -822,8 +845,10 @@ PICO_STATUS ScopeSelector::ps5000EnumerateUnits( int16_t *count, int8_t *serials
         }
     }
 
+    LOG_PICO_API_CALL( L"while (PICO_OK == ps5000OpenUnit", &handle );
     while (PICO_OK == ps5000OpenUnit(&handle) && 0 < handle)
     {
+        LOG_PICO_API_CALL( L"ps5000GetUnitInfo", handle, (int8_t*)_serials, sizeof(_serials), NULL, PS_BATCH_AND_SERIAL );
         status = ps5000GetUnitInfo( handle, (int8_t*)_serials, sizeof(_serials), NULL, PS_BATCH_AND_SERIAL );
         if (PICO_OK == status)
         {
@@ -897,6 +922,7 @@ PICO_STATUS ScopeSelector::PS5000OpenUnit( int16_t* handle, int8_t* serial )
 
 void ScopeSelector::CloseScopesFromSimulatedEnumeration( AvailableScopeDescription_T* doNotClose )
 {
+    wstringstream scopeStatusText;
     {
         auto it = ps2000Scopes.begin();
         while( it != ps2000Scopes.end())
@@ -905,6 +931,7 @@ void ScopeSelector::CloseScopesFromSimulatedEnumeration( AvailableScopeDescripti
                 doNotClose->driverFamily != PS2000 ||
                 doNotClose->serialNumber.compare(it->first))
             {
+                LOG_PICO_API_CALL( L"ps2000_close_unit", it->second );
                 ps2000_close_unit( it->second );
                 it = ps2000Scopes.erase( it );
             }
@@ -922,6 +949,7 @@ void ScopeSelector::CloseScopesFromSimulatedEnumeration( AvailableScopeDescripti
                 doNotClose->driverFamily != PS3000 ||
                 doNotClose->serialNumber.compare(it->first))
             {
+                LOG_PICO_API_CALL( L"ps3000_close_unit", it->second );
                 ps3000_close_unit( it->second );
                 it = ps3000Scopes.erase( it );
             }
@@ -939,8 +967,8 @@ void ScopeSelector::CloseScopesFromSimulatedEnumeration( AvailableScopeDescripti
                 doNotClose->driverFamily != PS5000 ||
                 doNotClose->serialNumber.compare(it->first))
             {
-                // PS5000 not implemented yet
-                // ps5000CloseUnit( it->second );
+                LOG_PICO_API_CALL( L"ps5000CloseUnit", it->second );
+                ps5000CloseUnit( it->second );
                 it = ps5000Scopes.erase( it );
             }
             else
@@ -948,6 +976,73 @@ void ScopeSelector::CloseScopesFromSimulatedEnumeration( AvailableScopeDescripti
                 it++;
             }
         }
+    }
+}
+
+void ScopeSelector::LogPicoApiCall(wstringstream& scopeStatusText)
+{
+    // If there is a trailing ", " remove it
+    size_t length = scopeStatusText.str().length();
+    if (!scopeStatusText.str().compare(length-2, 2, L", "))
+    {
+        scopeStatusText.seekp( -2, ios_base::end );
+    }
+
+    scopeStatusText << L" );";
+    LogMessage( scopeStatusText.str(), PICO_API_CALL );
+}
+
+template <typename First, typename... Rest> void ScopeSelector::LogPicoApiCall( wstringstream& scopeStatusText, First first, Rest... rest)
+{
+    if (scopeStatusText.str().empty()) // first is the function name
+    {
+        scopeStatusText << first << L"( ";
+    }
+    else // first is a parameter
+    {
+        scopeStatusText << first << L", ";
+    }
+    LogPicoApiCall( scopeStatusText, rest... );
+}
+
+void ScopeSelector::LogEnumerationCall(uint8_t idx, int16_t* count, int8_t* serials, int16_t* serialLth)
+{
+    wstringstream scopeStatusText;
+
+    switch (idx)
+    {
+        case PS2000A:
+        {
+            LOG_PICO_API_CALL( L"ps2000aEnumerateUnits", count, serials, serialLth );
+        }
+        break;
+        case PS3000A:
+        {
+            LOG_PICO_API_CALL( L"ps3000aEnumerateUnits", count, serials, serialLth );
+        }
+        break;
+        case PS4000:
+        {
+            LOG_PICO_API_CALL( L"ps4000EnumerateUnits", count, serials, serialLth );
+        }
+        break;
+        case PS4000A:
+        {
+            LOG_PICO_API_CALL( L"ps4000aEnumerateUnits", count, serials, serialLth );
+        }
+        break;
+        case PS5000A:
+        {
+            LOG_PICO_API_CALL( L"ps5000aEnumerateUnits", count, serials, serialLth );
+        }
+        break;
+        case PS6000:
+        {
+            LOG_PICO_API_CALL( L"ps6000EnumerateUnits", count, serials, serialLth );
+        }
+        break;
+        default:
+            break;
     }
 }
 
