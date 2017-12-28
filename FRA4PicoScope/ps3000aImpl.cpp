@@ -172,6 +172,7 @@ bool ps3000aImpl::GetFrequencyFromTimebase(uint32_t timebase, double &frequency)
 
 bool ps3000aImpl::InitializeScope(void)
 {
+    wstringstream scopeStatusText;
 
     // Even though the DDS parameters would suggest that a lower frequency is possible,
     // the API limits to this value.
@@ -226,6 +227,8 @@ bool ps3000aImpl::InitializeScope(void)
     if (PICO_POWER_SUPPLY_NOT_CONNECTED == initialPowerState ||
         PICO_USB3_0_DEVICE_NON_USB3_0_PORT == initialPowerState)
     {
+        scopeStatusText << L"ps3000aChangePowerSource( " << handle << ", " << initialPowerState << L" )";
+        LogMessage( scopeStatusText.str(), PICO_API_CALL );
         ps3000aChangePowerSource(handle, initialPowerState);
         numAvailableChannels = 2;
     }

@@ -25,6 +25,7 @@
 
 #include "StdAfx.h"
 #include "PicoScopeFRA.h"
+#include "StatusLog.h"
 #include "picoStatus.h"
 #define _USE_MATH_DEFINES
 #include <math.h>
@@ -54,6 +55,10 @@
 
 void __stdcall DataReady( short handle, PICO_STATUS status, void * pParameter)
 {
+    wstringstream fraStatusText;
+    fraStatusText << L"BlockReady( " << handle << L", " << status << L", " << pParameter << L" )";
+    LogMessage( fraStatusText.str(), PICO_API_CALL );
+
     PicoScopeFRA::SetCaptureStatus( status );
     SetEvent( *(HANDLE*)pParameter );
 }

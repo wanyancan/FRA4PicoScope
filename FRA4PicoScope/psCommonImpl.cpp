@@ -1141,6 +1141,7 @@ DWORD WINAPI CommonMethod(SCOPE_FAMILY_LT, CheckStatus)(LPVOID lpThreadParameter
     int16_t readyStatus;
     PICO_STATUS status;
     wstringstream fraStatusText;
+    wstringstream readyStatusText;
     int32_t delayCounter;
     CommonClass(SCOPE_FAMILY_LT)* inst = (CommonClass(SCOPE_FAMILY_LT)*)lpThreadParameter;
     do
@@ -1152,11 +1153,15 @@ DWORD WINAPI CommonMethod(SCOPE_FAMILY_LT, CheckStatus)(LPVOID lpThreadParameter
             if (inst->handle > 0)
             {
                 delayCounter = 0;
-                fraStatusText.clear();
-                fraStatusText.str(L"");
-                inst->LogPicoApiCall( fraStatusText, L"while 0 == " BOOST_PP_STRINGIZE(CommonApi(SCOPE_FAMILY_LT, _ready)), inst->handle );
                 while (0 == (readyStatus = CommonApi(SCOPE_FAMILY_LT, _ready)(inst->handle)))
                 {
+                    //// diagnostic logging
+                    readyStatusText.clear();
+                    readyStatusText.str(L"");
+                    readyStatusText << readyStatus << L" <== " << BOOST_PP_STRINGIZE(CommonApi(SCOPE_FAMILY_LT, _ready)) << L"( " << inst->handle << L" );";
+                    LogMessage( readyStatusText.str(), PICO_API_CALL );
+                    //// diagnostic logging
+
                     Sleep(100);
                     delayCounter += 100;
                     // delay with a safety factor of 1.5x and never let it go less than 3 seconds
@@ -1165,16 +1170,30 @@ DWORD WINAPI CommonMethod(SCOPE_FAMILY_LT, CheckStatus)(LPVOID lpThreadParameter
                         break;
                     }
                 }
-                if (readyStatus == 0)
+                if (readyStatus == 0) // timed out
                 {
                     continue; // Don't call the callback to help avoid races between this expiry and the one in PicoScopeFRA
                 }
                 if (readyStatus < 0)
                 {
+                    //// diagnostic logging
+                    readyStatusText.clear();
+                    readyStatusText.str(L"");
+                    readyStatusText << readyStatus << L" <== " << BOOST_PP_STRINGIZE(CommonApi(SCOPE_FAMILY_LT, _ready)) << L"( " << inst->handle << L" );";
+                    LogMessage( readyStatusText.str(), PICO_API_CALL );
+                    //// diagnostic logging
+
                     status = PICO_DATA_NOT_AVAILABLE;
                 }
                 else
                 {
+                    //// diagnostic logging
+                    readyStatusText.clear();
+                    readyStatusText.str(L"");
+                    readyStatusText << readyStatus << L" <== " << BOOST_PP_STRINGIZE(CommonApi(SCOPE_FAMILY_LT, _ready)) << L"( " << inst->handle << L" );";
+                    LogMessage( readyStatusText.str(), PICO_API_CALL );
+                    //// diagnostic logging
+
                     status = PICO_OK;
                 }
             }

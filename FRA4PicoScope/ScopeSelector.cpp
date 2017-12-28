@@ -660,6 +660,7 @@ PICO_STATUS ScopeSelector::ps2000EnumerateUnits( int16_t *count, int8_t *serials
                 break;
             }
         }
+        LOG_PICO_API_CALL( L"while (0 < ps2000_open_unit" );
     }
 
     *serialLth = totalSerialLth;
@@ -765,6 +766,7 @@ PICO_STATUS ScopeSelector::ps3000EnumerateUnits( int16_t *count, int8_t *serials
                 break;
             }
         }
+        LOG_PICO_API_CALL( L"while (0 < ps3000_open_unit" );
     }
 
     *serialLth = totalSerialLth;
@@ -870,6 +872,7 @@ PICO_STATUS ScopeSelector::ps5000EnumerateUnits( int16_t *count, int8_t *serials
                 break;
             }
         }
+        LOG_PICO_API_CALL( L"while (PICO_OK == ps5000OpenUnit", &handle );
     }
 
     *serialLth = totalSerialLth;

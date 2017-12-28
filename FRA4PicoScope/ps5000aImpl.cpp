@@ -89,6 +89,7 @@ bool ps5000aImpl::GetFrequencyFromTimebase(uint32_t timebase, double &frequency)
 
 bool ps5000aImpl::InitializeScope(void)
 {
+    wstringstream scopeStatusText;
     timebaseNoiseRejectMode = defaultTimebaseNoiseRejectMode = 4; // for PS5000A => 62.5 MHz approximately 3x HW BW limiter
 
     minTimebase = 3;
@@ -104,6 +105,8 @@ bool ps5000aImpl::InitializeScope(void)
 
     if (PICO_POWER_SUPPLY_NOT_CONNECTED == initialPowerState)
     {
+        scopeStatusText << L"ps5000aChangePowerSource( " << handle << ", " << PICO_POWER_SUPPLY_NOT_CONNECTED << L" )";
+        LogMessage( scopeStatusText.str(), PICO_API_CALL );
         ps5000aChangePowerSource(handle, PICO_POWER_SUPPLY_NOT_CONNECTED);
         numAvailableChannels = 2;
     }
