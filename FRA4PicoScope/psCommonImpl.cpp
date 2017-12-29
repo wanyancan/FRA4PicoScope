@@ -1148,6 +1148,7 @@ DWORD WINAPI CommonMethod(SCOPE_FAMILY_LT, CheckStatus)(LPVOID lpThreadParameter
     CommonClass(SCOPE_FAMILY_LT)* inst = (CommonClass(SCOPE_FAMILY_LT)*)lpThreadParameter;
     do
     {
+        ResetEvent(inst->hCheckStatusEvent);
         if (WAIT_OBJECT_0 == WaitForSingleObject( inst->hCheckStatusEvent, INFINITE ))
         {
             // Check that the handle is valid and implement a delay limit here, because unfortunately the ready function return
@@ -1231,7 +1232,7 @@ DWORD WINAPI CommonMethod(SCOPE_FAMILY_LT, CheckStatus)(LPVOID lpThreadParameter
 bool CommonMethod(SCOPE_FAMILY_LT, InitStatusChecking)(void)
 {
     bool retVal = true;
-    if (NULL == (hCheckStatusEvent = CreateEvent( NULL, false, false, NULL )))
+    if (NULL == (hCheckStatusEvent = CreateEvent( NULL, true, false, NULL )))
     {
     retVal = false;
     }
@@ -1681,6 +1682,12 @@ bool CommonMethod(SCOPE_FAMILY_LT, CancelCapture)(void)
     wstringstream fraStatusText;
 #if !defined(NEW_PS_DRIVER_MODEL)
     capturing = false;
+    // Wait until the CheckStatus loop is reset before calling stop.
+    // This is to avoid any possible simultaneous API calls between stop and ready.
+    while (WAIT_OBJECT_0 == WaitForSingleObject(hCheckStatusEvent, 0))
+    {
+        Sleep(100);
+    }
 #endif;
     LOG_PICO_API_CALL( BOOST_PP_STRINGIZE(CommonApi(SCOPE_FAMILY_LT, Stop)), handle );
     status = CommonApi(SCOPE_FAMILY_LT, Stop)( handle );

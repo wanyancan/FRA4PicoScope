@@ -620,6 +620,7 @@ bool PicoScopeFRA::ExecuteFRA(double startFreqHz, double stopFreqHz, int stepsPe
                     UpdateStatus( fraStatusMsg, FRA_STATUS_POWER_CHANGED, ex.GetState() == PICO_POWER_SUPPLY_CONNECTED );
                     // Change the power state regardless of whether the user wants to continue FRA execution.
                     ps->ChangePower(ex.GetState());
+                    ps->CancelCapture();
                     if (true == fraStatusMsg.responseData.proceed)
                     {
                         // Start the step over again
