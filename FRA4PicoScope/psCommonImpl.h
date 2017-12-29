@@ -89,6 +89,7 @@ static DWORD WINAPI CheckStatus(LPVOID lpThreadParameter);
 bool InitStatusChecking(void);
 HANDLE hCheckStatusEvent;
 HANDLE hCheckStatusThread;
+bool capturing;
 psBlockReady readyCB;
 int32_t currentTimeIndisposedMs;
 void* cbParam;

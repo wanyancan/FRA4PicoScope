@@ -166,6 +166,7 @@ CommonCtor(SCOPE_FAMILY_LT)( int16_t _handle ) : PicoScope()
 #if !defined(NEW_PS_DRIVER_MODEL)
     hCheckStatusEvent = NULL;
     hCheckStatusThread = NULL;
+    capturing = false;
     readyCB = NULL;
     currentTimeIndisposedMs = 0;
     cbParam = NULL;
@@ -1101,6 +1102,7 @@ bool CommonMethod(SCOPE_FAMILY_LT, RunBlock)( int32_t numSamples, uint32_t timeb
     else
     {
         currentTimeIndisposedMs = *timeIndisposedMs;
+        capturing = true;
         readyCB = lpReady;
         cbParam = pParameter;
         if (!SetEvent( hCheckStatusEvent ))
@@ -1153,7 +1155,10 @@ DWORD WINAPI CommonMethod(SCOPE_FAMILY_LT, CheckStatus)(LPVOID lpThreadParameter
             if (inst->handle > 0)
             {
                 delayCounter = 0;
-                while (0 == (readyStatus = CommonApi(SCOPE_FAMILY_LT, _ready)(inst->handle)))
+                readyStatus = 0;
+                // delay with a safety factor of 1.5x and never let it go less than 3 seconds
+                while (inst->capturing && delayCounter < max( 3000, ((inst->currentTimeIndisposedMs)*3)/2) &&
+                       0 == (readyStatus = CommonApi(SCOPE_FAMILY_LT, _ready)(inst->handle)))
                 {
                     //// diagnostic logging
                     readyStatusText.clear();
@@ -1164,13 +1169,8 @@ DWORD WINAPI CommonMethod(SCOPE_FAMILY_LT, CheckStatus)(LPVOID lpThreadParameter
 
                     Sleep(100);
                     delayCounter += 100;
-                    // delay with a safety factor of 1.5x and never let it go less than 3 seconds
-                    if (delayCounter >= max( 3000, ((inst->currentTimeIndisposedMs)*3)/2 ))
-                    {
-                        break;
-                    }
                 }
-                if (readyStatus == 0) // timed out
+                if (readyStatus == 0) // timed out or canceled
                 {
                     continue; // Don't call the callback to help avoid races between this expiry and the one in PicoScopeFRA
                 }
@@ -1679,6 +1679,9 @@ bool CommonMethod(SCOPE_FAMILY_LT, CancelCapture)(void)
 {
     PICO_STATUS status;
     wstringstream fraStatusText;
+#if !defined(NEW_PS_DRIVER_MODEL)
+    capturing = false;
+#endif;
     LOG_PICO_API_CALL( BOOST_PP_STRINGIZE(CommonApi(SCOPE_FAMILY_LT, Stop)), handle );
     status = CommonApi(SCOPE_FAMILY_LT, Stop)( handle );
     return !(PICO_ERROR(status));
