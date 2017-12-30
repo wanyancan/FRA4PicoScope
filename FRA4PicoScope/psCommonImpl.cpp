@@ -257,18 +257,22 @@ bool CommonMethod(SCOPE_FAMILY_LT,Connected)( void )
 {
     PICO_STATUS status;
     wstringstream fraStatusText;
+    wstringstream getUnitInfoCallReturn;
 
-    LOG_PICO_API_CALL( BOOST_PP_STRINGIZE(CommonApi(SCOPE_FAMILY_LT, PingUnit)), handle );
     status = CommonApi(SCOPE_FAMILY_LT, PingUnit)( handle );
+    getUnitInfoCallReturn << status << L" <== " << BOOST_PP_STRINGIZE(CommonApi(SCOPE_FAMILY_LT, PingUnit));
+    LOG_PICO_API_CALL( getUnitInfoCallReturn.str(), handle );
 #if defined(NEW_PS_DRIVER_MODEL)
     return !(PICO_CONNECTION_ERROR(status));
 #else
-    // TODO: finalize this code.  Right now it's just here to diagnose issues with user initiated cancel on PS2000
     if (PICO_CONNECTION_ERROR(status))
     {
         int8_t lastError[16];
-        LOG_PICO_API_CALL( BOOST_PP_STRINGIZE(CommonApi(SCOPE_FAMILY_LT, GetUnitInfo)), handle, lastError, sizeof(lastError), CommonErrorCode(SCOPE_FAMILY_UT) );
         CommonApi(SCOPE_FAMILY_LT, GetUnitInfo)( handle, lastError, sizeof(lastError), CommonErrorCode(SCOPE_FAMILY_UT) );
+        getUnitInfoCallReturn.clear();
+        getUnitInfoCallReturn.str(L"");
+        getUnitInfoCallReturn << L"string = " << (char*)lastError << L" <== " << BOOST_PP_STRINGIZE(CommonApi(SCOPE_FAMILY_LT, GetUnitInfo));
+        LOG_PICO_API_CALL( getUnitInfoCallReturn.str(), handle, lastError, sizeof(lastError), CommonErrorCode(SCOPE_FAMILY_UT) );
         return false;
     }
     else
