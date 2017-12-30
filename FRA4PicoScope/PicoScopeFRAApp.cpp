@@ -56,7 +56,7 @@ double testPlotPhases[];
 double testPlotUnwrappedPhases[];
 #endif
 
-char* appVersionString = "0.6.2b RC1";
+char* appVersionString = "0.6.2b RC2";
 char* appNameString = "Frequency Response Analyzer for PicoScope";
 
 #define MAX_LOADSTRING 100
