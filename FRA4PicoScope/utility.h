@@ -69,6 +69,14 @@ inline bool WStringToUint16( wstring myString, uint16_t& i )
     return (wss.eof() && !wss.fail());
 }
 
+inline bool WStringToInt32( wstring myString, int32_t& i )
+{
+    wstringstream wss(myString);
+    wss >> noskipws >> i; // Consider leading whitespace invalid
+                          // Valid only if whole string was consumed and neither failbit nor badbit is set
+    return (wss.eof() && !wss.fail());
+}
+
 inline bool WStringToUint32( wstring myString, uint32_t& i )
 {
     wstringstream wss(myString);

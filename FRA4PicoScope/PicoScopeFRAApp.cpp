@@ -1337,7 +1337,7 @@ BOOL LoadControlsData(HWND hDlg)
     Edit_SetText( hndCtrl, pSettings->GetStopFreqAsString().c_str() );
 
     hndCtrl = GetDlgItem( hDlg, IDC_FRA_STEPS_PER_DECADE );
-    Edit_LimitText( hndCtrl, 3 );
+    Edit_LimitText( hndCtrl, 5 );
     Edit_SetText( hndCtrl, pSettings->GetStepsPerDecadeAsString().c_str() );
 
     if (pSettings->GetAutoAxes())
@@ -1461,7 +1461,7 @@ DWORD WINAPI ExecuteFRA(LPVOID lpdwThreadParam)
     double maxStimulusVpp = 0.0;
     double startFreq = 0;
     double stopFreq = 0;
-    int stepsPerDecade = 0;
+    int32_t stepsPerDecade = 0;
 
     DWORD dwWaitResult;
 
@@ -1756,7 +1756,7 @@ bool ValidateSettings(void)
     double startFreq;
     double stopFreq;
     tuple <bool, double, double> freqScale;
-    int16_t stepsPerDecade;
+    int32_t stepsPerDecade;
     bool validStartFreq = false;
     bool validStopFreq = false;
     bool validStimulusVpp = false;
@@ -1953,7 +1953,7 @@ bool ValidateSettings(void)
 
     hndCtrl = GetDlgItem( hMainWnd, IDC_FRA_STEPS_PER_DECADE );
     Edit_GetText( hndCtrl, editText, 16 );
-    if (!WStringToInt16(editText, stepsPerDecade))
+    if (!WStringToInt32(editText, stepsPerDecade))
     {
         LogMessage( L"Steps per decade is not a valid number." );
         retVal = false;
