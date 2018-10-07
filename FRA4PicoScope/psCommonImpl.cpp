@@ -1019,8 +1019,15 @@ bool CommonMethod(SCOPE_FAMILY_LT, GetMaxSamples)( uint32_t* pMaxSamples )
 
 #if defined(PS4000A)
 #define CONDITIONS_INFO , PS4000A_CLEAR
+#define AUTO_TRIGGER_MILLISECONDS , 0
+#elif defined(PS5000A)
+#define CONDITIONS_INFO , PS5000A_CLEAR
+#define SetTriggerChannelConditions SetTriggerChannelConditionsV2
+#define SetTriggerChannelProperties SetTriggerChannelPropertiesV2
+#define AUTO_TRIGGER_MILLISECONDS
 #else
 #define CONDITIONS_INFO
+#define AUTO_TRIGGER_MILLISECONDS , 0
 #endif
 
 bool CommonMethod(SCOPE_FAMILY_LT, DisableChannelTriggers)( void )
@@ -1040,8 +1047,8 @@ bool CommonMethod(SCOPE_FAMILY_LT, DisableChannelTriggers)( void )
         retVal = false;
     }
 
-    LOG_PICO_API_CALL( BOOST_PP_STRINGIZE(CommonApi(SCOPE_FAMILY_LT, SetTriggerChannelProperties)), handle, NULL, 0, 0, 0 );
-    if (PICO_ERROR(CommonApi(SCOPE_FAMILY_LT, SetTriggerChannelProperties)( handle, NULL, 0, 0, 0 )))
+    LOG_PICO_API_CALL( BOOST_PP_STRINGIZE(CommonApi(SCOPE_FAMILY_LT, SetTriggerChannelProperties)), handle, NULL, 0, 0 AUTO_TRIGGER_MILLISECONDS );
+    if (PICO_ERROR(CommonApi(SCOPE_FAMILY_LT, SetTriggerChannelProperties)( handle, NULL, 0, 0 AUTO_TRIGGER_MILLISECONDS )))
     {
         fraStatusText.clear();
         fraStatusText.str(L"");
