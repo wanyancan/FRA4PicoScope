@@ -1566,7 +1566,55 @@ bool CommonMethod(SCOPE_FAMILY_LT, GetPeakValues)( uint16_t& inputPeak, uint16_t
         return false;
     }
 
+#define WORKAROUND_AGGREGATION_BUG
 #if defined(NEW_PS_DRIVER_MODEL)
+#if defined(WORKAROUND_AGGREGATION_BUG)
+    uint32_t numSamplesInOut = 512;
+
+    int16_t inputDataMin[512];
+    int16_t inputDataMax[512];
+    int16_t outputDataMin[512];
+    int16_t outputDataMax[512];
+
+    LOG_PICO_API_CALL( BOOST_PP_STRINGIZE(CommonApi(SCOPE_FAMILY_LT, SetDataBuffers)), handle, (CommonEnum(SCOPE_FAMILY_UT,CHANNEL))mInputChannel,
+        inputDataMax, inputDataMin, 512 SEGMENT_ARG RATIO_MODE_AGGREGATE_ARG );
+    if (PICO_ERROR(CommonApi(SCOPE_FAMILY_LT, SetDataBuffers)( handle, (CommonEnum(SCOPE_FAMILY_UT,CHANNEL))mInputChannel,
+        inputDataMax, inputDataMin, 512 SEGMENT_ARG RATIO_MODE_AGGREGATE_ARG )))
+    {
+        fraStatusText.clear();
+        fraStatusText.str(L"");
+        fraStatusText << L"Fatal error: Failed to set input data capture aggregation buffers for peak/overvoltage detection: " << status;
+        LogMessage( fraStatusText.str() );
+        retVal = false;
+    }
+
+    LOG_PICO_API_CALL( BOOST_PP_STRINGIZE(CommonApi(SCOPE_FAMILY_LT, SetDataBuffers)), handle, (CommonEnum(SCOPE_FAMILY_UT,CHANNEL))mOutputChannel,
+        outputDataMax, outputDataMin, 512 SEGMENT_ARG RATIO_MODE_AGGREGATE_ARG );
+    if (PICO_ERROR(CommonApi(SCOPE_FAMILY_LT, SetDataBuffers)( handle, (CommonEnum(SCOPE_FAMILY_UT,CHANNEL))mOutputChannel,
+        outputDataMax, outputDataMin, 512 SEGMENT_ARG RATIO_MODE_AGGREGATE_ARG )))
+    {
+        fraStatusText.clear();
+        fraStatusText.str(L"");
+        fraStatusText << L"Fatal error: Failed to set output data capture aggregation buffers for peak/overvoltage detection: " << status;
+        LogMessage( fraStatusText.str() );
+        retVal = false;
+    }
+
+    LOG_PICO_API_CALL( BOOST_PP_STRINGIZE(CommonApi(SCOPE_FAMILY_LT, GetValues)), handle, 0, &numSamplesInOut, (mNumSamples/512)+1, CommonEnum(SCOPE_FAMILY_UT, RATIO_MODE_AGGREGATE), 0, &overflow );
+    if (PICO_ERROR(CommonApi(SCOPE_FAMILY_LT, GetValues)( handle, 0, &numSamplesInOut, (mNumSamples/512)+1, CommonEnum(SCOPE_FAMILY_UT, RATIO_MODE_AGGREGATE), 0, &overflow )))
+    {
+        fraStatusText.clear();
+        fraStatusText.str(L"");
+        fraStatusText << L"Fatal error: Failed to retrieve aggregated data for peak/overvoltage detection: " << status;
+        LogMessage( fraStatusText.str() );
+        retVal = false;
+    }
+    else
+    {
+        inputPeak = max(abs(*std::max_element(&inputDataMax[0], &inputDataMax[numSamplesInOut])), abs(*std::min_element(&inputDataMin[0], &inputDataMin[numSamplesInOut])));
+        outputPeak = max(abs(*std::max_element(&outputDataMax[0], &outputDataMax[numSamplesInOut])), abs(*std::min_element(&outputDataMin[0], &outputDataMin[numSamplesInOut])));
+    }
+#else
     uint32_t numSamplesInOut;
 
     int16_t inputDataMin;
@@ -1613,6 +1661,7 @@ bool CommonMethod(SCOPE_FAMILY_LT, GetPeakValues)( uint16_t& inputPeak, uint16_t
         inputPeak = max(abs(inputDataMax), abs(inputDataMin));
         outputPeak = max(abs(outputDataMax), abs(outputDataMin));
     }
+#endif
 #else
     // Just use block mode without aggregation to get all the data.
 
