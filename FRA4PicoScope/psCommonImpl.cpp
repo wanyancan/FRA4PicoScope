@@ -1568,6 +1568,9 @@ bool CommonMethod(SCOPE_FAMILY_LT, GetPeakValues)( uint16_t& inputPeak, uint16_t
 
 #define WORKAROUND_AGGREGATION_BUG
 #if defined(NEW_PS_DRIVER_MODEL)
+    // This is a workaround for the issue described in Picotech support ID SUPPORT-7588
+    // Aggregating down to a single sample causes issues for some drivers.  Instead, this aggregates down to no
+    // more than 512 samples.  Once it has the samples, it searches for the min/max among them
 #if defined(WORKAROUND_AGGREGATION_BUG)
     uint32_t numSamplesInOut = 512;
 
