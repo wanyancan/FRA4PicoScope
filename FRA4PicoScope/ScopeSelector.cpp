@@ -407,7 +407,8 @@ PicoScope* ScopeSelector::OpenScope( AvailableScopeDescription_T scope )
     {
         LOG_PICO_API_CALL( L"ps5000aOpenUnit", &handle, (int8_t*)scope.serialNumber.c_str(), PS5000A_DR_15BIT );
         status = ps5000aOpenUnit( &handle, (int8_t*)scope.serialNumber.c_str(), PS5000A_DR_15BIT );
-        if ((status != PICO_OK && status != PICO_POWER_SUPPLY_NOT_CONNECTED) || handle <= 0)
+        if ((status != PICO_OK && status != PICO_POWER_SUPPLY_NOT_CONNECTED &&
+             status != PICO_USB3_0_DEVICE_NON_USB3_0_PORT) || handle <= 0)
         {
             if (handle > 0)
             {

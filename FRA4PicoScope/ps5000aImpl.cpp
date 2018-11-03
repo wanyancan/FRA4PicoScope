@@ -103,11 +103,12 @@ bool ps5000aImpl::InitializeScope(void)
     // Save the value set by the scope factory (ScopeSelector)
     numActualChannels = numAvailableChannels;
 
-    if (PICO_POWER_SUPPLY_NOT_CONNECTED == initialPowerState)
+    if (PICO_POWER_SUPPLY_NOT_CONNECTED == initialPowerState ||
+        PICO_USB3_0_DEVICE_NON_USB3_0_PORT == initialPowerState)
     {
         scopeStatusText << L"ps5000aChangePowerSource( " << handle << ", " << PICO_POWER_SUPPLY_NOT_CONNECTED << L" )";
         LogMessage( scopeStatusText.str(), PICO_API_CALL );
-        ps5000aChangePowerSource(handle, PICO_POWER_SUPPLY_NOT_CONNECTED);
+        ps5000aChangePowerSource(handle, initialPowerState);
         numAvailableChannels = 2;
     }
     else
